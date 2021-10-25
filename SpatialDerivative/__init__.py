@@ -1,3 +1,10 @@
+__author__ 		= "Lekan Molu"
+__copyright__ 	= "2021, Hamilton-Jacobi Analysis in Python"
+__license__ 	= "Molux Licence"
+__maintainer__ 	= "Lekan Molu"
+__email__ 		= "patlekno@icloud.com"
+__status__ 		= "Completed"
+
 from SpatialDerivative.Other import *
 from .check_eq_approx import checkEquivalentApprox
 from .ENO3aHelper import upwindFirstENO3aHelper

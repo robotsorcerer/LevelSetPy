@@ -1,3 +1,10 @@
+__author__ 		= "Lekan Molu"
+__copyright__ 	= "2021, Hamilton-Jacobi Analysis in Python"
+__license__ 	= "Molux Licence"
+__maintainer__ 	= "Lekan Molu"
+__email__ 		= "patlekno@icloud.com"
+__status__ 		= "Testing"
+
 import numpy as np
 
 def isosurface(my_array, my_value, zs, interp_order=6, power_parameter=0.5):

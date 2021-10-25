@@ -1,3 +1,10 @@
+__author__ 		= "Lekan Molu"
+__copyright__ 	= "2021, Hamilton-Jacobi Analysis in Python"
+__license__ 	= "Molux Licence"
+__maintainer__ 	= "Lekan Molu"
+__email__ 		= "patlekno@icloud.com"
+__status__ 		= "Testing"
+
 import copy
 import numpy as np
 from os.path import join
@@ -9,6 +16,7 @@ from Utilities import *
 import matplotlib
 # matplotlib.use('Agg')
 from Visualization import *
+from Visualization.Interactive_plotter import InteractiveVisualizer
 from ValueFuncs import *
 import matplotlib.pyplot as plt
 
@@ -229,98 +237,19 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
     small = 1e-4;
     g = schemeData.grid;
     gDim = g.dim;
-    # clns = [[':'] for i in range(gDim)]
 
     ## Backwards compatible
     if isfield(extraArgs, 'low_memory'):
-            extraArgs.lowMemory = copy.deepcopy(extraArgs.low_memory)
-            del extraArgs.low_memory;
-            warn('we now use lowMemory instead of low_memory');
-
+        extraArgs.lowMemory = copy.deepcopy(extraArgs.low_memory)
 
     if isfield(extraArgs, 'flip_output'):
         extraArgs.flipOutput = extraArgs.flip_output
-        del extraArgs.flip_output;
-        logger.warning('we now use flipOutput instead of flip_output');
-
 
     if isfield(extraArgs, 'stopSet'):
         extraArgs.stopSetInclude = extraArgs.stopSet
-        del extraArgs.stopSet;
-        logger.warning('we now use stopSetInclude instead of stopSet');
-
-    if isfield(extraArgs, 'visualize'):
-        if not isinstance (extraArgs.visualize, Bundle) and \
-                    extraArgs.visualize:
-            # remove visualize boolean
-            del extraArgs.visualize;
-
-            # reset defaults
-            extraArgs.visualize = Bundle(dict(initialValueSet = True,
-                                                valueSet = True))
-
-        if isfield(extraArgs, 'RS_level'):
-            extraArgs.visualize.sliceLevel = extraArgs.RS_level;
-            del extraArgs.RS_level;
-            logger.warning(f'we now use extraArgs.visualize.sliceLevel instead of {extraArgs.RS_level}')
-
-
-        if isfield(extraArgs, 'plotData'):
-            extraArgs.visualize.plotData = extraArgs.plotData;
-            del extraArgs.plotData;
-            logger.warning(f'we now use extraArgs.visualize.plotData instead of {extraArgs.plotData}');
-
-
-        if isfield(extraArgs, 'deleteLastPlot'):
-            extraArgs.visualize.deleteLastPlot = extraArgs.deleteLastPlot;
-            del extraArgs.deleteLastPlot;
-            logger.warning('we now use extraArgs.visualize.deleteLastPlot instead'
-                            'of extraArgs.deleteLastPlot');
-
-
-        if isfield(extraArgs, 'fig_num'):
-            extraArgs.visualize.figNum = copy.deepcopy(extraArgs.fig_num)
-            del extraArgs.fig_num;
-            # logger.warning(['we now use extraArgs.visualize.figNum instead'\
-            #     'of extraArgs.fig_num']);
-
-
-        if isfield(extraArgs, 'fig_filename'):
-            extraArgs.visualize.figFilename =copy.deepcopy( extraArgs.fig_filename)
-            del extraArgs.fig_filename;
-            # logger.warning(['we now use extraArgs.visualize.figFilename instead'\
-            #     'of extraArgs.fig_filename']);
-
-
-        if isfield(extraArgs, 'target'):
-            # logger.warning(['you wrote extraArgs.target instead of' \
-            #     'extraArgs.targetFunction'])
-            extraArgs.targetFunction = copy.deepcopy(extraArgs.target)
-            del extraArgs.target;
-
-
-        if isfield(extraArgs, 'targets'):
-            # logger.warning(['you wrote extraArgs.targets instead of' \
-            #     'extraArgs.targetFunction'])
-            extraArgs.targetFunction = copy.deepcopy(extraArgs.targets)
-            del extraArgs.targets;
-
-
-        if isfield(extraArgs, 'obstacle'):
-            extraArgs.obstacleFunction = copy.deepcopy(extraArgs.obstacle)
-            # logger.warning(['you wrote extraArgs.obstacle instead of' \
-            #     'extraArgs.obstacleFunction'])
-            del extraArgs.obstacle;
-
-
-        if isfield(extraArgs, 'obstacles'):
-            extraArgs.obstacleFunction = copy.deepcopy(extraArgs.obstacles)
-            # logger.warning(['you wrote extraArgs.obstacles instead of' \
-            #     'extraArgs.obstacleFunction'])
-            del extraArgs.obstacles;
 
     if isfield(extraArgs, 'quiet') and extraArgs.quiet:
-        print('HJIPDE_solve running in quiet mode')
+        info('Solving HJI PDEs in quiet mode')
         quiet = True;
 
     # Low memory mode
@@ -352,34 +281,32 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
         else:
             error('Inconsistent obstacle dimensions!')
 
-
-        # We always take the max between the data and the obstacles
-        # note that obstacles are negated.  That's because if you define the
-        # obstacles using something like ShapeSphere, it sets it up as a
-        # target. To make it an obstacle we just negate that.
-        data0 = np.maximum(data0, -obstacle_i);
+        """
+            We always take the max between the data and the obstacles
+            note that obstacles are negated.  That's because if you define the
+            obstacles using something like ShapeSphere, it sets it up as a
+            target. To make it an obstacle we just negate that.
+        """
+        data0 = np.maximum(data0, -obstacle_i)
 
     #---Extract the information about targets----------------------------------
-    targMode = 'none';
+    targMode = 'none'
 
     if isfield(extraArgs, 'targetFunction'):
-        targets = extraArgs.targetFunction;
-
+        targets = extraArgs.targetFunction
         # is target function moving or not?
         if numDims(targets) == gDim:
-            targMode = 'static';
+            targMode = 'static'
             target_i = targets;
         elif numDims(targets) == gDim + 1:
-            targMode = 'time-varying';
-            target_i = targets[0, ...];
+            targMode = 'time-varying'
+            target_i = targets[0, ...]
         else:
             error('Inconsistent target dimensions!')
 
     #---Stopping Conditions----------------------------------------------------
-
-    # Check validity of stopInit if needed
     if isfield(extraArgs, 'stopInit'):
-        if not isvector(extraArgs.stopInit) or gDim is not len(extraArgs.stopInit):
+        if not isvector(extraArgs.stopInit) or gDim!=len(extraArgs.stopInit):
             error('stopInit must be a vector of length g.dim!')
 
     if isfield(extraArgs,'stopSetInclude') or isfield(extraArgs,'stopSetIntersect'):
@@ -392,7 +319,7 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
             error('Inconsistent stopSet dimensions!')
 
         # Extract set of indices at which stopSet is negative
-        setInds = stopSet[stopSet < 0];
+        setInds = stopSet[stopSet < 0]
 
         # Check validity of stopLevel if needed
         if isfield(extraArgs, 'stopLevel'):
@@ -400,42 +327,28 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
         else:
             stopLevel = 0;
 
-
-
-    ## Visualization
-    if (isfield(extraArgs, 'visualize') and isinstance(extraArgs.visualize, Bundle))\
+    # Visualization
+    if (isfield(extraArgs, 'visualize') and isbundle(extraArgs.visualize))\
             or (isfield(extraArgs, 'makeVideo') and extraArgs.makeVideo):
-        # Mark initial iteration, state that for the first plot we need
-        # lighting
-        timeCount = 0;
-        needLight = True;
-
+        timeCount = 0
         #---Projection Parameters----------------------------------------------
 
         # Extract the information about plotData
-        plotDims = ones(gDim, 1);
-        projpt = [];
+        plotDims, ;  projpt = ones(gDim, 1), []
         if isfield(extraArgs.visualize, 'plotData'):
-            # Dimensions to visualize
-            # It will be an array of 1s and 0s with 1s means that dimension should
-            # be plotted.
             plotDims = extraArgs.visualize.plotData.plotDims;
-            # Points to project other dimensions at. There should be an entry point
-            # corresponding to each 0 in plotDims.
+            # Points to project other dimensions at.
             projpt = extraArgs.visualize.plotData.projpt;
 
-
         # Number of dimensions to be plotted and to be projected
-        pDims = np.count_nonzero(plotDims);
-        projDims = len(projpt);
+        pDims = np.count_nonzero(plotDims)
+        projDims = len(projpt)
 
         # Basic Checks
         if (pDims > 4):
             error('Currently plotting up to 3D is supported!');
 
-
         #---Defaults-----------------------------------------------------------
-
         if isfield(extraArgs, 'obstacleFunction') and isfield(extraArgs, 'visualize'):
             if not isfield(extraArgs.visualize, 'obstacleSet'):
                 extraArgs.visualize.obstacleSet = 1
@@ -443,8 +356,6 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
         if isfield(extraArgs, 'targetFunction') and isfield(extraArgs, 'visualize'):
             if not isfield(extraArgs.visualize, 'targetSet'):
                 extraArgs.visualize.targetSet = 1;
-
-        # grid on
 
         # Number of dimensions to be plotted and to be projected
         pDims = np.count_nonzero(plotDims);
@@ -459,124 +370,77 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
         else:
             sliceLevel = 0;
 
+        "Back up copy ops"
+        gPlot = copy.deepcopy(g)
+        dataPlot = copy.deepcopy(data0)
+        if isfield(extraArgs, 'obstacleFunction'):
+            obsPlot = copy.deepcopy(obstacle_i)
+        if isfield(extraArgs, 'targetFunction'):
+            targPlot = copy.deepcopy(target_i)
 
-        # Do we want to see every single plot at every single time step, or
-        # only the most recent one?
-        if isfield(extraArgs.visualize, 'deleteLastPlot'):
-            deleteLastPlot = extraArgs.visualize.deleteLastPlot
-        else:
-            deleteLastPlot = False;
-
-        view3D = 0;
-
-        # Project
         if (projDims == 0):
-            gPlot = g;
-            dataPlot = data0;
-            if isfield(extraArgs, 'obstacleFunction'):
-                obsPlot = obstacle_i;
-
-            if isfield(extraArgs, 'targetFunction'):
-                targPlot = target_i;
-        else:
-            # if projpt is a cell, project each dimensions separately. This
-            # allows us to take the union/intersection through some dimensions
-            # and to project at a particular slice through other dimensions.
-            if isinstance(projpt, list):
-                idx = np.where(plotDims==0)#[0]
-                plotDimsTemp = np.ones(len(plotDims));
-                gPlot = g;
-                dataPlot = data0;
-                if isfield(extraArgs, 'obstacleFunction'):
-                    obsPlot = obstacle_i;
-
-                if isfield(extraArgs, 'targetFunction'):
-                    targPlot = target_i;
-
-                for ii in range(len(idx[0])-1, 0, -1):
-                    plotDimsTemp[idx[ii]] = 0;
-                    if extraArgs.obstacleFunction:
-                        _, obsPlot = proj(gPlot, obsPlot, np.logical_not(plotDimsTemp), projpt[ii]);
-
-                    if extraArgs.targetFunction:
-                        _, targPlot = proj(gPlot, targPlot, np.logical_not(plotDimsTemp), projpt[ii])
-
-                    gPlot, dataPlot = proj(gPlot, dataPlot, np.logical_not(plotDimsTemp), projpt[ii])
-                    plotDimsTemp = ones(1,gPlot.dim);
-            else:
-                gPlot, dataPlot = proj(g, data0, np.logical_not(plotDims), projpt);
-
+            "Project"
+            debug(f"projDims = {projDims}; whence not projecting.")
+        elif iscell(projpt):
+            """
+                if projpt is a cell, project each dimensions separately. This
+                allows us to take the union/intersection through some dimensions
+                and to project at a particular slice through other dimensions.
+            """
+            idx = np.nonzero(plotDims==0)
+            plotDimsTemp = np.ones(len(plotDims))
+            for ii in range(len(idx[0])-1, 0, -1):
+                plotDimsTemp[idx[ii]] = 0;
                 if extraArgs.obstacleFunction:
-                    _, obsPlot = proj(g, obstacle_i, np.logical_not(plotDims), projpt);
+                    _, obsPlot = proj(gPlot, obsPlot, np.logical_not(plotDimsTemp), projpt[ii]);
 
                 if extraArgs.targetFunction:
-                    [_, targPlot] = proj(g, target_i, np.logical_not(plotDims), projpt);
-        #---Initialize Figure--------------------------------------------------
+                    _, targPlot = proj(gPlot, targPlot, np.logical_not(plotDimsTemp), projpt[ii])
 
-
-        # Initialize the figure for visualization
-        winsize = (16,9)
-        fig = plt.figure(figsize=winsize);
-        fig.tight_layout()
-        ax = fig.add_subplot(1, 1, 1)
-
-
-        # Clear figure unless otherwise specified
-        plt.clf()
-
-        ax.grid('on')
-
-        # Set defaults
-        eAT_visSetIm = Bundle(dict(sliceDim = gPlot.dim,
-                                    savedict = {"save": True, "savename": 'val_func.jpg',\
-                                                    "savepath": join("..", "jpeg_dumps")},
-                                    applyLight = False, disp=True))
-        if isfield(extraArgs.visualize, 'lineWidth'):
-            eAT_visSetIm.LineWidth = extraArgs.visualize.lineWidth;
+                gPlot, dataPlot = proj(gPlot, dataPlot, np.logical_not(plotDimsTemp), projpt[ii])
+                plotDimsTemp = ones(1,gPlot.dim);
         else:
-            eAO_visSetIm = Bundle(dict(LineWidth = 2,savedict = {"save": True, "savename": 'val_func.jpg',\
-                                        "savepath": join("..", "jpeg_dumps")},
-                                        disp=True))
+            # should we use copy ops here?
+            gPlot, dataPlot = proj(g, data0, np.logical_not(plotDims), projpt);
 
+            if extraArgs.obstacleFunction:
+                _, obsPlot = proj(g, obstacle_i, np.logical_not(plotDims), projpt);
 
-        # If we're stopping once we hit an initial condition requirement, plot
-        # said requirement
+            if extraArgs.targetFunction:
+                _, targPlot = proj(g, target_i, np.logical_not(plotDims), projpt);
+
+        "Set visualization defaults"
+        params = Bundle(
+                {"sliceDim": gPlot.dim,
+                 'disp': True,
+                 'labelsize': 16,
+                 'linewidth': 2,
+                 'init_conditions': False,
+                 'pause_time': extraArgs.pause_time,
+                 'winsize': extraArgs.visualize.winsize,
+             	 'fontdict': Bundle({'fontsize':16, 'fontweight':'bold'}),
+                 "savedict": Bundle({"save": True,
+                 "savename": extraArgs.visualize.savename,
+                 "savepath": join(extraArgs.visualize.savedir)}),
+                 })
+
+        # plot once we hit an initial condition, if set
         if isfield(extraArgs, 'stopInit'):
             projectedInit = extraArgs.stopInit(plotDims.astype(bool))
-            if np.nonzero(plotDims) == 2:
-                ax.plot(projectedInit[0], projectedInit[1], 'b*')
-            elif np.nonzero(plotDims) == 3:
-                ax.plot_wireframe(projectedInit[0], projectedInit[1], projectedInit[2], 'b*')
-            plt.show()
+            if np.count_nonzero(plotDims) == 2:
+                params.value=projectedInit
+                lev_interactive = InteractiveVisualizer(params=params)
+            elif np.count_nonzero(plotDims) == 3:
+                params.value=projectedInit
+                lev_interactive = InteractiveVisualizer(params=params)
+
         #---Visualize Initial Value Set----------------------------------------
         if isfield(extraArgs.visualize, 'initialValueSet') and extraArgs.visualize.initialValueSet:
-
-            if not isfield(extraArgs.visualize,'plotColorVS0'):
-                extraArgs.visualize.plotColorVS0 = 'g';
-
-
             visSetIm(dataPlot, gPlot, extraArgs.visualize.plotColorVS0, sliceLevel, eAT_visSetIm);
-
-            if isfield(extraArgs.visualize,'plotAlphaVS0'):
-                extraOuts.hVS0.FaceAlpha = extraArgs.visualize.plotAlphaVS0;
 
         #---Visualize Initial Value Function-----------------------------------
         if isfield(extraArgs.visualize, 'initialValueFunction') and \
                 extraArgs.visualize.initialValueFunction:
-
-            # If we're making a 3D plot, mark so we know to view this at an
-            # angle appropriate for 3D
-            if gPlot.dim >= 2:
-                view3D = 1;
-
-            # Set up default parameters
-            if isfield(extraArgs.visualize,'plotColorVF0'):
-                extraArgs.visualize.plotColorVF0 = 'g';
-
-
-            if not isfield(extraArgs.visualize,'plotAlphaVF0'):
-                extraArgs.visualize.plotAlphaVF0 = .5;
-
 
             # Visualize Initial Value function (hVF0)
             show3D(gPlot,dataPlot,(16,9), disp=True)

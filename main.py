@@ -1,4 +1,14 @@
+__author__ 		= "Lekan Molu"
+__copyright__ 	= "2021, Hamilton-Jacobi Analysis in Python"
+__credits__  	= "Sylvia Herbert"
+__license__ 	= "Molux Licence"
+__maintainer__ 	= "Lekan Molu"
+__email__ 		= "patlekno@icloud.com"
+__status__ 		= "Testing"
+
 import copy
+import argparse
+import logging
 import sys, os
 sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) )
 import numpy as np
@@ -11,10 +21,21 @@ from InitialConditions import shapeCylinder
 from DynamicalSystems import *
 import matplotlib.pyplot as plt
 
+parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
+parser.add_argument('--pause_time', '-pz', type=float, default=1e-4, help='pause time between successive updates of plots' )
+parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
+parser.add_argument('--silent', '-si', action='store_true', default=True, help='silent debug print outs' )
+parser.add_argument('--visualize', '-vz', action='store_true', default=True, help='visualize level sets?' )
+args = parser.parse_args()
 
-import logging
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-# logging.basicConfig(level=, )
+if args.silent:
+	logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+else:
+	logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+# Turn off pyplot's spurious dumps on screen
+logging.getLogger('matplotlib.font_manager').disabled = True
 logger = logging.getLogger(__name__)
 
 def main():
@@ -54,45 +75,33 @@ def main():
              add the following code:
              HJIextraArgs.addGaussianNoiseStandardDeviation = [0 0 0.5]
     """
-
-    ## Should we compute the trajectory?
-    compTraj = True
-
     ## Grid
     grid_min = expand(np.array((-5, -5, -pi)), ax = 1) # Lower corner of computation domain
     grid_max = expand(np.array((5, 5, pi)), ax = 1)   # Upper corner of computation domain
-    N = 41*ones(3, 1).astype(int) #expand(np.array((41, 41,  41)), ax = 1)        # Number of grid points per dimension
-    pdDims = 2              # 3rd dimension is periodic
+    N = 41*ones(3, 1).astype(int)   # expand(np.array((41, 41,  41)), ax = 1)        # Number of grid points per dimension
+    pdDims = 2                      # 3rd dimension is periodic
     g = createGrid(grid_min, grid_max, N, pdDims)
-    # print(f'g.vs after creation: {[x.shape for x in g.vs]}')
 
     ## target set
     data0 = shapeCylinder(g, 2, zeros(len(N), 1, np.float64), radius=1)
-    # show3D(g=g, mesh=data0, savedict={"save":False})
     # also try shapeRectangleByCorners, shapeSphere, etc.
-    # print(f'g.vs after cyl: {[x.shape for x in g.vs]}')
 
     ## time vector
-    t0 = 0
-    tMax =  2
-    dt = 0.05
-    tau = np.arange(t0, tMax+dt, dt) # account for pythonb's 0-indexing
+    t0 = 0; tMax = 2; dt = 0.05
+    tau = np.arange(t0, tMax+dt, dt)
 
     ## problem parameters
 
     # input bounds
-    speed = 1
-    wMax = 1
+    speed = 1;     wMax = 1
     # do dStep1 here
 
     # control trying to min or max value function?
     uMode = 'min'
     # do dStep2 here
 
-    ## Pack problem parameters
-
+    "Pack problem parameters"
     # Define dynamic system
-    # dCar = DubinsCar(dubins_default_params)
     dCar = DubinsCar(np.zeros((3,1)), wMax, speed)
 
     # Put grid and dynamic systems into schemeData
@@ -113,27 +122,26 @@ def main():
     ## If you have obstacles, compute them here
 
     ## Compute value function
-    HJIextraArgs = Bundle(dict(
-                            # visualize = Bundle(dict(
-                            # valueSet = True,
-                            # initialValueSet = True,
-                            # figNum = 1, #set figure number
-                            # deleteLastPlot = True, #delete previous plot as you update
-                            # plotData = Bundle(dict(
-                            # # comment these if you don't want to see a 2D slice
-                            # plotDims = [1, 1, 0], #plot x, y
-                            # projpt = [0], #project at theta = 0
-                            # )),
-                            # viewAngle = [0,90], # view 2D
-                            # )),
-                            ))
-
+    HJIextraArgs = Bundle({ 'quiet': args.silent,
+                            'visualize': Bundle({
+                            'valueSet': True,
+							'sliceLevel': 0,
+							'winsize': (16,9),
+							'pause_time': args.pause_time,
+							'savedir': join("..", "jepg_dumps"),
+                            'initialValueSet': True,
+                            'savename': 'hj_opt_result.jpg',
+                            }),
+							})
+	if args.visualize:
+		plotData = Bundle({'plotDims': np.asarray([1, 1, 0]), #plot x, y
+							'projpt': [0], #project at theta = 0
+							})
+		HJIextraArgs.visualize.plotData = plotData
     data, tau2, _ = HJIPDE_solve(data0, tau, schemeData, None, HJIextraArgs)
-    # print(f'g.vs after solve: {[x.shape for x in g.vs]}')
 
     ## Compute optimal trajectory from some initial state
-    if compTraj:
-
+    if args.compute_traj:
         #set the initial state
         xinit = np.array(([[2, 2, -pi]]))
 

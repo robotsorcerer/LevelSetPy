@@ -16,7 +16,7 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
 
      Input Parameters:
 
-       grid: Grid structure (see processGrid.m for details).
+       grid: Grid structure (see processGrid.py for details).
 
        axis_align: Vector specifying indices of coordinate axes with which the
        cylinder is aligned.  Defaults to the empty vector (eg: the cylinder is
@@ -33,15 +33,6 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
 
        data: Output data array (of size grid.size) containing the implicit
        surface function.
-
-     Copyright 2004 Ian M. Mitchell (mitchell@cs.ubc.ca).
-     This software is used, copied and distributed under the licensing
-       agreement contained in the file LICENSE in the top directory of
-       the distribution.
-
-     Ian Mitchell, 6/23/04
-     $Date: 2011-03-18 16:56:16 -0700 (Fri, 18 Mar 2011) $
-     $Id: shapeCylinder.m 60 2011-03-18 23:56:16Z mitchell $
 
      Translated August 2, 2021 | Lekan Molu
     ---------------------------------------------------------------------------

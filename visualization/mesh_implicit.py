@@ -3,7 +3,7 @@ __copyright__ 	= "2021, Hamilton-Jacobi Analysis in Python"
 __license__ 	= "Molux Licence"
 __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
-__status__ 		= "Testing"
+__status__ 		= "Completed"
 
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage import measure
@@ -34,6 +34,9 @@ def implicit_mesh(surface, level, spacing, gd='ascent', edge_color='k', face_col
             edge_color: color of the edge of the mesh.
 
             face_color: color of the face of the mesh.
+        Returns
+        =======
+            3D Mesh similar to the one you get in matlab
 
         Author: Lekan Molu, September 07, 2021
     """

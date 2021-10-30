@@ -30,15 +30,14 @@ def buffered_axis_limits(amin, amax, buffer_factor=1.0):
     amin = np.floor(amin/precision) * precision
     amax = np.ceil (amax/precision) * precision
     return (amin, amax)
-    
+
 class Visualizer():
 
     def __init__(self, fig=None, ax=None, winsize=None,
                 labelsize=18, linewidth=6, fontdict=None,
                 block=False, savedict=None):
         """
-            Ad-hoc visualizer for grids, grid partitions
-            and HJI solutions
+            Ad-hoc visualizer for grids, and grid partitions
 
             fig: pyplot figure. If not passed, it's created
             ax: subfig of fig on which to plot figure
@@ -47,6 +46,8 @@ class Visualizer():
             linewidth: width of 2D lines
             fontdict: fontweight and size for visualization
             block: whether to block screen after plot or not
+
+            Author: Lekan MOlux, August/September 2021
         """
         if winsize is None:
             self.winsize =(16, 9)

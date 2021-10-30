@@ -16,24 +16,7 @@ from Grids.create_grid import createGrid
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from Visualization.mesh_implicit import implicit_mesh
-
-
-def buffered_axis_limits(amin, amax, buffer_factor=1.05):
-	"""
-	Increases the range (amin, amax) by buffer_factor on each side
-	and then rounds to precision of 1/10th min or max.
-	Used for generating good plotting limits.
-	For example (0, 100) with buffer factor 1.1 is buffered to (-10, 110)
-	and then rounded to the nearest 10.
-	"""
-	diff = amax - amin
-	amin -= (buffer_factor-1)*diff
-	amax += (buffer_factor-1)*diff
-	magnitude = np.floor(np.log10(np.amax(np.abs((amin, amax)) + 1e-100)))
-	precision = np.power(10, magnitude-1)
-	amin = np.floor(amin/precision) * precision
-	amax = np.ceil (amax/precision) * precision
-	return (amin, amax)
+from Visualization.settings import buffered_axis_limits
 
 def get_field(field, bundle):
 	if isfield(field, bundle):
@@ -154,7 +137,15 @@ class InteractiveVisualizer(object):
 			self._ax_arr[ax_idx].set_xlabel("X") #, fontdict = self._fontdict)
 			self._ax_arr[ax_idx].set_ylabel("Y") #, fontdict = self._fontdict)
 			self._ax_arr[ax_idx].set_zlabel("Z") #, fontdict = self._fontdict)
-			# self._ax_arr[ax_idx].set_title(f'Initial {self.params.level}-Value Set',fontdict = self._fontdict)
+
+			buffer_factor=1.05
+			xlim = (min(data[0].ravel()), max(data[0].ravel())) #, buffer_factor)
+			ylim = (min(data[1].ravel()), max(data[1].ravel())) #, buffer_factor)
+			zlim = (min(data[2].ravel())-2.0, max(data[2].ravel())+2.0) #, buffer_factor*1.2)
+
+			self._ax_arr[ax_idx].set_xlim(*xlim)
+			self._ax_arr[ax_idx].set_ylim(*ylim)
+			self._ax_arr[ax_idx].set_zlim(*zlim)
 			self.set_title(ax_idx, f'Initial {self.params.level}-Value Set')
 		elif g.dim == 4:
 			# This is useful for the temporal-axis and 3 Cartesian Coordinates
@@ -175,14 +166,14 @@ class InteractiveVisualizer(object):
 								bbox_inches='tight',facecolor='None')
 
 	def show_3d(self, g, mesh, ax_idx, color, spacing):
-		self._ax_arr[ax_idx] = plt.subplot(self._gs_plots[ax_idx], projection='3d')
+		# self._ax_arr[ax_idx] = plt.subplot(self._gs_plots[ax_idx], projection='3d')
 		self._ax_arr[ax_idx].plot3D(g.xs[0].flatten(), g.xs[1].flatten(), g.xs[2].flatten(), color=next(color))
 		if isinstance(mesh, list):
 			for m in mesh:
 				m = implicit_mesh(m, level=self.params.level, spacing=spacing,  edge_color='k', face_color='r')
 				self._ax_arr[ax_idx].add_collection3d(m)
 		else:
-			self._ax_arr[ax_idx].add_collection(mesh)
+			self._ax_arr[ax_idx].add_collection3d(mesh)
 
 	def set_title(self, i, title):
 			self._ax_arr[i].set_title(title)

@@ -15,14 +15,15 @@ def show2D(g, mesh, title='', winsize=(16,9), ec='k', disp=False,
     """
      show2D: display a 2D implicit surface function.
 
-       show2D(g, mesh)
+     Example: show2D(g, mesh, **kwargs)
 
      2D implicit surface functions can be displayed either by contour plot
        or by surface plot.  This routine does both.
 
      parameters:
        g   	Grid structure (see processGrid.m for details).
-       mesh        Array containing the implicit surface function.
+       mesh Array containing the implicit surface function.
+       level: level set of the value function to plot.
 
        This function would substitute nicely for Sylvia's visFuncIm is g.dim<2
 

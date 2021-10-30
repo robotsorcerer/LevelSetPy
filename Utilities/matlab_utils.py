@@ -9,6 +9,7 @@ __status__ 		= "Completed"
 import numpy as np
 import logging
 import time
+import numbers
 import sys, copy
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ def strcmp(str1, str2):
         return True
     return False
 
-def isbundle(self, bund):
+def isbundle(bund):
     "Determines if bund is an instance of the class Bundle."
     if isinstance(bund, Bundle):
         return True
@@ -207,7 +208,7 @@ def cell(grid_len, dim=1):
     "Returns a matlab-like cell."
     if dim!=1:
         logger.fatal('This has not been implemented for n>1 cells')
-    return [[] for i in range(grid_len)]
+    return [np.nan for i in range(grid_len)]
 
 def iscell(cs):
     "Determines if cs is an instance of a cell."
@@ -218,16 +219,20 @@ def iscell(cs):
 
 def isnumeric(A):
     "Determines if A is a numeric type."
-    if isinstance(A, np.ndarray):
-        dtype = A.dtype
-    else:
-        dtype = type(A)
-
-    acceptable_types=[list, np.float64, np.float32, np.int64, np.int32, float, int]
-
-    if dtype in acceptable_types:
+    if isinstance(A, numbers.Number):
         return True
-    return False
+    else:
+        return False
+    # if isinstance(A, np.ndarray):
+    #     dtype = A.dtype
+    # else:
+    #     dtype = type(A)
+    #
+    # acceptable_types=[list, np.float64, np.float32, np.int64, np.int32, float, int]
+    #
+    # if dtype in acceptable_types:
+    #     return True
+    # return False
 
 def isfloat(A):
     "Determines if A is a float type."

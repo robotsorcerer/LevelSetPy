@@ -42,14 +42,14 @@ def proj(g, data, dimsToRemove, xs=None, NOut=None, process=True):
     """
     # print(f'dimsToRemove: {dimsToRemove} {dimsToRemove.shape}')
     # Input checking
+    if isinstance(dimsToRemove, list):
+        dimsToRemove = np.asarray(dimsToRemove)
     if len(dimsToRemove) != g.dim:
         logger.fatal('Dimensions are inconsistent!')
 
     if np.count_nonzero(np.logical_not(dimsToRemove)) == g.dim:
-        gOut = g
-        dataOut = data
         logger.warning('Input and output dimensions are the same!')
-        return gOut, dataOut
+        return g, data
 
     # By default, do a projection
     if not xs:
@@ -64,32 +64,29 @@ def proj(g, data, dimsToRemove, xs=None, NOut=None, process=True):
         NOut = g.N[np.logical_not(dimsToRemove)]
         if NOut.ndim < 2:
             NOut = expand(NOut, 1)
-    # print(f'NOut: {NOut} {NOut.shape}')
-    dataDims = numDims(data)
+
+    dataDims = data.ndim
     if np.any(data) and np.logical_not(dataDims == g.dim or dataDims == g.dim+1) \
         and not isinstance(data, list):
         logger.fatal('Inconsistent input data dimensions!')
 
     # Project data
-    gOut, dataOut = projSingle(g, data, dimsToRemove, xs, NOut, process)
+    if dataDims == g.dim:
+        gOut, dataOut = projSingle(g, data, dimsToRemove, xs, NOut, process)
+    else:
+        gOut, _  = projSingle(g, np.array([]), dimsToRemove, xs, NOut, process)
 
     # Project data
-    if isinstance(data, list):
-        numTimeSteps = len(data)
-    else:
-        numTimeSteps = data.shape[dataDims-1]
-        # colonsIn = [[':'] for i in range(g.dim)]
-
-    dataOut = np.zeros( NOut.T.shape + (numTimeSteps,) )
-    # colonsOut =   [[':'] for i in range(g.dim)] #repmat({':'}, 1, gOut.dim)
+    numTimeSteps = len(data) if iscell(data) else data.shape[dataDims-1]
+    dataOut      = cell(numTimeSteps) #np.zeros( NOut.T.shape + (numTimeSteps,) )
 
     for i in range(numTimeSteps):
-        if isinstance(data, list):
-            _, dataOut[i,...] = projSingle(g, data[i], dimsToRemove, xs, NOut, process)
+        if iscell(data):
+            _, dataOut[i] = projSingle(g, data[i], dimsToRemove, xs, NOut, process)
         else:
-            _, dataOut[i,...] = projSingle(g, data[i, ...], dimsToRemove, xs, NOut, process)
+            _, dataOut[i] = projSingle(g, data[i, ...], dimsToRemove, xs, NOut, process)
 
-        # dataO.append(dataOut)
+    dataOut = dataOut.T
 
     return gOut, dataOut
 
@@ -127,17 +124,13 @@ def projSingle(g, data, dims, xs, NOut, process):
     """
 
     # Create ouptut grid by keeping dimensions that we are not collapsing
-    if not g:
-        if not isnumeric(xs) or xs!='max' and xs!='min':
-            logger.fatal('Must perform min or max projection when not specifying grid!')
+    if not np.any(g):
+        if not xs.isalpha() or not strcmp(xs, 'max') and not strcmp(xs, 'min'):
+            error('Must perform min or max projection when not specifying grid!')
     else:
         dims = dims.astype(bool)
-        gOut = Bundle(dict(
-                dim = np.count_nonzero(np.logical_not(dims)),
-                min = None,
-                max = None,
-                bdry = None,
-        ))
+        dim = np.count_nonzero(np.logical_not(dims))
+        gOut = Bundle(dict(dim = dim,))
         ming = g.min[np.logical_not(dims)]
         maxg = g.max[np.logical_not(dims)]
         bdrg = np.asarray(g.bdry)[np.logical_not(dims)]
@@ -153,39 +146,33 @@ def projSingle(g, data, dims, xs, NOut, process):
 
 
         # Process the grid to populate the remaining fields if necessary
-        # print( 'g.vs b4 proc', [x.shape for x in g.vs])
         if process:
             gOut = processGrid(gOut)
-        # print( 'g.vs aft proc', [x.shape for x in gOut.vs])
 
         # Only compute the grid if value function is not requested
-        if not np.any(data) or data is None:
+        if not np.any(data) or not data.size:
             return gOut, None
 
     # 'min' or 'max'
-    if isinstance(xs, str):
+    if isinstance(xs, str): #xs.isalpha():
         dimsToProj = np.nonzero(dims)[0]
 
-        for i in range(len(dimsToProj)-1, -1, -1):
+        for i in range(len(dimsToProj)-1, 0, -1):
             # print('dara: ', data.shape, dimsToProj, xs)
-            if xs=='min':
-                data = np.amin(data, axis=dimsToProj[i])
-            elif xs=='max':
-                data = np.amax(data, axis=dimsToProj[i])
+            if strcmp(xs,'min'):
+                dataOut = np.amin(data, axis=dimsToProj[i])
+            elif strcmp(xs, 'max'):
+                dataOut = np.amax(data, axis=dimsToProj[i])
             else:
-                logger.fatal('xs must be a vector, ''min'', or ''max''!')
+                error('xs must be a vector, ''min'', or ''max''!')
 
-        dataOut = data
         return gOut, dataOut
 
     # Take a slice
-    # Preprocess periodic dimensions
-    # print('data b4 aug: ', data.shape, 'g.vs b4', [x.shape for x in g.vs])
     g, data = augmentPeriodicData(g, data)
 
-    eval_pt = cell(g.dim, 1)
+    eval_pt = cell(g.dim)
     xsi = 0
-    # print(f'dims: {dims}')
     for i in range(g.dim):
         if dims[i]:
             # If this dimension is periodic, wrap the input point to the correct period
@@ -200,28 +187,18 @@ def projSingle(g, data, dims, xs, NOut, process):
         else:
             eval_pt[i] = g.vs[i]
 
-    print('data: after aug', data.shape, 'g.vs ', [x.shape for x in g.vs],  'eval_pt: ', [x.shape for x in eval_pt[:-1]])
     # https://stackoverflow.com/questions/21836067/interpolate-3d-volume-with-numpy-and-or-scipy
     data_coords = [x.squeeze() for x in g.vs]
-    # print(f'g.vs in proj: {[x.shape for x in g.vs]}')
     fn = RegularGridInterpolator(data_coords, data)
-    # fn = RegularGridInterpolator(*g.vs, data)
     eval_pt = [x.squeeze() for x in eval_pt if isinstance(x, np.ndarray)] + [np.array([x]) for x in eval_pt if not isinstance(x, np.ndarray)]
-    print('eval_pt ', [x.shape for x in eval_pt])
-    # if len(eval_pt==3):
-    #     x, y = [a.shape[0] for a in eval_pt]
-    # eval_pt = np.tile(np.asarray(eval_pt), (eval_pt[0].shape[0], 1, 1)).T
+
     eshape = tuple([x.shape for x in eval_pt])
     if len(eshape) != data.ndim:
         eval_pt = np.tile(eval_pt, [*(data.shape[:-1]), 1])
-        print(f'eval_pt in tile: {eval_pt.shape}')
-    print('eval_pt post tile ', [x.shape for x in eval_pt])
     temp = fn(eval_pt)
-    print('temp post eval: ', temp.shape)
     dataOut = copy.copy(temp)
 
     temp = g.vs[np.logical_not(dims)]
-    print(f'temp after: {temp.shape}, dataOut: {dataOut.shape}')
 
     dataOut = np.interp(temp, dataOut, gOut.xs[:])
 

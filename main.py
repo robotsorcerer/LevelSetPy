@@ -113,7 +113,7 @@ def main():
 
 	# Put grid and dynamic systems into schemeData
 	schemeData = Bundle(dict(grid = g, dynSys = dCar, accuracy = 'high',
-							uMode = uMode))
+							uMode = uMode, dissType='global'))
 	#do dStep4 here
 	# print(f'g.vs after scheme: {[x.shape for x in g.vs]}')
 

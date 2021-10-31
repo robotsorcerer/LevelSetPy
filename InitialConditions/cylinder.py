@@ -1,4 +1,6 @@
-from Utilities import zeros, ones, numel, logger, np
+__all__ = ["shapeCylinder"]
+
+from Utilities.matlab_utils import zeros, ones, numel, logger, np
 
 def shapeCylinder(grid, axis_align=[], center=None, radius=1):
     """

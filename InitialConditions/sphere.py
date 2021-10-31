@@ -1,4 +1,6 @@
-from Utilities import zeros, ones, numel, logger, np
+__all__ = ["shapeSphere"]
+
+from Utilities.matlab_utils import zeros, ones, numel, logger, np
 
 def shapeSphere(grid, center=None, radius=1):
     """

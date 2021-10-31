@@ -1,3 +1,5 @@
+__all__ = ["termRestrictUpdate"]
+
 from Utilities import *
 
 def termRestrictUpdate(t, y, schemeData):

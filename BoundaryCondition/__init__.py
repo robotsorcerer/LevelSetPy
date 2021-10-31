@@ -1,3 +1,3 @@
-from .add_ghost_periodic import addGhostPeriodic
-from .add_ghost_extrapolate import addGhostExtrapolate
-from .add_ghost_all import addGhostAllDims
+from .add_ghost_periodic import *
+from .add_ghost_extrapolate import *
+from .add_ghost_all import *

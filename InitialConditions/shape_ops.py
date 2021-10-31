@@ -1,3 +1,10 @@
+__all__ = ["shapeUnion", 
+            "shapeIntersection", 
+            "shapeDifference", 
+            "shapeComplement"
+          ]
+
+
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)

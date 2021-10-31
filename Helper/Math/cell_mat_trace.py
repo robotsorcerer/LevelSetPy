@@ -1,3 +1,6 @@
+__all__ = ["cellMatrixTrace"]
+
+
 from Utilities import *
 
 def cellMatrixTrace(A):

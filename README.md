@@ -13,3 +13,5 @@ The [Tests](/Tests) folder contains examples of running basic tests. For example
 
 + Fix len of smooth in derivL computation in upwindFirstWENO5.py
 + data_proj is a lotta issue
++ Add all exports from modules PODS down
++ Write POD projections and reprojections for lifting dynamics

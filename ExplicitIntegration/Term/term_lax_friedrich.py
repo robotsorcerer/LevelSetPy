@@ -1,4 +1,5 @@
-import copy
+__all__ = ["termLaxFriedrichs"]
+
 from Utilities import *
 
 def termLaxFriedrichs(t, y, schemeData):

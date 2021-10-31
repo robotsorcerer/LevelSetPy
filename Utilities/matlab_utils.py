@@ -20,6 +20,17 @@ ONES_TYPE = np.int64
 realmin = sys.float_info.epsilon
 DEFAULT_ORDER = "C"
 
+
+__all__ = [
+            "Bundle", "mat_like_array", "index_array", 
+            "quickarray", "ismember", "omin", "omax", "strcmp", 
+            "isbundle","isfield", "cputime","error", 
+            "info","warn",  "length","size",  "to_column_mat", "numel", 
+            "numDims", "ndims", "expand", "ones", "zeros", "isvector", 
+            "isColumnLength", "cell",  "iscell", "isnumeric", "isfloat", "isscalar", 
+]
+
+
 class Bundle(object):
     def __init__(self, dicko):
         """

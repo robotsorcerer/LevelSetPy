@@ -1,4 +1,5 @@
-import sys
+__all__ = ["odeCFLset"]
+
 from Utilities import *
 
 def odeCFLset(kwargs):

@@ -1,3 +1,5 @@
+__all__ = ["genericPartial"]
+
 from Utilities import *
 
 def genericPartial(t, data, derivMin, derivMax, schemeData, dim):

@@ -1,3 +1,6 @@
+__all__ = ["termSum"]
+
+
 def termSum(t, y, schemeData):
     """
      termSum: Combine a collection of spatial HJ term approximations.

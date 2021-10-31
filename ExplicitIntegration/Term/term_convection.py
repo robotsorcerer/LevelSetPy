@@ -1,3 +1,5 @@
+__all__ = ["termConvection"]
+
 from Utilities import *
 
 def termConvection(t, y, schemeData):

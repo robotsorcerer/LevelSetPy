@@ -1,3 +1,5 @@
+__all__ = ["termCurvature"]
+
 from Utilities import *
 
 def termCurvature(t, y, schemeData):

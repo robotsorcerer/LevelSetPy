@@ -1,4 +1,7 @@
-from Utilities import zeros, ones, numel, logger, np
+__all__ = ["shapeRectangleByCorners"]
+
+
+from Utilities.matlab_utils import zeros, ones, numel, logger, np
 
 def shapeRectangleByCorners(grid, lower=None, upper=None):
     """

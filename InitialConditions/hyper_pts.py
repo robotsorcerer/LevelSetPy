@@ -1,3 +1,6 @@
+__all__ = ["shapeHyperplaneByPoints"]
+
+
 from Utilities import *
 
 

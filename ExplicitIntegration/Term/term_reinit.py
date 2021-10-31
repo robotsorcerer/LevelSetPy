@@ -1,3 +1,7 @@
+__all__ = ["termReinit"]
+
+
+
 def termReinit(t, y, schemeData):
     """
      termReinit: a Godunov solver for the reinitialization HJ PDE.

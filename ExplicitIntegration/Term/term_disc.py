@@ -1,3 +1,6 @@
+__all__ = ["termDiscount"]
+
+
 from Utilities import *
 
 def termDiscount(t, y, schemeData):

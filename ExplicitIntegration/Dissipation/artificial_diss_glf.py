@@ -1,4 +1,7 @@
-from Utilities import isfield, cell, np
+__all__ = ["artificialDissipationGLF"]
+
+import numpy as np
+from Utilities import isfield, cell
 
 def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
     """

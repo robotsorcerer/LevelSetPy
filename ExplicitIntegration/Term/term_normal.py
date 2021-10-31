@@ -1,3 +1,6 @@
+__all__ = ["termNormal"]
+
+
 from Utilities import *
 
 def termNormal(t, y, schemeData):

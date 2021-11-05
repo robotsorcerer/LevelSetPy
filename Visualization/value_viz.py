@@ -65,7 +65,16 @@ class ValueVisualizer(object):
 			assert isinstance(value, np.ndarray), "value function must be an ndarray."
 			self.init_projections(value.ndim)
 		else:
+			# fig 1 for initial value set
+			self._fig_init_val = plt.figure(1, figsize=(16, 9))
+			# # https://stackoverflow.com/questions/7449585/how-do-you-set-the-absolute-position-of-figure-windows-with-matplotlib
+			# mngr = self._fig_init_val.get_current_fig_manager()
+			# geom = mngr.window.geometry()
+			# x,y,dx,dy = geom.getRect()
+			# mngr.window.setGeometry(100, 200, 640, 580)
 			self.viz_init_valueset(params, 0)
+			self._fig_init_val.canvas.draw()
+			self._fig_init_val.canvas.flush_events()
 
 		self._fig.canvas.draw()
 		self._fig.canvas.flush_events()
@@ -108,32 +117,24 @@ class ValueVisualizer(object):
 	def viz_init_valueset(self, params, ax_idx=0):
 		g 		= 	params.grid_bundle
 		data 	= 	params.value_data
-		# fig 1 for initial value set
-		fig = plt.figure(1, figsize=(16, 9))
-		# https://stackoverflow.com/questions/7449585/how-do-you-set-the-absolute-position-of-figure-windows-with-matplotlib
-		mngr = plt.get_current_fig_manager()
-		geom = mngr.window.geometry()
-		x,y,dx,dy = geom.getRect()
-		mngr.window.setGeometry(100, 200, 640, 580)
 
 		self._init		= True
 
 		if g.dim<2:
-			init_ax = plt.axes(projection='3d')
-			init_ax.plot(g.xs[0],  data, linestyle='-', color=next(self.color))
-			init_ax.plot(g.xs[0],  np.zeros(size(g.xs[0])), linestyle=':', color='k')
+			# init_ax = self._fig_init_val.gca(projection='3d')
+			self._ax_arr[0].plot(g.xs[0],  data, linestyle='-', color=next(self.color))
+			self._ax_arr[0].plot(g.xs[0],  np.zeros(size(g.xs[0])), linestyle=':', color='k')
 		elif g.dim==2:
-			init_ax = plt.axes(projection='3d')
-			init_ax.contourf(g.xs[0], g.xs[1], self.value, levels=self.params.level, colors=next(self.color))
+			# init_ax = self._fig_init_val.axes(projection='3d')
+			self._ax_arr[0].contourf(g.xs[0], g.xs[1], self.value, levels=self.params.level, colors=next(self.color))
 			self.title(init_ax, title=f'Initial {self.params.level}-Value Set')# init_ax.set_xlabel('X', fontdict=self.fontdict)
 			# init_ax.set_ylabel('Y', fontdict=self.fontdict)
 			# init_ax.set_zlabel('Z', fontdict=self.fontdict)
 			# init_ax.set_title(f'Initial {self.params.level}-Value Set',fontdict = self._fontdict)
 		elif g.dim == 3:
-			init_ax = plt.axes(projection='3d')
 			spacing = tuple(g.dx.flatten().tolist())
 			mesh = implicit_mesh(data, level=self.params.level, spacing=spacing,  edge_color='k', face_color='r')
-			self.show_3d(g, mesh, init_ax, spacing)
+			self.show_3d(g, mesh, self._ax_arr[0], spacing)
 
 			buffer_factor=1.05
 			xlim = (min(data[0].ravel()), max(data[0].ravel())) #, buffer_factor)
@@ -141,19 +142,21 @@ class ValueVisualizer(object):
 			zlim = (min(data[2].ravel()), max(data[2].ravel()), buffer_factor*1.55)
 			# zlim = (min(data[2].ravel()), max(data[2].ravel()), buffer_factor*1.55)
 
-			init_ax.set_xlim(*xlim)
-			init_ax.set_ylim(*ylim)
-			init_ax.set_zlim(-np.pi-.05, np.pi+2.3)
+			self._ax_arr[0].set_xlim(*xlim)
+			self._ax_arr[0].set_ylim(*ylim)
+			self._ax_arr[0].set_zlim(-np.pi-.05, np.pi+2.3)
 			# init_ax.set_xlabel("X", fontdict = self._fontdict)
 			# init_ax.set_ylabel("Y", fontdict = self._fontdict)
 			# init_ax.set_zlabel("Z", fontdict = self._fontdict)
 			# self.set_title(ax_idx, f'Initial {self.params.level}-Level Value Set')
-			self.set_title(init_ax, title=f'Starting {self.params.level}-level Value Set')
+			self.set_title(self._ax_arr[0], title=f'Starting {self.params.level}-level Value Set')
+
+
 		elif g.dim == 4:
 			# This is useful for the temporal-axis and 3 Cartesian Coordinates
 			'Take 6 slice snapshots and show me the 3D projections'
 			N=6
-			gs = gridspec.GridSpec(2, 3, fig)
+			gs = gridspec.GridSpec(2, 3, self._fig_init_val)
 			ax =  [plt.subplot(gs[i], projection='3d') for i in range(N)]
 
 			for slice_idx in range(N):
@@ -166,25 +169,23 @@ class ValueVisualizer(object):
 				self.set_title(ax_idx, f"Projected Slice {g.dim} of Initial Value Function Snapshot {slice_idx}.")
 
 		if self.savedict.save:
-			self._fig.savefig(join(self.savedict.savepath,self.savedict.savename),
+			self._fig_init_val.savefig(join(self.savedict.savepath,self.savedict.savename),
 								bbox_inches='tight',facecolor='None')
 
 	def show_3d(self, g, mesh, ax_idx, spacing):
-		ax_idx.plot3D(g.xs[0].flatten(), g.xs[1].flatten(), g.xs[2].flatten(), color=next(self.color))
+		# ax_idx.plot3D(g.xs[0].flatten(), g.xs[1].flatten(), g.xs[2].flatten(), color=next(self.color))
 		if isinstance(mesh, list):
 			for m in mesh:
 				m = implicit_mesh(m, level=self.params.level, spacing=spacing,  edge_color='k', face_color='r')
 				ax_idx.add_collection3d(m)
 		else:
 			ax_idx.add_collection3d(mesh)
+		ax_idx.view_init(elev=30., azim=10.)
 
 	def set_title(self, ax, title):
 		ax.set_title(title)
 		ax.title.set_fontsize(self._fontdict.fontsize)
 		ax.title.set_fontweight(self._fontdict.fontweight)
-		# ax.set_xlabel('X', self._fontdict)
-		# ax.set_ylabel('Y', self._fontdict)
-		# ax.set_zlabel('Z', self._fontdict)
 
 	def add_legend(self, linestyle, marker, color, label):
 		self._ax_legend.plot([], [], linestyle=linestyle, marker=marker,
@@ -215,7 +216,7 @@ class ValueVisualizer(object):
 
 		return h
 
-	def levelset_viz(self, g, data, title='', fontdict=None, fc='c', ec='k'):
+	def levelset_viz(self, g, data, title='', fc='c', ec='k'):
 		"""
 			Simultaneously visualize the level sets of a value function
 			on a 1X3 chart:
@@ -248,38 +249,45 @@ class ValueVisualizer(object):
 			self._ax_arr[2].set_title(f'2D Zero level set', fontdict=self._fontdict)
 		elif g.dim == 3:
 			# draw the mesh first # see example in test 3d mesh
-			self._ax_arr[0].plot3D(g.xs[0].flatten(), g.xs[1].flatten(), g.xs[2].flatten(), color='cyan')
+			# self._ax_arr[0].plot3D(g.xs[0].flatten(), g.xs[1].flatten(), g.xs[2].flatten(), color='cyan')
+			'add the zero level set'
+			mesh = implicit_mesh(data, level=0., spacing=tuple(g.dx.flatten().tolist()),  edge_color=None, face_color='g')
+			self._ax_arr[0].add_collection3d(mesh)
+			# self._ax_arr[1].set_xlabel('X', fontdict=self._fontdict)
+			# self._ax_arr[1].set_title(f'3D Zero level set', fontdict=self._fontdict)
+			self._ax_arr[0].view_init(elev=30., azim=10.)
 
 			xlims, ylims, zlims = self.get_lims(g, data, use_hard_coded=True)
 			self._ax_arr[0].set_xlim(xlims)
 			self._ax_arr[0].set_ylim(ylims)
 			self._ax_arr[0].set_zlim(zlims)
 
-			'add the zero level set'
-			mesh = implicit_mesh(data, level=0., spacing=tuple(g.dx.flatten().tolist()),  edge_color=None, face_color='g')
-			self._ax_arr[1].add_collection3d(mesh)
-			# self._ax_arr[1].set_xlabel('X', fontdict=self._fontdict)
-			# self._ax_arr[1].set_title(f'3D Zero level set', fontdict=self._fontdict)
-			self._ax_arr[1].view_init(elev=30., azim=10.)
 			self.set_title(self._ax_arr[1], f'3D Zero level set')
 
 			# 'zero level set with set azimuth and elevation'
 			# # mesh = implicit_mesh(data, level=0., spacing=tuple(g.dx.flatten().tolist()),  edge_color=None, face_color='g')
-			# # project las6t dim and visu 2D level set
-			# xs = 'min' # xs = g.min[g.dim-1] + 3/(N+1) * (g.max[g.dim-1] - g.min[g.dim-1])
-			# g_red, data_red = proj(g, data, [0, 0, 1], xs);
-			# self._ax_arr[2].contourf(g_red.xs[0], g_red.xs[1], data_red, colors=next(self.color))
-			# # self._ax_arr[2].add_collection3d(mesh)
+			# # project last dim and visu 2D level set
+			xs = 'min' # xs = g.min[g.dim-1] + 3/(N+1) * (g.max[g.dim-1] - g.min[g.dim-1])
+			g_red, data_red = proj(g, data, [0, 0, 1], xs);
+			self._ax_arr[1].plot_surface(g_red.xs[0], g_red.xs[1], data_red, rstride=1, cstride=1,
+						cmap='viridis', edgecolor='k', facecolor='red')
+			# self._ax_arr[1].contourf(g_red.xs[0], g_red.xs[1], data_red, colors=next(self.color))
+			self.set_title(self._ax_arr[1], f'Value function surface')
+			self._ax_arr[1].view_init(elev=30., azim=10.)
+
+			# self._ax_arr[2].contour(g_red.xs[0], g_red.xs[1], data_red, colors=next(self.color))
+			self._ax_arr[2].contourf(g_red.xs[0], g_red.xs[1], data_red, colors='blue')
 			# # self._ax_arr[2].set_xlabel('X', fontdict=self._fontdict)
 			# # self._ax_arr[2].set_title(f'3D Zero level set', fontdict=self._fontdict)
-			# # self._ax_arr[2].view_init(elev=60., azim=10.)
-			# self.set_title(self._ax_arr[2], f'3D Zero level set')
+			# self._ax_arr[2].view_init(elev=60., azim=10.)
+			self.set_title(self._ax_arr[2], f'Zero level set slice')
 
 		self._fig.tight_layout()
 		if self.savedict.save:
 			self._fig.savefig(join(self.savedict.savepath,self.savedict.savename),
 						bbox_inches='tight',facecolor='None')
 		self.draw()
+		time.sleep(self.params.pause_time)
 
 	def draw(self):
 		for ax in self._ax_arr:

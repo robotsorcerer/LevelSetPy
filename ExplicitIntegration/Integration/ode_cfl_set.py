@@ -2,14 +2,14 @@ __all__ = ["odeCFLset"]
 
 from Utilities import *
 
-def odeCFLset(kwargs):
+def odeCFLset(kwargs=None):
     """
      odeCFLset: Create/alter options for CFL constrained ode integrators.
      CFL: Courant–Friedrichs–Lewy condition
 
      See: https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition
       Inputs:
-        kwargs = {'name1': value1, 'name2': value2, ...}
+        options = {'name1': value1, 'name2': value2, ...}
       Output:
         options = odeCFLset('name1', value1, 'name2', value2, ...)
         options = odeCFLset(oldopts, 'name1', value1, ...)
@@ -86,75 +86,47 @@ def odeCFLset(kwargs):
         info('   singleStep: [ on | {off} ]')
         info('        stats: [ on | {off} ]')
         info('terminalEvent: [ function handle | {[]} ]')
+        raise ValueError(f'kwargs cannot be {None}')
         return
-
-        #---------------------------------------------------------------------------
-    # First input argument is an old options structure
-    if len(kwargs) > 0 and 'options' in kwargs.__dict__.keys():
-        options = kwargs.options
-        startArg = 1
     else:
-        # Create the default options structure.
-        options = Bundle(dict())
-        options.factorCFL = 0.5
-        options.maxStep = sys.float_info.max
-        options.postTimestep = []
-        options.singleStep = 'off'
-        options.stats = 'off'
-        options.terminalEvent = []
-        startArg = 0
+        assert isbundle(kwargs), "kwargs must be a bundle type."
+
+    options = Bundle({})
+    options.factorCFL = kwargs.__dict__.get('factorCFL', 0.5)
+    options.maxStep  = kwargs.__dict__.get('realmax', realmax)
+    options.postTimestep = kwargs.__dict__.get('postTimestep', None)
+    options.singleStep = kwargs.__dict__.get("singleStep", 'off')
+    options.stats = kwargs.__dict__.get("stats", 'off')
+    options.terminalEvent = kwargs.__dict__.get("terminalEvent", None)
+    startArg = 0
 
     #---------------------------------------------------------------------------
     # Loop through remaining name value pairs
-    keys = list(kwargs.__dict__.keys())
-    for i in range(startArg, len(kwargs)):
-        name = keys[i]
-        value = kwargs.__dict__[name]
+    if options.factorCFL < 0.0:
+        raise ValueError('FactorCFL must be a positive scalar double value')
+    if options.maxStep < 0.0:
+        raise ValueError('MaxStep must be a positive scalar double value')
 
-        # Remember that the case labels are lower case.
-        if name.lower()=='factorcfl':
-            if(isfloat(value) and (len([value]) == 1) and (value > 0.0)):
-                options.factorCFL = value
-            else:
-                error('FactorCFL must be a positive scalar double value')
-
-        elif name.lower()== 'maxstep':
-            if(isfloat(value) and (len([value]) == 1) and (value > 0.0)):
-                options.maxStep = value
-            else:
-                error('MaxStep must be a positive scalar double value')
-
-        elif name.lower()==  'posttimestep':
-            if(hasattr(value, '__call__') or value is None):
-                options.postTimestep = value
-            elif(isinstance(value, 'cell')):
-                for j in range(length(value)):
-                    if(not hasattr(value[j], '__call__')):
-                        error('Each element in a postTimestep cell vector must '
-                        'be a function handle.')
-                options.postTimestep = value
-            else:
-                error('PostTimestep parameter must be a function handle or '
-                    'a cell vector of function handles.')
-
-        elif name.lower()==  'singlestep':
-            if(isinstance(value, str) and (value=='on') or (value=='off')):
-                options.singleStep = value
-            else:
-                error('SingleStep must be one of the strings ''on'' or ''off''')
-
-        elif name.lower()==  'stats':
-            if(isinstance(value, str) and (value=='on') or (value=='off')):
-                options.stats = value
-            else:
-                error('Stats must be one of the strings \'on\' or \'off\'')
-
-        elif name.lower()==  'terminalevent':
-            if(value is None or hasattr(value, '__call__')):
-                options.terminalEvent = value
-            else:
-                error('PostTimestep parameter must be a function handle.')
+    if options.postTimestep is not None:
+        if (isinstance(options.postTimestep, list)):
+            for j in range(len(options.postTimestep)):
+                if(not hasattr(options.postTimestep[j], '__call__')):
+                    raise ValueError('Each element in a postTimestep cell vector must '
+                    'be a function handle.')
         else:
-            error(f'Unknown odeCFL option, {name}')
+            raise ValueError('PostTimestep parameter must be a function handle or '
+                                'a list of function handles.')
+
+    if (not isinstance(options.singleStep, str) and \
+            strcmp(options.singleStep, 'on') or \
+            strcmp(options.singleStep, 'off')):
+        raise ValueError('SingleStep must be one of the strings ''on'' or ''off''')
+
+    if(not isinstance(options.stats, str) and not \
+        strcmp(options.stats, 'on') or not (options.stats, 'off')):
+        raise ValueError('Stats must be one of the strings \'on\' or \'off\'')
+
+    if(options.terminalEvent is not None and not hasattr(options.terminalEvent, '__call__')):
+        raise ValueError('PostTimestep parameter must be a function handle.')
 
     return options

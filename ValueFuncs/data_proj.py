@@ -10,6 +10,7 @@ from Utilities import *
 from ValueFuncs import *
 from Grids import processGrid
 from BoundaryCondition import addGhostPeriodic
+from scipy import interpolate
 from scipy.interpolate import RegularGridInterpolator
 import logging
 
@@ -45,7 +46,7 @@ def proj(g, data, dimsToRemove, xs=None, NOut=None, process=True):
     if isinstance(dimsToRemove, list):
         dimsToRemove = np.asarray(dimsToRemove)
     if len(dimsToRemove) != g.dim:
-        logger.fatal('Dimensions are inconsistent!')
+        raise ValueError('Dimensions are inconsistent!')
 
     if np.count_nonzero(np.logical_not(dimsToRemove)) == g.dim:
         logger.warning('Input and output dimensions are the same!')
@@ -58,17 +59,17 @@ def proj(g, data, dimsToRemove, xs=None, NOut=None, process=True):
     # If a slice is requested, make sure the specified point has the correct
     # dimension
     if isnumeric(xs) and len(xs) != np.count_nonzero(dimsToRemove):
-        logger.fatal('Dimension of xs and dims do not match!')
+        raise ValueError('Dimension of xs and dims do not match!')
 
     if NOut is None:
-        NOut = g.N[np.logical_not(dimsToRemove)]
-        if NOut.ndim < 2:
-            NOut = expand(NOut, 1)
+        NOut = g.N[np.ix_(np.logical_not(dimsToRemove))]
+        # if NOut.ndim < 2:
+        #     NOut = expand(NOut, 1)
 
     dataDims = data.ndim
-    if np.any(data) and np.logical_not(dataDims == g.dim or dataDims == g.dim+1) \
+    if np.any(data) and not (dataDims== g.dim or dataDims== g.dim+1) \
         and not isinstance(data, list):
-        logger.fatal('Inconsistent input data dimensions!')
+        raise ValueError('Inconsistent input data dimensions!')
 
     # Project data
     if dataDims == g.dim:
@@ -86,7 +87,7 @@ def proj(g, data, dimsToRemove, xs=None, NOut=None, process=True):
         else:
             _, dataOut[i] = projSingle(g, data[i, ...], dimsToRemove, xs, NOut, process)
 
-    dataOut = dataOut.T
+    dataOut = np.asarray(dataOut).T
 
     return gOut, dataOut
 
@@ -126,19 +127,19 @@ def projSingle(g, data, dims, xs, NOut, process):
     # Create ouptut grid by keeping dimensions that we are not collapsing
     if not np.any(g):
         if not xs.isalpha() or not strcmp(xs, 'max') and not strcmp(xs, 'min'):
-            error('Must perform min or max projection when not specifying grid!')
+            raise ValueError('Must perform min or max projection when not specifying grid!')
     else:
         dims = dims.astype(bool)
         dim = np.count_nonzero(np.logical_not(dims))
-        gOut = Bundle(dict(dim = dim,))
-        ming = g.min[np.logical_not(dims)]
-        maxg = g.max[np.logical_not(dims)]
-        bdrg = np.asarray(g.bdry)[np.logical_not(dims)]
-        # print('bdrg: ', bdrg)
-        gOut.min = ming if ming.ndim==2 else expand(ming, 1)
-        gOut.max = maxg if maxg.ndim==2 else expand(maxg, 1)
-        gOut.bdry = bdrg if bdrg.ndim==2 else expand(bdrg, 1)
 
+        # take the min/max/bdry along the axes we are keeping
+        # and create new grid
+        gOut = Bundle(dict(dim = dim,
+                min = g.min[np.ix_(np.logical_not(dims))],
+                max = g.max[np.ix_(np.logical_not(dims))],
+                ))
+        bdry = expand(np.asarray(g.bdry)[np.logical_not(dims)], 1)
+        gOut.bdry = bdry
         if numel(NOut) == 1:
             gOut.N = NOut*ones(gOut.dim, 1).astype(np.int64)
         else:
@@ -156,13 +157,14 @@ def projSingle(g, data, dims, xs, NOut, process):
     # 'min' or 'max'
     if isinstance(xs, str): #xs.isalpha():
         dimsToProj = np.nonzero(dims)[0]
+        # dimsToProj = dimsToProj[0] if isinstance(dimsToProj, np.ndarray) else dimsToProj
+        dimsToProjList = list(range(dimsToProj.size))[::-1]
 
-        for i in range(len(dimsToProj)-1, 0, -1):
-            # print('dara: ', data.shape, dimsToProj, xs)
+        for i in dimsToProjList: #range(dimsToProj.size):
             if strcmp(xs,'min'):
-                dataOut = np.amin(data, axis=dimsToProj[i])
+                dataOut = np.amin(data, axis=dimsToProjList[i])
             elif strcmp(xs, 'max'):
-                dataOut = np.amax(data, axis=dimsToProj[i])
+                dataOut = np.amax(data, axis=dimsToProjList[i])
             else:
                 error('xs must be a vector, ''min'', or ''max''!')
 
@@ -177,7 +179,7 @@ def projSingle(g, data, dims, xs, NOut, process):
         if dims[i]:
             # If this dimension is periodic, wrap the input point to the correct period
             if isfield(g, 'bdry') and id(g.bdry[i])==id(addGhostPeriodic):
-                period = max(g.vs[i]) - min(g.vs[i])
+                period = max(g.vs[i].squeeze()) - min(g.vs[i].squeeze())
                 while xs[xsi] > max(g.vs[i]):
                     xs[xsi] -= period
                 while xs[xsi] < min(g.vs[i]):
@@ -188,18 +190,28 @@ def projSingle(g, data, dims, xs, NOut, process):
             eval_pt[i] = g.vs[i]
 
     # https://stackoverflow.com/questions/21836067/interpolate-3d-volume-with-numpy-and-or-scipy
-    data_coords = [x.squeeze() for x in g.vs]
-    fn = RegularGridInterpolator(data_coords, data)
+    # data_coords = [x.squeeze() for x in g.vs]
     eval_pt = [x.squeeze() for x in eval_pt if isinstance(x, np.ndarray)] + [np.array([x]) for x in eval_pt if not isinstance(x, np.ndarray)]
-
-    eshape = tuple([x.shape for x in eval_pt])
-    if len(eshape) != data.ndim:
-        eval_pt = np.tile(eval_pt, [*(data.shape[:-1]), 1])
+    fn = [RegularGridInterpolator(eval_pt[:-1], data[-1,...])]
+    # eshape = tuple([x.shape for x in eval_pt])
+    # if len(eshape) != data.ndim:
+    #     eval_pt = np.tile(eval_pt, [*(data.shape[:-1]), 1])
     temp = fn(eval_pt)
-    dataOut = copy.copy(temp)
-
-    temp = g.vs[np.logical_not(dims)]
-
-    dataOut = np.interp(temp, dataOut, gOut.xs[:])
+    print(f'temp: {temp.shape}')
+    # dataOut = copy.copy(temp)
+    #
+    # temp = g.vs[np.logical_not(dims)]
+    #
+    # # dataOut = np.interp(temp, dataOut, gOut.xs[:])
+    # dataOut = np.interp(temp, dataOut, gOut.xs.flatten())
+    # print(f'dataOut.shape {dataOut.shape}')
+    # if len(data.shape) == 2:
+    #     f = interpolate.interp2d(g.vs[0], g.vs[1], data, kind='linear')
+    #     dataOut = np.concatenate([f(*x) for x in eval_pt])
+    # elif len(data.shape) == 3:
+    #     fs = [interpolate.interp2d(g.vs[0], g.vs[1], data[:,:,i], kind='linear') for i in range(data.shape[2])]
+    #     dataOut= np.stack([np.concatenate([f(*x) for x in eval_pt]) for f in fs])
+    # else:
+    #     raise ValueError('%dD data not supported' % len(data.shape))
 
     return gOut, dataOut

@@ -3,6 +3,7 @@ __all__ = [
 ]
 
 import copy
+import numpy as np
 from Utilities import *
 from Grids import getOGPBounds, createGrid
 from .cell_neighs import neighbors

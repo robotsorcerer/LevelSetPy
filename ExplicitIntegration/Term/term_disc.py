@@ -1,6 +1,7 @@
 __all__ = ["termDiscount"]
 
-
+import copy
+import numpy as np
 from Utilities import *
 
 def termDiscount(t, y, schemeData):

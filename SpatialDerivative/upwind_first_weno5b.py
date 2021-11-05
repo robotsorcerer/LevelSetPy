@@ -1,4 +1,12 @@
+__all__ = ['upwindFirstWENO5b']
+
+import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
+
+
 from .ENO3bHelper import upwindFirstENO3bHelper
 from .upwind_first_weno5a import weightWENO
 

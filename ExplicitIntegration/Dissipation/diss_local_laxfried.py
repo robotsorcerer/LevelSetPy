@@ -1,7 +1,8 @@
 __all__ = ["artificialDissipationLLF"]
 
-from Utilities import *
 import copy
+import numpy as np
+from Utilities import *
 
 def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
     """

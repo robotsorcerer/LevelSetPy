@@ -1,6 +1,7 @@
 __all__ = ["truncateGrid"]
 
 import copy
+import numpy as np
 from Utilities import *
 from .process_grid import processGrid
 

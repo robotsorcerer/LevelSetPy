@@ -11,7 +11,7 @@ import cupy as cp
 import numpy as np
 from Utilities import Bundle
 from .tensor_utils import use_gpu
-from Tensors.TenMat import TenMat
+from Tensors.TenMat import tenmat
 
 def nvecs(X,n,r,options=None):
     """
@@ -53,10 +53,13 @@ def nvecs(X,n,r,options=None):
         Author: Lekan Molux
         Date: November 2, 2021
     """
+    global use_gpu
+
     options = Bundle({}) if options is None  else options
 
-    options.svd = options.__dict__.get('svd', False)
+    options.svd      = options.__dict__.get('svd', False)
     options.flipsign = options.__dict__.get('flipsign', True)
+    use_gpu          = options.__dict__.get('use_gpu', use_gpu)
 
     Xn = tenmat(X,n)
 

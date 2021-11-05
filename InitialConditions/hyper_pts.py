@@ -1,6 +1,7 @@
 __all__ = ["shapeHyperplaneByPoints"]
 
 
+import numpy as np
 from Utilities import *
 
 

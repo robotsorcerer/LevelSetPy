@@ -1,6 +1,7 @@
 __all__ = ["termForcing"]
 
-
+import copy
+import numpy as np
 from Utilities import *
 
 def  termForcing(t, y, schemeData):

@@ -1,1 +1,1 @@
-from .class_tenmat import TenMat
+from .class_tenmat import tenmat

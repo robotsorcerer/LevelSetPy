@@ -1,5 +1,6 @@
 __all__ =[ "splitGrid_sameDim"]
 
+import numpy as np
 from Utilities import *
 from Grids import createGrid, getOGPBounds
 import copy

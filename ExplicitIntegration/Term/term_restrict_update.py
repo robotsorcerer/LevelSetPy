@@ -1,5 +1,7 @@
 __all__ = ["termRestrictUpdate"]
 
+
+import numpy as np
 from Utilities import *
 
 def termRestrictUpdate(t, y, schemeData):

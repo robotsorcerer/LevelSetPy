@@ -1,6 +1,7 @@
 __all__ = ["termTraceHessian"]
 
 
+import numpy as np
 from Utilities import *
 from Helper.Math import *
 

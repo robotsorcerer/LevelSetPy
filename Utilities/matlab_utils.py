@@ -1,3 +1,14 @@
+__all__ = [
+            "Bundle", "ZEROS_TYPE", "ONES_TYPE",
+            "realmin", "DEFAULT_ORDER", "mat_like_array", "index_array",
+            "quickarray", "ismember", "omin", "omax", "strcmp",
+            "isbundle","isfield", "cputime","error", "realmax", "eps",
+            "info","warn",  "length","size",  "to_column_mat", "numel",
+            "numDims", "ndims", "expand", "ones", "zeros", "isvector",
+            "isColumnLength", "cell",  "iscell", "isnumeric", "isfloat", "isscalar",
+]
+
+
 __author__ 		= "Lekan Molu"
 __copyright__ 	= "2021, Hamilton-Jacobi Analysis in Python"
 __credits__  	= "There are None."
@@ -5,6 +16,7 @@ __license__ 	= "Molux Licence"
 __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Completed"
+
 
 import numpy as np
 import logging
@@ -17,18 +29,12 @@ logger = logging.getLogger(__name__)
 # DEFAULT TYPES
 ZEROS_TYPE = np.int64
 ONES_TYPE = np.int64
-realmin = sys.float_info.epsilon
+realmin = sys.float_info.min
+realmax = sys.float_info.max
+eps     = sys.float_info.epsilon
 DEFAULT_ORDER = "C"
 
 
-__all__ = [
-            "Bundle", "mat_like_array", "index_array", 
-            "quickarray", "ismember", "omin", "omax", "strcmp", 
-            "isbundle","isfield", "cputime","error", 
-            "info","warn",  "length","size",  "to_column_mat", "numel", 
-            "numDims", "ndims", "expand", "ones", "zeros", "isvector", 
-            "isColumnLength", "cell",  "iscell", "isnumeric", "isfloat", "isscalar", 
-]
 
 
 class Bundle(object):

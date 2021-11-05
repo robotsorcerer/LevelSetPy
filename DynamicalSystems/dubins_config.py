@@ -1,4 +1,5 @@
-from Utilities import zeros, cell, np
+import numpy as np
+from Utilities import zeros, cell
 
 dubins_default_params = dict(
                             wRange=[-1, 1],

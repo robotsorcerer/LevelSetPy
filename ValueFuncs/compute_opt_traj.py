@@ -6,6 +6,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
 import time
+import numpy as np
 from Utilities import *
 from .data_proj import proj
 from .compute_gradients import computeGradients

@@ -1,5 +1,7 @@
 __all__ = ["termCurvature"]
 
+import copy
+import numpy as np
 from Utilities import *
 
 def termCurvature(t, y, schemeData):

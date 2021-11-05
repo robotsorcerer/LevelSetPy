@@ -5,6 +5,7 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
+import numpy as np
 from Utilities import *
 from BoundaryCondition import addGhostPeriodic
 from .augment_periodic import augmentPeriodicData

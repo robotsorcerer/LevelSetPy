@@ -1,4 +1,11 @@
+__all__ = ['upwindFirstENO3b']
+
+import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
+
 from .ENO3bHelper import upwindFirstENO3bHelper
 from .check_eq_approx import checkEquivalentApprox
 

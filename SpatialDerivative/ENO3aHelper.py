@@ -1,5 +1,11 @@
+__all__ = ['upwindFirstENO3aHelper']
+
 import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
+
 
 def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
     """

@@ -1,7 +1,10 @@
 __all__ = ["shapeRectangleByCorners"]
 
+import logging
+import numpy as np
+from Utilities.matlab_utils import *
 
-from Utilities.matlab_utils import zeros, ones, numel, logger, np
+logger = logging.getLogger(__name__)
 
 def shapeRectangleByCorners(grid, lower=None, upper=None):
     """

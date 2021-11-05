@@ -1,4 +1,10 @@
+__all__ = ['checkEquivalentApprox']
+
+import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
 
 def checkEquivalentApprox(approx1, approx2,bound):
     """

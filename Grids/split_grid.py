@@ -1,5 +1,6 @@
 __all__ = ["splitGrid"]
 
+import numpy as np
 from .sep_grid import sepGrid
 from .split_same_dim import splitGrid_sameDim
 

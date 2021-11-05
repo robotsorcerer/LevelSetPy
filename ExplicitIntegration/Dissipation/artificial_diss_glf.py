@@ -1,7 +1,7 @@
 __all__ = ["artificialDissipationGLF"]
 
 import numpy as np
-from Utilities import isfield, cell
+from Utilities import *
 
 def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
     """
@@ -68,9 +68,9 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
 
     #---------------------------------------------------------------------------
     if not isfield(schemeData, 'grid'):
-        error(f'grid is not a structure')
+        raise ValueError(f'grid is not a structure')
     if not isfield(schemeData, 'partialFunc'):
-        error(f'partialFunc is not a structure')
+        raise ValueError(f'partialFunc is not a structure')
 
     #---------------------------------------------------------------------------
     grid = schemeData.grid
@@ -80,14 +80,16 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
     derivMin = cell(grid.dim, 1)
     derivMax = cell(grid.dim, 1)
     derivDiff = cell(grid.dim, 1)
+
+    # Revusut this
     for i in range(grid.dim):
         # Get derivative bounds over entire grid (scalars).
-        derivMinL = np.min(derivL[i])
-        derivMinR = np.min(derivR[i])
+        derivMinL = np.min(derivL[i].flatten())
+        derivMinR = np.min(derivR[i].flatten())
         derivMin[i] = min(derivMinL, derivMinR)
 
-        derivMaxL = np.max(derivL[i])
-        derivMaxR = np.max(derivR[i])
+        derivMaxL = np.max(derivL[i].flatten())
+        derivMaxR = np.max(derivR[i].flatten())
         derivMax[i] = max(derivMaxL, derivMaxR)
 
         # Get derivative differences at each node.

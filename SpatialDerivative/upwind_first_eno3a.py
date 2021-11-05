@@ -1,5 +1,12 @@
+__all__ = ['upwindFirstENO3']
+
+import copy
+import logging
+import numpy as np
 from Utilities import *
-import sys, copy
+logger = logging.getLogger(__name__)
+
+
 from .check_eq_approx import checkEquivalentApprox
 from .ENO3aHelper import upwindFirstENO3aHelper
 
@@ -52,7 +59,7 @@ def upwindFirstENO3a(grid, data, dim, generateAll=False):
     # Check that approximations that should be equivalent are equivalent
     #   (for debugging purposes, only used if generateAll == 1).
     checkEquivalentApproximations = True
-    small = 100 * sys.float_info.epsilon             # a small number for "equivalence"
+    small = 100 * realmin             # a small number for "equivalence"
 
     if(generateAll):
         # We only need the three ENO approximations

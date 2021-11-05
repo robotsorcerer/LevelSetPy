@@ -1,5 +1,7 @@
 __all__ = ["termConvection"]
 
+import copy
+import numpy as np
 from Utilities import *
 
 def termConvection(t, y, schemeData):

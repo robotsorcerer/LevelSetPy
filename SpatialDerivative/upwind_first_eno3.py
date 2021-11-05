@@ -1,4 +1,12 @@
+__all__ = ['upwindFirstENO3']
+
+import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
+
+
 from .upwind_first_eno3a import upwindFirstENO3a
 
 def  upwindFirstENO3(grid, data, dim, generateAll=0):

@@ -1,5 +1,6 @@
 __all__ = ["getOGPBounds"]
 
+import numpy as np
 from Utilities import *
 
 def  getOGPBounds(gBase, gMinIn, gMaxIn, padding):

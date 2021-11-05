@@ -1,5 +1,10 @@
+__all__ = ['upwindFirstFirst']
+
 import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
 
 def upwindFirstFirst(grid, data, dim, generateAll=False):
     """

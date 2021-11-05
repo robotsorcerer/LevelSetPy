@@ -1,5 +1,10 @@
+__all__ = ['upwindFirstENO3bHelper']
+
 import copy
+import logging
+import numpy as np
 from Utilities import *
+logger = logging.getLogger(__name__)
 
 def upwindFirstENO3bHelper(grid, gdata, dim, direction):
     """

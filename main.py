@@ -24,14 +24,16 @@ from ValueFuncs import *
 from Visualization import *
 from DynamicalSystems import *
 from InitialConditions import shapeCylinder
-from Utilities import expand, zeros, Bundle, ones, error
+from Utilities import *
 
 parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
 parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
-parser.add_argument('--silent', '-si', action='store_true', default=True, help='silent debug print outs' )
+parser.add_argument('--silent', '-si', action='store_false', help='silent debug print outs' )
 parser.add_argument('--visualize', '-vz', action='store_true', default=True, help='visualize level sets?' )
 parser.add_argument('--pause_time', '-pz', type=float, default=5e-3, help='pause time between successive updates of plots' )
 args = parser.parse_args()
+
+print('args: ', args)
 
 if args.silent:
 	logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -140,13 +142,14 @@ def main():
 							'savename': 'hj_opt_result.jpg',
 							}),
 							})
-	if args.visualize:
+	if args.visualize and isfield( HJIextraArgs, "visualize"):
 		plotData = Bundle({'plotDims': np.asarray([1, 1, 0]), #plot x, y
 							'projpt': [0], #project at theta = 0
 							})
 		HJIextraArgs.visualize.plotData = plotData
 	data, tau2, _ = HJIPDE_solve(data0, tau, schemeData, None, HJIextraArgs)
 
+	print('Finished solving the HJI Values.')
 	## Compute optimal trajectory from some initial state
 	if args.compute_traj:
 		#set the initial state

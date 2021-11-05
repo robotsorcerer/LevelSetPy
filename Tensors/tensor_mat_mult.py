@@ -14,7 +14,7 @@ import numpy as np
 from Utilities.matlab_utils import numel
 from .tensor_utils import dims_check, use_gpu
 
-def tensor_matrix_mult(X, V, n=None, Transpose=False):
+def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
     """
     tensor_matrix_mult: Tensor times matrix.
 

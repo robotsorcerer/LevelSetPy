@@ -96,8 +96,8 @@ def termRestrictUpdate(t, y, schemeData):
     #Restrict the update (stepBound is returned unchanged).
     #   Do not negate for RHS of ODE (that is handled by innerFunc).
     if(positive):
-        ydot = max(unRestricted, 0)
+        ydot = np.max(np.hstack((unRestricted.flatten(), 0)))
     else:
-        ydot = min(unRestricted, 0)
+        ydot = np.min(np.hstack((unRestricted.flatten(), 0)))
 
     return ydot, stepBound, schemeData

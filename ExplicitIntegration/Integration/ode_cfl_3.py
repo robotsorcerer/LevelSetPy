@@ -106,6 +106,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             if(isinstance(schemeFunc, list)):
                 schemeFuncCell = schemeFunc
             else:
+                # schemeFuncCell[:numY] = schemeFunc
                 schemeFuncCell = [schemeFunc for i in range(numY)]
         else:
             # Set numY, but be careful: ((numY == 1) & iscell(y0)) is possible.

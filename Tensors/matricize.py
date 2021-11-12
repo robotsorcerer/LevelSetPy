@@ -8,8 +8,17 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Finished"
 
 import numpy as np
+from Utilities import *
+from .class_tensor import Tensor
+from TenMat import matricize_tensor
 
-def matricization(T, mode=1):
+def matricization(T, mode=1): # pragma nocover
+    np.warnings.warn("matricization() has been matricize_tensor()",
+                   DeprecationWarning, stacklevel=1)
+    # return matricize_tensor
+    # matricization.__doc__ = "\nDEPRECATED! use matricize_tensor(options).\n\n" \
+    #                     + matricize_tensor.__doc__
+    # # Deprecated
     """
         Matricize the tensor T shaped (3,3) into Folds along axes
 
@@ -30,6 +39,8 @@ def matricization(T, mode=1):
     """
     assert T.ndim == 3, "We do not support higher order tensors >3 at this moment"
 
+    if isinstance(T, Tensor):
+        T = T.data
     #1-mode unfold
     if mode=='1':
         X = np.concatenate(( [T[...,i] for i in range(T.shape[-1])]),
@@ -48,4 +59,4 @@ def matricization(T, mode=1):
     else:
         raise NotImplementedError(f"Cannot decompose a {T.size} sized Tensor along mode {mode}.")
 
-    return X
+    return Tensor(X)

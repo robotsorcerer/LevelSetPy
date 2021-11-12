@@ -117,9 +117,10 @@ def odeCFLset(kwargs=None):
             raise ValueError('PostTimestep parameter must be a function handle or '
                                 'a list of function handles.')
 
+    # print('options.singleStep ', options.singleStep)
     if (not isinstance(options.singleStep, str) and \
-            strcmp(options.singleStep, 'on') or \
-            strcmp(options.singleStep, 'off')):
+            not strcmp(options.singleStep, 'on') or \
+            not strcmp(options.singleStep, 'off')):
         raise ValueError('SingleStep must be one of the strings ''on'' or ''off''')
 
     if(not isinstance(options.stats, str) and not \

@@ -47,7 +47,7 @@ class ValueVisualizer(object):
 
 		self._labelsize = params.labelsize
 		self._init      = False
-		self.value      = params.value if isfield(params, 'value') else None
+		self.value      = params.value if isfield(params, 'value') else False
 		self._fontdict  = params.fontdict
 		self.pause_time = params.pause_time
 		self.savedict   = params.savedict

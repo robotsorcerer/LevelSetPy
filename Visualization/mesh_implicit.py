@@ -46,6 +46,6 @@ def implicit_mesh(surface, level, spacing, gd='ascent', edge_color='k', face_col
     # Fancy indexing: `verts[faces]` to generate a collection of triangles
     mesh = Poly3DCollection(verts[faces])
     mesh.set_edgecolor(edge_color)
-    mesh.set_edgecolor(face_color)
+    mesh.set_facecolor(face_color)
 
     return mesh

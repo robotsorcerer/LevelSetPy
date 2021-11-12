@@ -1,6 +1,8 @@
 __all__ = ["odeCFL2"]
 
+import copy
 import time
+import numpy as np
 from Utilities import *
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_mult import odeCFLmultipleSteps
@@ -67,12 +69,6 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
        agreement contained in the file LICENSE in the top directory of
        the distribution.
 
-     Ian Mitchell, 5/14/03.
-     Calling parameters modified to more closely match Matlab's ODE suite
-       Ian Mitchell, 2/14/04.
-     Modified to allow vector level sets.  Ian Mitchell, 12/13/04.
-     Modified to add terminalEvent option, Ian Mitchell, 1/30/05.
-
     Lekan 08/16/2021
     """
     #---------------------------------------------------------------------------
@@ -82,7 +78,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
     #---------------------------------------------------------------------------
     # Make sure we have the default options settings
     if not options:
-        options = odeCFLset
+        options = odeCFLset()
     #---------------------------------------------------------------------------
     # This routine includes multiple substeps, and the CFL restricted timestep
     #   size is chosen on the first substep.  Subsequent substeps may violate
@@ -109,20 +105,21 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             if(iscell(schemeFunc)):
                 schemeFuncCell = schemeFunc
             else:
-                schemeFuncCell[:numY] = schemeFunc
+                # schemeFuncCell[:numY] = schemeFunc
+                schemeFuncCell = [schemeFunc for i in range(numY)]
         else:
             # Set numY, but be careful: ((numY == 1) & iscell(y0)) is possible.
             numY = 1
 
             # We need a cell vector form of schemeFunc.
-            schemeFuncCell = schemeFunc
+            schemeFuncCell = [schemeFunc]
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         t = tspan[0]
         steps = 0
         startTime = cputime()
-        stepBound = zeros(numY, 1)
+        stepBound = zeros(numY, 1, dtype=np.float64)
         ydot = cell(numY, 1)
-        y = y0
+        y = copy.copy(y0)
 
         while(tspan[1] - t >= small * np.abs(tspan[1])):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -134,21 +131,21 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y)):
-                    y = y[ 1:, 0 ]
+                    y = y[ 1: ]
 
                 if(iscell(schemeData)):
-                    schemeData = schemeData[1:, 0]
+                    schemeData = schemeData[1:]
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Determine CFL bound on timestep, but not beyond the final time.
             #   For vector level sets, use the most restrictive stepBound.
             #   We'll use this fixed timestep for both substeps..
-            deltaT = min(min(options.factorCFL@stepBound),  \
-                           min(tspan[1] - t, options.maxStep))
+            deltaT = min(np.min(options.factorCFL*stepBound),  \
+                           tspan[1] - t, options.maxStep)
 
             # Take the first substep.
             t1 = t + deltaT
             if(iscell(y)):
-                y1 = cell(numY, 1)
+                y1 = cell(numY)
                 for i in range(numY):
                     y1[i] +=(deltaT * ydot[i])
             else:
@@ -164,10 +161,10 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y1)):
-                    y1 = y1[ 1:, 0 ]
+                    y1 = y1[ 1:]
 
                 if(iscell(schemeData)):
-                    schemeData = schemeData[ 1:, 0 ]
+                    schemeData = schemeData[ 1:]
 
             # Check CFL bound on timestep:
             #   If the timestep chosen on the first substep violates
@@ -225,7 +222,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
         endTime = cputime()
 
         if(strcmp(options.stats, 'on')):
-            info(f'\t{steps} steps in {endTime-startTime} seconds from  {tspan[0]}, to {t}')
+            info(f'{steps} steps in {endTime-startTime} seconds from  {tspan[0]} to {t}.')
     #---------------------------------------------------------------------------
     elif(numT > 2):
         # If we were asked for the solution at multiple timesteps.

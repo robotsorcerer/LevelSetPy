@@ -6,6 +6,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Completed"
 
 from .visualizer import Visualizer
+from .rcbrt_visu import RCBRTVisualizer
 from .color_utils import cmaps, all_cmaps
 from .mesh_implicit import implicit_mesh
 from .show_3d import show3D

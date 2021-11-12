@@ -62,7 +62,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     # Check that approximations that should be equivalent are equivalent
     #   (for debugging purposes, only used if generateAll == 1).
     checkEquivalentApproximations = 1
-    small = 100 * sys.float_info.epsilon             # a small number for "equivalence"
+    small = 100 * eps             # a small number for "equivalence"
 
     # Add ghost cells.
     # gdata = feval(grid.bdry[dim], data, dim, stencil, grid.bdryData[dim])
@@ -73,7 +73,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     sizeData = size(gdata)
     indices1 = []
     for i in range(grid.dim):
-      indices1[i].append(np.arange(sizeData[i], dtype=np.intp))
+      indices1.append(np.arange(sizeData[i], dtype=np.intp))
     indices2 = copy.copy(indices1)
 
     #---------------------------------------------------------------------------
@@ -118,6 +118,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
 
     indices1[dim] += 1
     indices2[dim] += 1
+
     dR[0] -= grid.dx[dim] * D2[np.ix_(*indices1)]
     dR[1] -= grid.dx[dim] * D2[np.ix_(*indices2)]
 

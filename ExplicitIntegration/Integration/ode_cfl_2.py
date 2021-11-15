@@ -88,11 +88,9 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
     #   capped at a CFL number of unity.  The latter cap may cause
     #   problems if the user is using a very aggressive CFL number.
     safetyFactorCFL = min(1.0, 1.2 * options.factorCFL)
-
     #---------------------------------------------------------------------------
     # Number of timesteps to be returned.
     numT = len(tspan)
-
     #---------------------------------------------------------------------------
     # If we were asked to integrate forward to a final time.
     if(numT == 2):
@@ -113,13 +111,15 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
             # We need a cell vector form of schemeFunc.
             schemeFuncCell = [schemeFunc]
+        # print(f'y0 odeCFL2 b4: , {np.linalg.norm(y0)}')
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         t = tspan[0]
         steps = 0
         startTime = cputime()
-        stepBound = zeros(numY, 1, dtype=np.float64)
-        ydot = cell(numY, 1)
+        stepBound = np.zeros((numY), dtype=np.float64)
+        ydot = cell(numY)
         y = copy.copy(y0)
+        # print(f'y odeCFL2: {y[:10]}')
 
         while(tspan[1] - t >= small * np.abs(tspan[1])):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -128,7 +128,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             # Approximate the derivative and CFL restriction.
             for i in range(numY):
                 ydot[i], stepBound[i], schemeData = schemeFuncCell[i](t, y, schemeData)
-
+                #print(f'ydot[i]: {ydot[i].shape}, stepBound[i]: {stepBound[i]} schemeData: {schemeData}')
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y)):
                     y = y[ 1: ]
@@ -139,8 +139,9 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             # Determine CFL bound on timestep, but not beyond the final time.
             #   For vector level sets, use the most restrictive stepBound.
             #   We'll use this fixed timestep for both substeps..
-            deltaT = min(np.min(options.factorCFL*stepBound),  \
-                           tspan[1] - t, options.maxStep)
+           
+            deltaT = np.min(np.hstack((options.factorCFL*stepBound,  \
+                           tspan[1] - t, options.maxStep)))
 
             # Take the first substep.
             t1 = t + deltaT
@@ -171,7 +172,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             #   the CFL condition by a significant amount, throw a warning.
             #   For vector level sets, use the most restrictive stepBound.
             # Occasional failure should not cause too many problems.
-            if(deltaT > min(safetyFactorCFL * stepBound)):
+            if(deltaT > np.min(safetyFactorCFL * stepBound)):
                 violation = deltaT / stepBound
                 warn(f'Second substep violated CFL effective number {violation}')
 

@@ -54,7 +54,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     if((dim < 0) or (dim > grid.dim)):
         error('Illegal dim parameter')
 
-    dxInv = 1 / grid.dx[dim]
+    dxInv = 1 / grid.dx.item(dim)
 
     # How big is the stencil?
     stencil = 2
@@ -65,9 +65,9 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     small = 100 * eps             # a small number for "equivalence"
 
     # Add ghost cells.
-    # gdata = feval(grid.bdry[dim], data, dim, stencil, grid.bdryData[dim])
     gdata = grid.bdry[dim](data, dim, stencil, grid.bdryData[dim])
-
+    #print(f'gdata: {np.linalg.norm(gdata)}, {gdata.shape}')
+    #import time; time.sleep(10)
     #---------------------------------------------------------------------------
     # Create cell array with array indices.
     sizeData = size(gdata)
@@ -79,12 +79,21 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     #---------------------------------------------------------------------------
     # First divided differences (first entry corresponds to D^1_{-1/2}).
     indices1[dim] = np.arange(1,size(gdata, dim), dtype=np.intp)
-    indices2[dim] = indices1[dim] - 1
+    indices2[dim] = copy.copy(indices1[dim]) - 1
     D1 = dxInv*(gdata[np.ix_(*indices1)] - gdata[np.ix_(*indices2)])
+    # print(f'[@upFirstENO2] gdata: {gdata.shape} {dxInv}')
+    # print(f'gdata[np.ix_(*indices1)] norm: {np.linalg.norm(gdata[np.ix_(*indices1)])}')
+    # print(f'gdata[np.ix_(*indices2)] norm: {np.linalg.norm(gdata[np.ix_(*indices2)])}')
+    # print(f'D1: {D1.shape} norm: {np.linalg.norm(D1)}')
+    # print(f'indices1 in upENO2: {indices1[dim]}, shape: {indices1[dim].shape}')
+    # print(f'indices2 in upENO2: {indices2[dim]}, shape: {indices2[dim].shape}')
 
+    # print(f'@UpwindFirstENO2: D1: {np.linalg.norm(D1)}, {D1.shape}, \
+    #         dL: {[(np.linalg.norm(dL[i])) for i in range(2)]}, \
+    #         dR: {[(np.linalg.norm(dR[i])) for i in range(2)]}')
     # Second divided differences (first entry corresponds to D^2_0).
     indices1[dim] = np.arange(1, size(D1, dim), dtype=np.intp)
-    indices2[dim] = indices1[dim] - 1
+    indices2[dim] = copy.copy(indices1[dim]) - 1
     D2 = 0.5 * dxInv*(D1[np.ix_(*indices1)] - D1[np.ix_(*indices2)])
 
     #---------------------------------------------------------------------------
@@ -93,12 +102,11 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     # Now first entry corresponds to D^1_{1/2}.
     indices1[dim] = np.arange(1, size(D1, dim)-1, dtype=np.intp)
     D1 = D1[np.ix_(*indices1)]
-
+    # print(f'indices1[dim]: {indices1[dim]}')
+    # import time; time.sleep(10)
     #---------------------------------------------------------------------------
     # First order approx is just the first order divided differences.
     #   Make two copies to build the two approximations
-    # dL = cell(2,1)
-    # dR = cell(2,1)
 
     # Take leftmost grid.N(dim) entries for left approximation.
     indices1[dim] = np.arange(0, size(D1, dim) - 1, dtype=np.intp)
@@ -106,6 +114,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
 
     # Take rightmost grid.N(dim) entries for right approximation.
     indices1[dim] = np.arange(1, size(D1, dim), dtype=np.intp)
+    # print('indices1[dim]: ', indices1[dim], [indices1[x] for x in [1, 2]])
     dR = [D1[np.ix_(*indices1)] for i in range(2)]
 
     #---------------------------------------------------------------------------
@@ -113,14 +122,14 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     #   Second order terms are sorted left to right.
     indices1[dim] = np.arange(0, size(D2, dim) - 2, dtype=np.intp)
     indices2[dim] = np.arange(1, size(D2, dim) - 1, dtype=np.intp)
-    dL[0] += grid.dx[dim] * D2[np.ix_(*indices1)]
-    dL[1] += grid.dx[dim] * D2[np.ix_(*indices2)]
+    dL[0] += (grid.dx.item(dim) * D2[np.ix_(*indices1)])
+    dL[1] += (grid.dx.item(dim) * D2[np.ix_(*indices2)])
 
     indices1[dim] += 1
     indices2[dim] += 1
 
-    dR[0] -= grid.dx[dim] * D2[np.ix_(*indices1)]
-    dR[1] -= grid.dx[dim] * D2[np.ix_(*indices2)]
+    dR[0] -= (grid.dx.item(dim) * D2[np.ix_(*indices1)])
+    dR[1] -= (grid.dx.item(dim) * D2[np.ix_(*indices2)])
 
     #---------------------------------------------------------------------------
     if(generateAll):
@@ -130,8 +139,8 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
             checkEquivalentApprox(dL[1], dR[0], small)
 
         # Caller requested both approximations in each direction.
-        derivL = dL
-        derivR = dR
+        derivL = copy.copy(dL)
+        derivR = copy.copy(dR)
     #---------------------------------------------------------------------------
     else:
 
@@ -142,7 +151,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
         # Pick out minimum modulus neighboring D2 term.
         D2abs = np.abs(D2)
         indices1[dim] = np.arange(0, size(D2, dim) - 1, dtype=np.intp)
-        indices2[dim] = indices1[dim] + 1
+        indices2[dim] = copy.copy(indices1[dim]) + 1
         smallerL = (D2abs[np.ix_(*indices1)] < D2abs[np.ix_(*indices2)])
         smallerR = np.logical_not(smallerL)
 

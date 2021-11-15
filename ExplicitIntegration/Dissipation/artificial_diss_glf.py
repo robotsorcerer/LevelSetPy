@@ -92,9 +92,14 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
         derivMaxR = np.max(derivR[i].flatten())
         derivMax[i] = max(derivMaxL, derivMaxR)
 
+        # print(f'{i} derivMinL: {derivMinL} derivMaxL: {derivMaxL} derivMinR: {derivMinR} derivMaxR: {derivMaxR}')
+
         # Get derivative differences at each node.
         derivDiff[i] = derivR[i] - derivL[i]
+    # print(f'derivDiff in aGLF: {[np.linalg.norm(derivDiff[i]) for i in range(3)]}')
 
+    # import time
+    # time.sleep(500)
     #---------------------------------------------------------------------------
     # Now calculate the dissipation.  Since alpha is the effective speed of
     #   the flow, it provides the CFL timestep bound too.
@@ -103,9 +108,15 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
     for i in range(grid.dim):
         alpha = schemeData.partialFunc(t, data, derivMin, derivMax, \
                       schemeData, i)
+        # print(f'@aGLF: alpha: {alpha.shape}')
         diss += (0.5 * derivDiff[i] * alpha)
-        stepBoundInv += (np.max(alpha) / grid.dx[i])
+        if isinstance(alpha, np.ndarray):
+          alpha = np.max(alpha.flatten())
 
+        stepBoundInv += (alpha / grid.dx.item(i))
+
+        #print(f'@aGLF: diss: {diss.shape} stepBoundInv: {stepBoundInv}')
     stepBound = 1 / stepBoundInv
+    #print(f'[@aGLF]: final stepbd: {stepBound}')
 
     return diss, stepBound

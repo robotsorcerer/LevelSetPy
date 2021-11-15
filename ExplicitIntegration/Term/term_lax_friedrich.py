@@ -90,6 +90,7 @@ def termLaxFriedrichs(t, y, schemeData):
     grid = copy.copy(thisSchemeData.grid)
 
     #---------------------------------------------------------------------------
+    # print(f'y in lax friedrichs: {np.linalg.norm(y)}  {y.shape}')
     if(iscell(y)):
         data = y[0].reshape(grid.shape)
     else:
@@ -102,8 +103,12 @@ def termLaxFriedrichs(t, y, schemeData):
     derivC = [np.nan for i in range(grid.dim)]
 
     for i in range(grid.dim):
+        # Do upwinding now
         derivL[i], derivR[i] = thisSchemeData.derivFunc(grid, data, i)
         derivC[i] = 0.5 * (derivL[i] + derivR[i])
+        # print(f'@termLF derivL: {np.linalg.norm(derivL[i])},  \
+        #     derivR: {np.linalg.norm(derivR[i])} \
+        #     derivC: {np.linalg.norm(derivC[i])}')
 
     # Analytic Hamiltonian with centered difference derivatives.
     result = thisSchemeData.hamFunc(t, data, derivC, thisSchemeData)
@@ -120,6 +125,7 @@ def termLaxFriedrichs(t, y, schemeData):
     # Lax-Friedrichs dissipative stabilization.
     diss, stepBound = thisSchemeData.dissFunc(t, data, derivL, derivR, thisSchemeData)
 
+    #print(f'[@LF]: stepbd: {stepBound}')
     # Calculate update: (unstable) analytic hamiltonian
     #                   - (dissipative) stabiliziation.
     delta = ham - diss
@@ -127,5 +133,6 @@ def termLaxFriedrichs(t, y, schemeData):
     #---------------------------------------------------------------------------
     # Reshape output into vector format and negate for RHS of ODE.
     ydot = expand(-delta.flatten(), 1)
+    # print(f'ydot LF: {ydot.shape}')
 
     return ydot, stepBound, schemeData

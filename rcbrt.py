@@ -36,7 +36,7 @@ from Visualization.value_viz import ValueVisualizer
 parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
 parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
 parser.add_argument('--silent', '-si', action='store_false', help='silent debug print outs' )
-parser.add_argument('--visualize', '-vz', action='store_true', default=True, help='visualize level sets?' )
+parser.add_argument('--visualize', '-vz', type=int, default=0, help='visualize level sets?' )
 parser.add_argument('--pause_time', '-pz', type=float, default=5e-3, help='pause time between successive updates of plots' )
 args = parser.parse_args()
 
@@ -96,10 +96,12 @@ def main(args):
 					]])).T.astype(int)
 	grid_max[2, 0]*= (1-2/N[2])
 
-	# global obj
-	# print(obj.__dict__)
-
+	# be careful not to create periodic dims for this problem
 	obj.grid = createGrid(grid_min, grid_max, N, pdDims)
+
+	# print(f'[RCBRT@] grid.max: {obj.grid.max.T} grid.min: {obj.grid.min.T}')
+	# print(f'[RCBRT@] grid.N: {obj.grid.N.T}')
+	# print(f'[RCBRT@] grid.dx: {obj.grid.dx.T}')
 
 	# global params
 	obj.axis_align, obj.center, obj.radius = 2, np.zeros((3, 1)), 0.5
@@ -178,9 +180,10 @@ def main(args):
 			 				"savepath": "../jpeg_dumps/rcbrt"})
 			 })
 
-	rcbrt_viz = RCBRTVisualizer(params=params)
-	delete_last_plot = False
+	if args.visualize:
+		rcbrt_viz = RCBRTVisualizer(params=params)
 
+	# print(f'dx: {obj.grid.dx.T}')
 	while(t_range[1] - t_now > small * t_range[1]):
 
 		time_step = f"{t_now}/{t_range[-1]}"
@@ -189,6 +192,11 @@ def main(args):
 
 		# Reshape data array into column vector for ode solver call.
 		y0 = data.flatten()
+		#print(f'y0 rcbrt: {np.linalg.norm(y0)}')
+		# print(f'y0 from data0 rcbrt: {np.linalg.norm(data0)}')
+		# print(f'min y0: {min(y0):.3f}, max y0: {max(y0):.3f}')
+		# import time; time.sleep(40)
+		# correct up to here
 
 		# How far to step?
 		t_span = np.hstack([ t_now, min(t_range[1], t_now + t_plot) ])
@@ -196,6 +204,8 @@ def main(args):
 		# Take a timestep.
 		t, y, _ = odeCFL2(termRestrictUpdate, t_span, y0, integratorOptions, finite_diff_data)
 		t_now = t
+
+		print(f't: {t:.3f} min y: {min(y):.3f}, max y: {max(y):.3f} normy: {np.linalg.norm(y)}')
 
 		# Get back the correctly shaped data array
 		data = np.reshape(y, obj.grid.shape)
@@ -209,9 +219,8 @@ def main(args):
 		mesh.set_edgecolor('magenta')
 		mesh.set_facecolor('magenta')
 
-		rcbrt_viz.update_tube(data, mesh, time_step, delete_last_plot)
-
-		delete_last_plot = True
+		if args.visualize:
+			rcbrt_viz.update_tube(data, mesh, time_step, delete_last_plot)
 
 	end_time = cputime()
 	info(f'Total execution time {end_time - start_time} seconds.')

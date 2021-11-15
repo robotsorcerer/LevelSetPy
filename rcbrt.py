@@ -220,7 +220,7 @@ def main(args):
 		mesh.set_facecolor('magenta')
 
 		if args.visualize:
-			rcbrt_viz.update_tube(data, mesh, time_step, delete_last_plot)
+			rcbrt_viz.update_tube(data, mesh, time_step)
 
 	end_time = cputime()
 	info(f'Total execution time {end_time - start_time} seconds.')

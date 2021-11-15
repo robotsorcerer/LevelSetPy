@@ -73,13 +73,6 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
         # Do all ops on numpy or cp array
         X = X.data
 
-    if use_gpu:
-        # Do it on gpu if available
-        X = cp.asarray(X)
-        'when we are multiplying with multiple arrays'
-        'be careful that we do not give cupy object dtypes'
-        V = cp.asarray(V) if V.dtype!='O' else V
-
     if n is None:
         n = np.arange(X.ndim)
 
@@ -89,16 +82,10 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
         dims,vidx = dims_check(dims,X.ndim,numel(V))
 
         # Calc individual tensor products
-        if use_gpu:
-            Y = tensor_matrix_mult(X, cp.asarray(V[vidx[0]]), dims[0], Transpose)
-        else:
-            Y = tensor_matrix_mult(X, V[vidx[0]], dims[0], Transpose)
+        Y = tensor_matrix_mult(X, V[vidx[0]], dims[0], Transpose)
 
         for k in range(1, numel(dims)):
-            if use_gpu:
-                Y = tensor_matrix_mult(Y, cp.asarray(V[vidx[k]]), dims[k], Transpose)
-            else:
-                Y = tensor_matrix_mult(Y, V[vidx[k]], dims[k], Transpose)
+            Y = tensor_matrix_mult(Y, V[vidx[k]], dims[k], Transpose)
         return Y
 
     if V.ndim>2:
@@ -156,9 +143,6 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
     newsz[n] = p
 
     # put it back in a tensor format
-    if use_gpu:
-        Y = Tensor(B.get(), tuple(newsz))
-    else:
-        Y = Tensor(B, tuple(newsz))
+    Y = Tensor(B)
 
     return Y

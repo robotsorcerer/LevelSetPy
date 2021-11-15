@@ -33,22 +33,22 @@ def dims_check(dims=None, N=None, M=None):
         tf = np.isin(-dims, range(N)).astype(np.int64)
         tf = np.array([tf]) if isscalar(tf) else tf
 
-
         if  min(tf)==0:
-            error("Invalid dimension specified.")
+            raise ValueError("Invalid dimension specified.")
         dims = list(set(range(N)).difference(-dims))
 
     tf = np.isin(dims, range(N)).astype(np.int64)
     tf = np.array([tf]) if isscalar(tf) else tf
 
     if min(tf)==0:
-        error("Invalid dimension specified.")
+        raise ValueError("Invalid dimension specified.")
 
     P = len(dims)
 
     sorted_dims = np.sort(dims)
     sorted_dims_idx = np.argsort(dims)
-
+    
+    #print('M, N', M, N)
     if M > N: raise ValueError("We cannot have more multiplicands than dimensions")
 
 

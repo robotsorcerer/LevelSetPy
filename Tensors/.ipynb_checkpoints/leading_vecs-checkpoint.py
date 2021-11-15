@@ -9,9 +9,9 @@ __status__ 		= "Testing"
 
 import cupy as cp
 import numpy as np
-from Utilities import Bundle
+from Utilities import Bundle, isfield
 from .tensor_utils import use_gpu
-from Tensors.TenMat import tenmat
+from Tensors.TenMat import matricize_tensor
 
 def nvecs(X,n,r,options=None):
     """
@@ -23,7 +23,13 @@ def nvecs(X,n,r,options=None):
             n:  The n-th mode of the tensor X.
             r:  Leading eigenvalue of Xn*Xn.T. This reveals information about the
                 mode-n fibers.
-            options: Optional options to be passed along to the decomposition solver.
+            options: A Bundle class options hat packs computation options to be 
+                     passed along to the decomposition solver.
+                     
+                     Parameters
+                     ----------
+                    .flipsign: make each column's largest element positive: Default: True
+                    .svd: use svds on Xn rather than np.linalg.eigs on Xn*Xn'; Default: False
 
         Returns
         -------
@@ -37,13 +43,6 @@ def nvecs(X,n,r,options=None):
             eigenvectors of the matrix Xn*Xn^T. This behavior can be changed per the
             options argument as follows:
 
-        Options
-        -------
-            A Bundle class that packs computation options similar to a
-            MATLAB struct.
-
-            options.flipsign: make each column's largest element positive: Default: True
-            options.svd: use svds on Xn rather than np.linalg.eigs on Xn*Xn'; Default: False
 
         Example:
         --------
@@ -56,21 +55,27 @@ def nvecs(X,n,r,options=None):
     global use_gpu
 
     options = Bundle({}) if options is None  else options
+    options = Bundle(options) if isinstance(options, dict) else options
 
     options.svd      = options.__dict__.get('svd', False)
     options.flipsign = options.__dict__.get('flipsign', True)
+    options.rdims    = options.__dict__.get('rdims', np.arange(n, dtype=np.intp))
     use_gpu          = options.__dict__.get('use_gpu', use_gpu)
-
-    Xn = tenmat(X,n)
-
-    if opt.svd:
+    
+    print('X: ', X.shape, 'options.rdims: ', options.rdims)
+    Xn = matricize_tensor(X, n)
+    
+    Xn = Xn().T.data
+    
+    print('Xmat: ', Xn.shape, 'r: ', r)
+    if isfield(options, 'svd') and options.svd:
         if use_gpu:
             Xn = cp.asarray(Xn) # Do it on gpu if available
             U,_, _ = cp.linalg.svd(Xn, full_matrices=False)
         else:
             U,_, _ = np.linalg.svd(Xn, full_matrices=False)
         # we are only interested in the first r values, so copy those
-        U = U[:,:r]
+        #U = U[:,:r]
     else:
         Y = Xn @ Xn.T
         if use_gpu:
@@ -88,10 +93,11 @@ def nvecs(X,n,r,options=None):
             except:
                 LinAlgError("Could not find the leading eigen values using"
                             "Numpy's eigvals method.")
+        print('U: ', U.shape)
         # return only the leading 'r' values:
         U = U[:,:r]
 
-    if opt.flipsign:
+    if isfield(options, 'flipsign') and options.flipsign:
         # Make the largest magnitude element be positive
         maxi = np.amax(np.abs(U))
         maxi_idx = np.where(np.abs(U)==maxi)

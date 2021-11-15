@@ -11,7 +11,7 @@ import cupy as cp
 import numpy as np
 
 class Tensor():
-    def __init__(self, array=None, shape=()):
+    def __init__(self, data=None, shape=(), rindices=None, cindices=None):
         """
             Tensor class: This class wraps a numpy or cupy array
             into a Tensor class
@@ -22,31 +22,43 @@ class Tensor():
                 shape: Shape of the tensor, or shape to cast array to within the tensor.
         """
 
-        assert len(shape)>=1, 'shape of Tensor cannot be null.'
+        #assert len(shape)>=1, 'shape of Tensor cannot be null.'
+        if len(shape)<1:
+            # infer array shape from data
+            shape = data.shape
 
-        assert np.any(array), 'Tensor cannot hold empty array.'
+        assert np.any(data), 'Tensor cannot hold empty array.'
 
-        if np.any(array):
-            if isinstance(array, np.ndarray):
+        if np.any(data):
+            if isinstance(data, np.ndarray):
                 self.type = 'numpy'
-            elif isinstance(array, cp.ndarray):
+            elif isinstance(data, cp.ndarray):
                 self.type = 'cupy'
-            elif isinstance(array, list):
+            elif isinstance(data, list):
                 raise ValueError("Only supports Numpy and CuPy Ndarrays at this time.")
 
-        self.data = array
+        self.data = data
 
         if ((len(shape)>0) and (self.data.shape!=shape)):
             self.data = self.data.reshape(shape)
+            
+        # ad-hoc attributes for tensor matricization
+        
+        self.rindices  = rindices
+        self.cindices  = cindices
 
     @property
     def ndim(self):
         return self.data.ndim
 
-
+    
+    @property
+    def tsize(self):
+        return self.shape
+            
     @property
     def shape(self):
-        return self.data.shape
+        return list(self.data.shape)
 
     def __dtype__(self):
         return f"Tensor"

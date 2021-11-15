@@ -97,6 +97,10 @@ class RCBRTVisualizer(object):
 		else:
 			self._ax[1].add_collection3d(mesh)
 
+		# xlim = (min(data[0].ravel())-1.5, max(data[0].ravel())+1.5)
+		# ylim = (min(data[1].ravel())-1.4, max(data[1].ravel())+1.5)
+		# zlim = (min(data[2].ravel())-1.3, max(data[2].ravel())+1.3)
+
 		self.xlim = (min(data[0].ravel()), max(data[0].ravel()))
 		self.ylim = (min(data[1].ravel())-.4, max(data[1].ravel())+1.5)
 		self.zlim = (-np.pi+1.3, np.pi+3.8)

@@ -58,15 +58,15 @@ def  createGrid(grid_min, grid_max, N, pdDims=None, process=True, low_mem=False)
     for i in range(g.dim):
         if np.any(i == pdDims):
             g.bdry[i] = addGhostPeriodic;
-            g.max[i,0] = g.min[i,0] + (g.max[i,0] - g.min[i,0]) * (1 - 1/g.N[i,0]);
+            #g.max[i,0] = g.min[i,0] + (g.max[i,0] - g.min[i,0]) * (1 - 1/g.N[i,0]);
         else:
             g.bdry[i] = addGhostExtrapolate
 
-    if low_mem:
-      g.dx = np.divide(grid_max - grid_min, N)
-      g.vs = cell(g.dim, 1);
-      for i in range(g.dim):
-          g.vs[i] = expand(np.arange(grid_min[i,0],  grid_max[i,0],  g.dx[i,0]), 1)
-    elif process:
+    # if low_mem:
+    #   g.dx = np.divide(grid_max - grid_min, N)
+    #   g.vs = cell(g.dim, 1);
+    #   for i in range(g.dim):
+    #       g.vs[i] = expand(np.arange(grid_min[i,0],  grid_max[i,0],  g.dx[i,0]), 1)
+    if process:
       g = processGrid(g)
     return g

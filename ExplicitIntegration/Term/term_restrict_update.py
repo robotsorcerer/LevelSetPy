@@ -78,8 +78,9 @@ def termRestrictUpdate(t, y, schemeData):
     else:
         innerData = schemeData.innerData
 
-    #Get the unrestricted update.
+    #Get the unrestricted update. # this is usually termLaxFriedrichs
     unRestricted, stepBound, innerData = thisSchemeData.innerFunc(t, y, innerData)
+    #print(f'unRestricted: {unRestricted.shape}, stepBound: {stepBound}')
 
     #Store any modifications of the inner data structure.
     if(iscell(schemeData)):
@@ -96,8 +97,10 @@ def termRestrictUpdate(t, y, schemeData):
     #Restrict the update (stepBound is returned unchanged).
     #   Do not negate for RHS of ODE (that is handled by innerFunc).
     if(positive):
-        ydot = np.max(np.hstack((unRestricted.flatten(), 0)))
+        ydot = np.maximum(unRestricted, 0).squeeze()
     else:
-        ydot = np.min(np.hstack((unRestricted.flatten(), 0)))
+        ydot = np.minimum(unRestricted, 0).squeeze()
+
+    # print(f'ydot in restrict update: {ydot.shape}')
 
     return ydot, stepBound, schemeData

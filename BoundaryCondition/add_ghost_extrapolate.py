@@ -1,3 +1,8 @@
+__author__ 		= "Lekan Molu"
+__maintainer__ 	= "Lekan Molu"
+__email__ 		= "patlekno@icloud.com"
+__status__ 		= "Completed"
+
 __all__ = ["addGhostExtrapolate"]
 
 
@@ -57,13 +62,13 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     if((width < 0) or (width > size(dataIn, dim))):
         error('Illegal width parameter')
 
-    if(ghostData and isinstance(ghostData, Bundle)):
+    if(np.any(ghostData) and isinstance(ghostData, Bundle)):
         slopeMultiplier = -1 if(ghostData.towardZero) else +1
     else:
         slopeMultiplier = +1
 
     # create cell array with array size
-    dims = ndims(dataIn)
+    dims = dataIn.ndim
     sizeIn = size(dataIn)
     indicesOut = []
     for i in range(dims):
@@ -72,9 +77,8 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
 
     # create appropriately sized output array
     sizeOut = copy.copy(list(sizeIn))
-
     sizeOut[dim] = sizeOut[dim] + (2 * width)
-    dataOut = zeros(tuple(sizeOut), dtype=np.float64)
+    dataOut = np.zeros(tuple(sizeOut), dtype=np.float64)
 
     # fill output array with input data
     indicesOut[dim] = np.arange(width, sizeOut[dim] - width, dtype=np.intp) # correct
@@ -93,20 +97,31 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     # adjust slope sign to correspond with sign of data at array edge
     indicesIn[dim] = [0]
     slopeBot = slopeMultiplier * np.abs(slopeBot) * np.sign(dataIn[np.ix_(*indicesIn)])
-    indicesIn[dim] = [sizeIn[dim]-1] # account for python/C indexing
+    # print(f'[@addExtrap] indicesOut[{dim}]: {indicesOut[dim]} {[indicesOut[x].shape for x in [1, 2]]}')
+    indicesIn[dim] = [sizeIn[dim]-1]
     slopeTop = slopeMultiplier * np.abs(slopeTop) * np.sign(dataIn[np.ix_(*indicesIn)])
 
     # now extrapolate
+    # print('width ', width)
     for i in range(width):
         indicesOut[dim] = [i]
         indicesIn[dim] = [0]
-        dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i + 1) * slopeBot)
+        dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i) * slopeBot)
+
+        # print(f'[@addExtrap{i}] indicesIn[{dim}]: {indicesIn[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
+        # print(f'[@addExtrap{i}] indicesOut[{dim}]: {indicesOut[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
+        # print('[@addExtrap{i}]  dataOut[np.ix_(*indicesOut)]: ', np.linalg.norm(dataOut[np.ix_(*indicesOut)]), dataOut[np.ix_(*indicesOut)].shape)
 
         if i == 0:
-            indicesOut[dim] = [sizeOut[dim] - i -1]
+            indicesOut[dim] = [sizeOut[dim] -1]
         else:
             indicesOut[dim] = [sizeOut[dim] - i]
         indicesIn[dim] = [sizeIn[dim]-1]
-        dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i + 1) * slopeTop)
+        dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i) * slopeTop)
+        print(f'[@addExtrap {i}] indicesOut[{dim}]: {indicesOut[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
+        print(f'[@addExtrap {i}] indicesIn[{dim}]: {indicesIn[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
+        print(i, '[@addExtrap]  dataOut[np.ix_(*indicesOut)]: ', np.linalg.norm(dataOut[np.ix_(*indicesOut)]), dataOut[np.ix_(*indicesOut)].shape)
+    #     print()
+    # print('[@addExtrap]  dataOut final: ', np.linalg.norm(dataOut), dataOut.shape)
 
     return dataOut

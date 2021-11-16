@@ -15,3 +15,9 @@ The [Tests](/Tests) folder contains examples of running basic tests. For example
 + data_proj is a lotta issue
 + Add all exports from modules PODS down
 + Write POD projections and reprojections for lifting dynamics
+
+#### Derivatives and LF that work
++ upwindENO2
++ termLaxFriedrichs
++ artificialGLF
++ dissipation 

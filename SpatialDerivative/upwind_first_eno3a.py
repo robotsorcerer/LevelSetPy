@@ -104,9 +104,7 @@ def upwindFirstENO3a(grid, data, dim, generateAll=False):
         D2abs = np.abs(DD.D2)
         indices1[dim] = np.arange(size(D2abs, dim)-1, dtype=np.intp)
         indices2[dim] = indices1[dim] + 1
-        # print(f'indices1[dim]: {len(indices1[dim])} indices2[dim]: {len(indices2[dim])}')
-        # print(D2abs.shape)
-        # print(f'D2abs[np.ix_(*indices1): {D2abs[np.ix_(*indices1).shape}, {D2abs[np.ix_(*indices2)].shape}')
+
         smallerL = (D2abs[np.ix_(*indices1)] < D2abs[np.ix_(*indices2)])
         smallerR = np.logical_not(smallerL)
 

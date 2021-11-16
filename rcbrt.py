@@ -35,14 +35,15 @@ from Visualization.value_viz import ValueVisualizer
 
 parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
 parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
-parser.add_argument('--silent', '-si', action='store_false', help='silent debug print outs' )
+parser.add_argument('--silent', '-si', type=int, default=0, help='silent debug print outs' )
 parser.add_argument('--visualize', '-vz', type=int, default=0, help='visualize level sets?' )
 parser.add_argument('--pause_time', '-pz', type=float, default=5e-3, help='pause time between successive updates of plots' )
 args = parser.parse_args()
+args.verbose = True if not args.silent else False
 
 print('args: ', args)
 
-if args.silent:
+if not args.silent:
 	logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 else:
 	logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -99,10 +100,6 @@ def main(args):
 	# be careful not to create periodic dims for this problem
 	obj.grid = createGrid(grid_min, grid_max, N, pdDims)
 
-	# print(f'[RCBRT@] grid.max: {obj.grid.max.T} grid.min: {obj.grid.min.T}')
-	# print(f'[RCBRT@] grid.N: {obj.grid.N.T}')
-	# print(f'[RCBRT@] grid.dx: {obj.grid.dx.T}')
-
 	# global params
 	obj.axis_align, obj.center, obj.radius = 2, np.zeros((3, 1)), 0.5
 	data0 = get_target(obj)
@@ -157,7 +154,6 @@ def main(args):
 	t_now = t_range[0]
 	start_time = cputime()
 
-	# plt.close('all')
 	# Visualization paramters
 	spacing = tuple(obj.grid.dx.flatten().tolist())
 	init_mesh = implicit_mesh(data, level=0, spacing=spacing,  edge_color='orange',
@@ -192,11 +188,6 @@ def main(args):
 
 		# Reshape data array into column vector for ode solver call.
 		y0 = data.flatten()
-		#print(f'y0 rcbrt: {np.linalg.norm(y0)}')
-		# print(f'y0 from data0 rcbrt: {np.linalg.norm(data0)}')
-		# print(f'min y0: {min(y0):.3f}, max y0: {max(y0):.3f}')
-		# import time; time.sleep(40)
-		# correct up to here
 
 		# How far to step?
 		t_span = np.hstack([ t_now, min(t_range[1], t_now + t_plot) ])
@@ -205,7 +196,7 @@ def main(args):
 		t, y, _ = odeCFL2(termRestrictUpdate, t_span, y0, integratorOptions, finite_diff_data)
 		t_now = t
 
-		print(f't: {t:.3f} min y: {min(y):.3f}, max y: {max(y):.3f} normy: {np.linalg.norm(y)}')
+		logger.debug(f't: {t:.3f} min y: {min(y):.3f}, max y: {max(y):.3f} normy: {np.linalg.norm(y)}')
 
 		# Get back the correctly shaped data array
 		data = np.reshape(y, obj.grid.shape)

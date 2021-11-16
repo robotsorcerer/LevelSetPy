@@ -119,7 +119,6 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
         stepBound = np.zeros((numY), dtype=np.float64)
         ydot = cell(numY)
         y = copy.copy(y0)
-        # print(f'y odeCFL2: {y[:10]}')
 
         while(tspan[1] - t >= small * np.abs(tspan[1])):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -128,7 +127,6 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             # Approximate the derivative and CFL restriction.
             for i in range(numY):
                 ydot[i], stepBound[i], schemeData = schemeFuncCell[i](t, y, schemeData)
-                #print(f'ydot[i]: {ydot[i].shape}, stepBound[i]: {stepBound[i]} schemeData: {schemeData}')
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y)):
                     y = y[ 1: ]

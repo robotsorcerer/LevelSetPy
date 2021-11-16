@@ -80,7 +80,7 @@ def addGhostPeriodic(dataIn, dim, width=None, ghostData=None):
     dataOut[np.ix_(*indicesOut)] = dataIn[np.ix_(*indicesIn)]
 
     indicesIn[dim] = np.arange(width, dtype=np.intp)
-    indicesOut[dim] = np.arange(sizeIn[dim] - width, sizeIn[dim], dtype=np.intp)
+    indicesOut[dim] = np.arange(sizeOut[dim] - width, sizeOut[dim], dtype=np.intp)
     dataOut[np.ix_(*indicesOut)] = dataIn[np.ix_(*indicesIn)]
 
     return dataOut

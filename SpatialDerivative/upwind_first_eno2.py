@@ -52,7 +52,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     ---------------------------------------------------------------------------
     """
     if((dim < 0) or (dim > grid.dim)):
-        error('Illegal dim parameter')
+        raise ValueError('Illegal dim parameter')
 
     dxInv = 1 / grid.dx.item(dim)
 
@@ -66,8 +66,6 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
 
     # Add ghost cells.
     gdata = grid.bdry[dim](data, dim, stencil, grid.bdryData[dim])
-    # print(f'gdata: {np.linalg.norm(gdata)}, {gdata.shape}, ming: {np.min(gdata.flatten())}, maxg: {np.max(gdata.flatten())}')
-    #import time; time.sleep(10)
     #---------------------------------------------------------------------------
     # Create cell array with array indices.
     sizeData = size(gdata)
@@ -79,7 +77,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     #---------------------------------------------------------------------------
     # First divided differences (first entry corresponds to D^1_{-1/2}).
     indices1[dim] = np.arange(1,size(gdata, dim), dtype=np.intp)
-    indices2[dim] = copy.copy(indices1[dim]) - 1 # indices1[dim] - 1 #
+    indices2[dim] = copy.copy(indices1[dim]) - 1
     D1 = dxInv*(gdata[np.ix_(*indices1)] - gdata[np.ix_(*indices2)])
 
     indices1[dim] = np.arange(1, size(D1, dim), dtype=np.intp)

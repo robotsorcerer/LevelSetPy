@@ -146,6 +146,6 @@ def main(savedict):
 	plt.show()
 
 if __name__ == '__main__':
-	savedict = dict(save=True, savename='implicit_mesh.jpg',\
-					savepath=join("..", "jpeg_dumps"))
+	savedict = dict(save=False, savename='implicit_mesh.jpg',\
+					savepath=join("../../", "jpeg_dumps"))
 	main(savedict)

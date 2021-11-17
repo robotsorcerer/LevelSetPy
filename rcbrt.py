@@ -80,13 +80,11 @@ def get_partial_func(t, data, derivMin, derivMax, \
 	"""
 	global obj
 
-	# print('dim: ', dim)
 	assert dim>=0 and dim <3, "grid dimension has to be between 0 and 2 inclusive."
 
 	return obj.alpha[dim]
 
 def main(args):
-	## Grid
 	grid_min = expand(np.array((-.75, -1.25, -pi)), ax = 1)
 	grid_max = expand(np.array((3.25, 1.25, pi)), ax = 1)
 	pdDims = 2                      # 3rd dimension is periodic
@@ -117,7 +115,7 @@ def main(args):
 
 	obj.p1_term = obj.v_e - obj.v_p * np.cos(obj.grid.xs[2])
 	obj.p2_term = -obj.v_p * np.sin(obj.grid.xs[2])
-	obj.alpha = [ np.abs(obj.p1_term) + np.abs(obj.omega_e_bound * obj.grid.xs[1]), \
+	obj.alpha   = [ np.abs(obj.p1_term) + np.abs(obj.omega_e_bound * obj.grid.xs[1]), \
 					np.abs(obj.p2_term) + np.abs(obj.omega_e_bound * obj.grid.xs[0]), \
 					obj.omega_e_bound + obj.omega_p_bound ]
 
@@ -205,6 +203,9 @@ def main(args):
 
 		if args.visualize:
 			rcbrt_viz.update_tube(data, mesh, time_step)
+	
+	if args.visualize:
+		rcbrt_viz.update_tube(data, params.mesh, time_step)
 
 	end_time = cputime()
 	info(f'Total execution time {end_time - start_time} seconds.')

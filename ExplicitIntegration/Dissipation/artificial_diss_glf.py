@@ -96,10 +96,6 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
 
         # Get derivative differences at each node.
         derivDiff[i] = derivR[i] - derivL[i]
-    # print(f'derivDiff in aGLF: {[np.linalg.norm(derivDiff[i]) for i in range(3)]}')
-
-    # import time
-    # time.sleep(500)
     #---------------------------------------------------------------------------
     # Now calculate the dissipation.  Since alpha is the effective speed of
     #   the flow, it provides the CFL timestep bound too.

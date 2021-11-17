@@ -103,7 +103,6 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             if(iscell(schemeFunc)):
                 schemeFuncCell = schemeFunc
             else:
-                # schemeFuncCell[:numY] = schemeFunc
                 schemeFuncCell = [schemeFunc for i in range(numY)]
         else:
             # Set numY, but be careful: ((numY == 1) & iscell(y0)) is possible.
@@ -111,7 +110,6 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
             # We need a cell vector form of schemeFunc.
             schemeFuncCell = [schemeFunc]
-        # print(f'y0 odeCFL2 b4: , {np.linalg.norm(y0)}')
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         t = tspan[0]
         steps = 0
@@ -137,7 +135,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             # Determine CFL bound on timestep, but not beyond the final time.
             #   For vector level sets, use the most restrictive stepBound.
             #   We'll use this fixed timestep for both substeps..
-           
+
             deltaT = np.min(np.hstack((options.factorCFL*stepBound,  \
                            tspan[1] - t, options.maxStep)))
 
@@ -225,7 +223,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
     #---------------------------------------------------------------------------
     elif(numT > 2):
         # If we were asked for the solution at multiple timesteps.
-        t, y, schemeData = odeCFLmultipleSteps(schemeFunc, tspan, y0, options, schemeData)
+        t, y, schemeData = odeCFLmultipleSteps(odeCFL2, schemeFunc, tspan, y0, options, schemeData)
 
     #---------------------------------------------------------------------------
     else:

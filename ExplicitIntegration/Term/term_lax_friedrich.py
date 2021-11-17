@@ -103,12 +103,9 @@ def termLaxFriedrichs(t, y, schemeData):
     derivC = [np.nan for i in range(grid.dim)]
 
     for i in range(grid.dim):
-        # Do upwinding now: for RCBRT, we use upwindENO2
+        # Do upwinding now: for RCBRT, we use upwindENO2. I bet w/my life that this is correct
         derivL[i], derivR[i] = thisSchemeData.derivFunc(grid, data, i)
         derivC[i] = 0.5 * (derivL[i] + derivR[i])
-        # print(f'@termLF derivL: {np.linalg.norm(derivL[i])},  \
-        #     derivR: {np.linalg.norm(derivR[i])} \
-        #     derivC: {np.linalg.norm(derivC[i])}')
 
     # Analytic Hamiltonian with centered difference derivatives.
     # derivs from upwindENO2 is incorrect. Investigate this
@@ -125,10 +122,6 @@ def termLaxFriedrichs(t, y, schemeData):
 
     # Lax-Friedrichs dissipative stabilization.
     diss, stepBound = thisSchemeData.dissFunc(t, data, derivL, derivR, thisSchemeData)
-
-    #print(f'[@LF]: stepbd: {stepBound}')
-    # Calculate update: (unstable) analytic hamiltonian
-    #                   - (dissipative) stabiliziation.
     delta = ham - diss
 
     #---------------------------------------------------------------------------

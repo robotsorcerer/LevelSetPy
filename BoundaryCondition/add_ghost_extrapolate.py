@@ -112,16 +112,11 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
         # print(f'[@addExtrap{i}] indicesOut[{dim}]: {indicesOut[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
         # print('[@addExtrap{i}]  dataOut[np.ix_(*indicesOut)]: ', np.linalg.norm(dataOut[np.ix_(*indicesOut)]), dataOut[np.ix_(*indicesOut)].shape)
 
-        if i == 0:
-            indicesOut[dim] = [sizeOut[dim] -1]
-        else:
-            indicesOut[dim] = [sizeOut[dim] - i]
+        # if i == 0:
+        #     indicesOut[dim] = [sizeOut[dim]-i]
+        # else:
+        #     indicesOut[dim] = [sizeOut[dim] - i]
+        indicesOut[dim] = [sizeOut[dim] - i-1]
         indicesIn[dim] = [sizeIn[dim]-1]
         dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i) * slopeTop)
-        print(f'[@addExtrap {i}] indicesOut[{dim}]: {indicesOut[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
-        print(f'[@addExtrap {i}] indicesIn[{dim}]: {indicesIn[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
-        print(i, '[@addExtrap]  dataOut[np.ix_(*indicesOut)]: ', np.linalg.norm(dataOut[np.ix_(*indicesOut)]), dataOut[np.ix_(*indicesOut)].shape)
-    #     print()
-    # print('[@addExtrap]  dataOut final: ', np.linalg.norm(dataOut), dataOut.shape)
-
     return dataOut

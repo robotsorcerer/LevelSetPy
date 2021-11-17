@@ -60,7 +60,7 @@ def addGhostPeriodic(dataIn, dim, width=None, ghostData=None):
     # create cell array with array indices
     dims = dataIn.ndim
     sizeIn = dataIn.shape
-    indicesOut = cell(dims, 1)
+    indicesOut = cell(dims)
     for i in range(dims):
       indicesOut[i] = index_array(1, sizeIn[i])
     indicesIn = copy.copy(indicesOut)
@@ -71,7 +71,7 @@ def addGhostPeriodic(dataIn, dim, width=None, ghostData=None):
     dataOut = zeros(tuple(sizeOut), dtype=np.float64)
 
     # fill output array with input data
-    indicesOut[dim] = np.arange(width + 0, sizeOut[dim] - width, dtype=np.intp)
+    indicesOut[dim] = np.arange(width, sizeOut[dim] - width, dtype=np.intp)
     dataOut[np.ix_(*indicesOut)] = dataIn
 
     # fill ghost cells
@@ -80,7 +80,7 @@ def addGhostPeriodic(dataIn, dim, width=None, ghostData=None):
     dataOut[np.ix_(*indicesOut)] = dataIn[np.ix_(*indicesIn)]
 
     indicesIn[dim] = np.arange(width, dtype=np.intp)
-    indicesOut[dim] = np.arange(sizeIn[dim] - width, sizeIn[dim], dtype=np.intp)
+    indicesOut[dim] = np.arange(sizeOut[dim] - width, sizeOut[dim], dtype=np.intp)
     dataOut[np.ix_(*indicesOut)] = dataIn[np.ix_(*indicesIn)]
 
     return dataOut

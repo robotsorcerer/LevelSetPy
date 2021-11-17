@@ -85,8 +85,7 @@ def cylinder_sphere(g3, savedict):
     ax.set_zlim(0, zlim[1])
 
     sphere = shapeSphere(g3, center, radius=3)
-    sphere_mesh = implicit_mesh(sphere, level=0., spacing=spacing, face_color='g')
-    sphere_mesh.set_edgecolor('None')
+    sphere_mesh = implicit_mesh(sphere, level=0., spacing=spacing, edge_color='k', face_color='g')
 
     ax2 = fig.add_subplot(122, projection='3d')
     #ax2.plot3D(g3.xs[0].flatten(), g3.xs[1].flatten(), g3.xs[2].flatten(), color='cyan')

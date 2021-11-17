@@ -58,37 +58,50 @@ class RCBRTVisualizer(object):
 		cm = plt.get_cmap('rainbow')
 		self._ax[0].grid('on')
 		self._ax[0].add_collection3d(mesh)
-		self._ax[0].view_init(elev=5., azim=15.)
+
+		self._ax[0].view_init(elev=self.params.elevation, azim=self.params.azimuth)
+		self._ax[1].view_init(elev=self.params.elevation, azim=self.params.azimuth)
+
+		self._ax[0].axes.get_xaxis().set_ticks([])
+		self._ax[0].axes.get_yaxis().set_ticks([])
+
+		self._ax[1].axes.get_xaxis().set_ticks([])
+		self._ax[1].axes.get_yaxis().set_ticks([])
 
 		if isinstance(mesh, list):
 			for m in mesh:
-				m = implicit_mesh(m, level=self.params.level, spacing=spacing,  edge_color='orange', face_color='orange')
+				m = implicit_mesh(m, level=self.params.level, spacing=spacing,  edge_color='k', face_color='red')
 				self._ax[0].add_collection3d(m)
 		else:
 			self._ax[0].add_collection3d(mesh)
 
 		data = self.params.data
-		self.xlim = (min(data[0].ravel()), max(data[0].ravel()))
-		self.ylim = (min(data[1].ravel())-.4, max(data[1].ravel())+1.5)
-		self.zlim = (-np.pi+1.3, np.pi+3.8)
+		xlim = (min(data[0].ravel()), max(data[0].ravel()))
+		ylim = (self.params.grid.min.item(1)-.5, self.params.grid.min.item(1)+4.)
+		zlim = (self.params.grid.min.item(2)-1.3, self.params.grid.max.item(2)+4.5)
 
-		self._ax[0].set_xlim(*self.xlim)
-		self._ax[0].set_ylim(*self.ylim)
-		self._ax[0].set_zlim(*self.zlim)
+		self._ax[0].set_xlim3d(*xlim)
+		self._ax[0].set_ylim3d(*ylim)
+		self._ax[0].set_zlim3d(*zlim)
+		# self._ax[0].autoscale()
 
 		self._ax[0].set_xlabel("X", fontdict = self.params.fontdict.__dict__)
 		self._ax[0].set_ylabel("Y", fontdict = self.params.fontdict.__dict__)
 		self._ax[0].set_zlabel("Z", fontdict = self.params.fontdict.__dict__)
 		self._ax[0].set_title(f"Initial {self.params.level}-Level Value Set", \
 								fontweight=self.params.fontdict.fontweight)
+		self._ax[1].set_title(f'BRT at {0} secs.', fontweight=self.params.fontdict.fontweight)
 
 	def update_tube(self, data, mesh, time_step, delete_last_plot=False):
 		self._ax[1].grid('on')
 		self._ax[1].add_collection3d(mesh)
-		# self._ax[1].view_init(elev=8., azim=15.)
+		self._ax[1].view_init(elev=self.params.elevation, azim=self.params.azimuth)
 
-		# if delete_last_plot:
-		# 	plt.cla()
+		self._ax[1].axes.get_xaxis().set_ticks([])
+		self._ax[1].axes.get_yaxis().set_ticks([])
+
+		if delete_last_plot:
+			plt.cla()
 
 		if isinstance(mesh, list):
 			for m in mesh:
@@ -97,19 +110,13 @@ class RCBRTVisualizer(object):
 		else:
 			self._ax[1].add_collection3d(mesh)
 
-		# xlim = (min(data[0].ravel())-1.5, max(data[0].ravel())+1.5)
-		# ylim = (min(data[1].ravel())-1.4, max(data[1].ravel())+1.5)
-		# zlim = (min(data[2].ravel())-1.3, max(data[2].ravel())+1.3)
+		xlim = (min(data[0].ravel())-2, max(data[0].ravel())+2)
+		ylim = (min(data[1].ravel())-3, max(data[1].ravel())+2.)
+		zlim = (min(data[2].ravel())-1.3, max(data[2].ravel())+4.1)
 
-		self.xlim = (min(data[0].ravel()), max(data[0].ravel()))
-		self.ylim = (min(data[1].ravel())-.4, max(data[1].ravel())+1.5)
-		self.zlim = (-np.pi+1.3, np.pi+3.8)
-
-		self._ax[1].set_xlim(*self.xlim)
-		self._ax[1].set_ylim(*self.ylim)
-		self._ax[1].set_zlim(*self.zlim)
-		# self._ax[1].set_aspect('auto')
-		# self._ax[1].autoscale()
+		self._ax[1].set_xlim3d(*xlim)
+		self._ax[1].set_ylim3d(*ylim)
+		self._ax[1].set_zlim3d(*zlim)
 
 		self._ax[1].set_xlabel("X", fontdict = self.params.fontdict.__dict__)
 		self._ax[1].set_title(f'BRT at {time_step}.', fontweight=self.params.fontdict.fontweight)
@@ -122,9 +129,6 @@ class RCBRTVisualizer(object):
 				color=color, label=label)
 		self._ax_legend.legend(ncol=2, mode='expand', fontsize=10)
 
-	def draw(self):
-		for ax in self._ax:
-			ax.draw_artist(ax)
-
+	def draw(self, ax=None):
 		self._fig.canvas.draw()
 		self._fig.canvas.flush_events()

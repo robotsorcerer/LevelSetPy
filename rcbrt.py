@@ -35,9 +35,11 @@ from Visualization.value_viz import ValueVisualizer
 
 parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
 parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
-parser.add_argument('--silent', '-si', type=int, default=0, help='silent debug print outs' )
-parser.add_argument('--visualize', '-vz', type=int, default=0, help='visualize level sets?' )
-parser.add_argument('--pause_time', '-pz', type=float, default=5e-3, help='pause time between successive updates of plots' )
+parser.add_argument('--silent', '-si', action='store_false',  default=0, help='silent debug print outs' )
+parser.add_argument('--visualize', '-vz', action='store_false', help='visualize level sets?' )
+parser.add_argument('--elevation', '-el', type=float, default=5., help='elevation angle for target set plot.' )
+parser.add_argument('--azimuth', '-az', type=float, default=5., help='azimuth angle for target set plot.' )
+parser.add_argument('--pause_time', '-pz', type=float, default=4, help='pause time between successive updates of plots' )
 args = parser.parse_args()
 args.verbose = True if not args.silent else False
 
@@ -85,8 +87,8 @@ def get_partial_func(t, data, derivMin, derivMax, \
 
 def main(args):
 	## Grid
-	grid_min = expand(np.array((-.75, -1.25, -pi)), ax = 1) # Lower corner of computation domain
-	grid_max = expand(np.array((3.25, 1.25, pi)), ax = 1)   # Upper corner of computation domain
+	grid_min = expand(np.array((-.75, -1.25, -pi)), ax = 1)
+	grid_max = expand(np.array((3.25, 1.25, pi)), ax = 1)
 	pdDims = 2                      # 3rd dimension is periodic
 	resolution = 100
 	N = np.array(([[
@@ -97,7 +99,6 @@ def main(args):
 					]])).T.astype(int)
 	grid_max[2, 0]*= (1-2/N[2])
 
-	# be careful not to create periodic dims for this problem
 	obj.grid = createGrid(grid_min, grid_max, N, pdDims)
 
 	# global params
@@ -156,8 +157,7 @@ def main(args):
 
 	# Visualization paramters
 	spacing = tuple(obj.grid.dx.flatten().tolist())
-	init_mesh = implicit_mesh(data, level=0, spacing=spacing,  edge_color='orange',
-	                         face_color='orange')
+	init_mesh = implicit_mesh(data, level=0, spacing=spacing, edge_color='b', face_color='b')
 	params = Bundle(
 			{"grid": obj.grid,
 			 'disp': True,
@@ -165,6 +165,8 @@ def main(args):
 			 'labels': "Initial 0-LevelSet",
 			 'linewidth': 2,
 			 'data': data,
+			 'elevation': args.elevation,
+			 'azimuth': args.azimuth,
 			 'mesh': init_mesh,
 			 'init_conditions': False,
 			 'pause_time': args.pause_time,
@@ -179,12 +181,9 @@ def main(args):
 	if args.visualize:
 		rcbrt_viz = RCBRTVisualizer(params=params)
 
-	# print(f'dx: {obj.grid.dx.T}')
 	while(t_range[1] - t_now > small * t_range[1]):
 
 		time_step = f"{t_now}/{t_range[-1]}"
-		if(strcmp(options.stats, 'on')):
-			info(f"Iteration: {time_step}")
 
 		# Reshape data array into column vector for ode solver call.
 		y0 = data.flatten()
@@ -196,19 +195,13 @@ def main(args):
 		t, y, _ = odeCFL2(termRestrictUpdate, t_span, y0, integratorOptions, finite_diff_data)
 		t_now = t
 
-		logger.debug(f't: {t:.3f} min y: {min(y):.3f}, max y: {max(y):.3f} normy: {np.linalg.norm(y)}')
+		logger.info(f't: {t:.3f}/{t_range[-1]} TargSet Min: {min(y):.3f}, TargSet Max: {max(y):.3f} TargSet Norm: {np.linalg.norm(y)}')
 
 		# Get back the correctly shaped data array
 		data = np.reshape(y, obj.grid.shape)
 
-		# TODO: Why doesn't mesh have zero values?
-		# mesh=implicit_mesh(data, level=None, spacing=spacing,  edge_color='red',
-	    #                      face_color='red')
-		verts, faces, normals, values = measure.marching_cubes(data, level=None, spacing=spacing, gradient_direction='descent')
-		# Fancy indexing: `verts[faces]` to generate a collection of triangles
-		mesh = Poly3DCollection(verts[faces])
-		mesh.set_edgecolor('magenta')
-		mesh.set_facecolor('magenta')
+		mesh=implicit_mesh(data, level=0, spacing=spacing,  edge_color='None',
+	                         face_color='red')
 
 		if args.visualize:
 			rcbrt_viz.update_tube(data, mesh, time_step)

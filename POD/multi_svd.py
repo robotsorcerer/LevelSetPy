@@ -27,7 +27,7 @@ except ImportError:
     warnings.warn(msg, ImportWarning)
     no_torch = True
 
-import numpy as np
+import cupy as cp
 from numpy import linalg
 from matplotlib import pyplot as plt 
 from scipy.sparse.linalg import svds
@@ -48,7 +48,7 @@ class SVDecomposer:
     Parameters
     ----------
     data : numpy ndarray
-        Input array (2d, 3d or 4d).
+        Icp.t array (2d, 3d or 4d).
     mode : {'fullfr', 'annular'}, optional
         Whether to use the whole frames or a single annulus.
     inrad : None or int, optional
@@ -56,7 +56,7 @@ class SVDecomposer:
     outrad : None or int, optional
         [mode='annular'] Outer radius.
     svd_mode : {'lapack', 'arpack', 'eigen', 'randsvd', 'cupy', 'eigencupy',
-        'randcupy', 'pytorch', 'eigenpytorch', 'randpytorch'}, str optional
+        'randcupy', 'pytorch', 'eigecp.torch', 'randpytorch'}, str optional
         Switch for the SVD method/library to be used.
 
         ``lapack``: uses the LAPACK linear algebra library through Numpy
@@ -83,7 +83,7 @@ class SVDecomposer:
 
         `pytorch``: uses the Pytorch library for GPU computation of the SVD.
 
-        ``eigenpytorch``: offers the same method as with the ``eigen``
+        ``eigecp.torch``: offers the same method as with the ``eigen``
         option but on GPU (through Pytorch).
 
         ``randpytorch``: is an adaptation of the randomized_svd algorithm,
@@ -93,7 +93,7 @@ class SVDecomposer:
     scaling : {None, "temp-mean", spat-mean", "temp-standard",
                "spat-standard"}, None or str optional
         Pixel-wise scaling mode using ``sklearn.preprocessing.scale``
-        function. If set to None, the input matrix is left untouched.
+        function. If set to None, the icp.t matrix is left untouched.
         Otherwise:
 
         ``temp-mean``: temporal px-wise mean is subtracted.
@@ -145,7 +145,7 @@ class SVDecomposer:
 
     def generate_matrix(self):
         """
-        Generate a matrix from the input ``data``. Pixel values in the matrix
+        Generate a matrix from the icp.t ``data``. Pixel values in the matrix
         are scaled. Depending on ``mode``, the matrix can come from an annulus
         instead of the whole frames.
         """
@@ -177,7 +177,7 @@ class SVDecomposer:
                     cube_resc = cube_crop_frames(cube_resc, size=y_in,
                                                  verbose=False)
                     big_cube.append(cube_resc)
-                big_cube = np.array(big_cube)
+                big_cube = cp.array(big_cube)
                 cube_ = big_cube.reshape(z * n_frames, y_in, x_in)
                 self.cube4dto3d_shape = cube_.shape
 
@@ -197,7 +197,7 @@ class SVDecomposer:
 
     def run(self):
         """
-        Decompose the input data.
+        Decompose the icp.t data.
         """
         start_time = time_ini(False)
         if not hasattr(self, 'matrix'):
@@ -253,10 +253,10 @@ class SVDecomposer:
 
         self.ncomp_list = ncomp_list
         exp_var = (self.s ** 2) / (self.s.shape[0] - 1)
-        full_var = np.sum(exp_var)
+        full_var = cp.sum(exp_var)
         # % of variance explained by each PC
         self.explained_variance_ratio = exp_var / full_var
-        self.cevr = np.cumsum(self.explained_variance_ratio)
+        self.cevr = cp.cumsum(self.explained_variance_ratio)
 
         df_allks = DataFrame({'ncomp': range(1, self.s.shape[0] + 1),
                               'expvar_ratio': self.explained_variance_ratio,
@@ -334,9 +334,9 @@ class SVDecomposer:
             self.get_cevr(plot=False)
 
         if isinstance(cevr, float):
-            ncomp = np.searchsorted(self.cevr, cevr) + 1
+            ncomp = cp.searchsorted(self.cevr, cevr) + 1
         elif isinstance(cevr, tuple):
-            ncomp = [np.searchsorted(self.cevr, c) + 1 for c in cevr]
+            ncomp = [cp.searchsorted(self.cevr, c) + 1 for c in cevr]
 
         return ncomp
 
@@ -348,9 +348,9 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
     Parameters
     ----------
     matrix : numpy ndarray, 2d
-        2d input matrix.
+        2d icp.t matrix.
     mode : {'lapack', 'arpack', 'eigen', 'randsvd', 'cupy', 'eigencupy',
-        'randcupy', 'pytorch', 'eigenpytorch', 'randpytorch'}, str optional
+        'randcupy', 'pytorch', 'eigecp.torch', 'randpytorch'}, str optional
         Switch for the SVD method/library to be used.
 
         ``lapack``: uses the LAPACK linear algebra library through Numpy
@@ -377,7 +377,7 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
 
         `pytorch``: uses the Pytorch library for GPU computation of the SVD.
 
-        ``eigenpytorch``: offers the same method as with the ``eigen``
+        ``eigecp.torch``: offers the same method as with the ``eigen``
         option but on GPU (through Pytorch).
 
         ``randpytorch``: is an adaptation of the randomized_svd algorithm,
@@ -397,7 +397,7 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
         If int, random_state is the seed used by the random number generator.
         If RandomState instance, random_state is the random number generator.
         If None, the random number generator is the RandomState instance used
-        by np.random. Used for ``randsvd`` mode.
+        by cp.random. Used for ``randsvd`` mode.
     to_numpy : bool, optional
         If True (by default) the arrays computed in GPU are transferred from
         VRAM and converted to numpy ndarrays.
@@ -405,9 +405,9 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
     Returns
     -------
     V : numpy ndarray
-        The right singular vectors of the input matrix. If ``full_output`` is
+        The right singular vectors of the icp.t matrix. If ``full_output`` is
         True it returns the left and right singular vectors and the singular
-        values of the input matrix. If ``mode`` is set to eigen then only S and
+        values of the icp.t matrix. If ``mode`` is set to eigen then only S and
         V are returned.
     
     References
@@ -431,12 +431,12 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
         https://docs-cupy.chainer.org/en/master/reference/generated/cupy.linalg.eigh.html
     * For ``pytorch`` SVD mode see:
         http://pytorch.org/docs/master/torch.html#torch.svd
-    * For ``eigenpytorch`` mode see:
+    * For ``eigecp.torch`` mode see:
         http://pytorch.org/docs/master/torch.html#torch.eig
 
     """
     if matrix.ndim != 2:
-        raise TypeError('Input matrix is not a 2d array')
+        raise TypeError('Icp.t matrix is not a 2d array')
 
     if ncomp > min(matrix.shape[0], matrix.shape[1]):
         msg = '{} PCs cannot be obtained from a matrix with size [{},{}].'
@@ -444,12 +444,12 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
         raise RuntimeError(msg.format(ncomp, matrix.shape[0], matrix.shape[1]))
 
     if mode == 'eigen':
-        # building C as np.dot(matrix.T,matrix) is slower and takes more memory
-        C = np.dot(matrix, matrix.T)    # covariance matrix
+        # building C as cp.dot(matrix.T,matrix) is slower and takes more memory
+        C = cp.dot(matrix, matrix.T)    # covariance matrix
         e, EV = linalg.eigh(C)          # EVals and EVs
-        pc = np.dot(EV.T, matrix)       # PCs using a compact trick when cov is MM'
+        pc = cp.dot(EV.T, matrix)       # PCs using a compact trick when cov is MM'
         V = pc[::-1]                    # reverse since we need the last EVs
-        S = np.sqrt(np.abs(e))          # SVals = sqrt(EVals)
+        S = cp.sqrt(cp.abs(e))          # SVals = sqrt(EVals)
         S = S[::-1]                     # reverse since EVals go in increasing order
         for i in range(V.shape[1]):
             V[:, i] /= S    # scaling EVs by the square root of EVals
@@ -537,13 +537,13 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
         S = s_gpu[:ncomp]
         U = torch.transpose(u_gpu, 0, 1)[:ncomp]
         if to_numpy:
-            V = np.array(V)
-            S = np.array(S)
-            U = np.array(U)
+            V = cp.array(V)
+            S = cp.array(S)
+            U = cp.array(U)
         if verbose:
             print('Done SVD/PCA with pytorch (GPU)')
 
-    elif mode == 'eigenpytorch':
+    elif mode == 'eigecp.torch':
         if no_torch:
             raise RuntimeError('Pytorch is not installed')
         a_gpu = torch.Tensor.cuda(torch.from_numpy(matrix.astype('float32')))
@@ -555,7 +555,7 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
             V[:, i] /= S
         V = V[:ncomp]
         if to_numpy:
-            V = np.array(V)
+            V = cp.array(V)
         if verbose:
             print('Done PCA with pytorch eig function')
 
@@ -564,9 +564,9 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
             raise RuntimeError('Pytorch is not installed')
         U, S, V = randomized_svd_gpu(matrix, ncomp, n_iter=2, lib='pytorch')
         if to_numpy:
-            V = np.array(V)
-            S = np.array(S)
-            U = np.array(U)
+            V = cp.array(V)
+            S = cp.array(S)
+            U = cp.array(U)
         if verbose:
             print('Done randomized SVD/PCA with randomized pytorch (GPU)')
 
@@ -581,7 +581,7 @@ def svd_wrapper(matrix, mode, ncomp, verbose, full_output=False,
                 return V.T, S, U.T
             else:
                 return torch.transpose(V, 0, 1), S, torch.transpose(U, 0, 1)
-        elif mode in ('eigen', 'eigencupy', 'eigenpytorch'):
+        elif mode in ('eigen', 'eigencupy', 'eigecp.torch'):
             return S, V
         else:
             return U, S, V
@@ -632,16 +632,16 @@ def get_eigenvectors(ncomp, data, svd_mode, mode='noise', noise_error=1e-3,
                 ncomp += 1
                 V = V_sc[:ncomp]
                 if no_dataref:
-                    transformed = np.dot(data_sc, V.T)
-                    reconstructed = np.dot(transformed, V)
+                    transformed = cp.dot(data_sc, V.T)
+                    reconstructed = cp.dot(transformed, V)
                 else:
-                    transformed = np.dot(V, data_sc)
-                    reconstructed = np.dot(transformed.T, V).T
+                    transformed = cp.dot(V, data_sc)
+                    reconstructed = cp.dot(transformed.T, V).T
                 residuals = data_sc - reconstructed
                 if not collapse:
-                    curr_noise = np.std(residuals)
+                    curr_noise = cp.std(residuals)
                 else:
-                    curr_noise = np.std((np.median(residuals, axis=0)))
+                    curr_noise = cp.std((cp.median(residuals, axis=0)))
                 px_noise.append(curr_noise)
                 if ncomp > 1:
                     px_noise_decay = px_noise[-2] - curr_noise
@@ -654,11 +654,11 @@ def get_eigenvectors(ncomp, data, svd_mode, mode='noise', noise_error=1e-3,
                                                          data_sc.shape[1]),
                                   False, full_output=True)
             exp_var = (S ** 2) / (S.shape[0] - 1)
-            full_var = np.sum(exp_var)
+            full_var = cp.sum(exp_var)
             # % of variance explained by each PC
             explained_variance_ratio = exp_var / full_var
-            ratio_cumsum = np.cumsum(explained_variance_ratio)
-            ncomp = np.searchsorted(ratio_cumsum, cevr) + 1
+            ratio_cumsum = cp.cumsum(explained_variance_ratio)
+            ncomp = cp.searchsorted(ratio_cumsum, cevr) + 1
             V = V_big[:ncomp]
 
         if debug:
@@ -704,7 +704,7 @@ def randomized_svd_gpu(M, n_components, n_oversamples=10, n_iter='auto',
         the data.  If int, random_state is the seed used by the random number
         generator; If RandomState instance, random_state is the random number
         generator; If None, the random number generator is the RandomState
-        instance used by `np.random`.
+        instance used by `cp.random`.
     lib : {'cupy', 'pytorch'}, str optional
         Chooses the GPU library to be used.
 
@@ -771,7 +771,7 @@ def randomized_svd_gpu(M, n_components, n_oversamples=10, n_iter='auto',
         U = cupy.dot(Q, Uhat)
 
         if transpose:
-            # transpose back the results according to the input convention
+            # transpose back the results according to the icp.t convention
             return (V[:n_components, :].T, s[:n_components],
                     U[:,:n_components].T)
         else:
@@ -802,7 +802,7 @@ def randomized_svd_gpu(M, n_components, n_oversamples=10, n_iter='auto',
         U = torch.mm(Q, Uhat)
 
         if transpose:
-            # transpose back the results according to the input convention
+            # transpose back the results according to the icp.t convention
             return (torch.transpose(V[:n_components, :], 0, 1),
                     s[:n_components],
                     torch.transpose(U[:, :n_components], 0, 1))

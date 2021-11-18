@@ -1,7 +1,7 @@
 __all__ = ["termRestrictUpdate"]
 
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termRestrictUpdate(t, y, schemeData):
@@ -13,7 +13,7 @@ def termRestrictUpdate(t, y, schemeData):
      Given some other HJ term approximation, this function either restricts
        the sign of that update to be either:
            nonnegative (level set function only decreases), or
-           nonpositive (level set function only increases).
+           nocp.sitive (level set function only increases).
 
      The CFL restriction of the other HJ term approximation is returned
        without modification.
@@ -97,9 +97,9 @@ def termRestrictUpdate(t, y, schemeData):
     #Restrict the update (stepBound is returned unchanged).
     #   Do not negate for RHS of ODE (that is handled by innerFunc).
     if(positive):
-        ydot = np.maximum(unRestricted, 0).squeeze()
+        ydot = cp.maximum(unRestricted, 0).squeeze()
     else:
-        ydot = np.minimum(unRestricted, 0).squeeze()
+        ydot = cp.minimum(unRestricted, 0).squeeze()
 
     # print(f'ydot in restrict update: {ydot.shape}')
 

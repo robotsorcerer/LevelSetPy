@@ -7,7 +7,7 @@ __all__ = ["addGhostExtrapolate"]
 
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
@@ -31,7 +31,7 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
               dataOut(width+1,1) == dataIn(1,1)
 
      parameters:
-       dataIn	Input data array.
+       dataIn	Icp.t data array.
        dim		Dimension in which to add ghost cells.
        width	Number of ghost cells to add on each side (default = 1).
        ghostData	A structure (see below).
@@ -52,7 +52,7 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
 
      Ian Mitchell, 5/12/03
      modified to allow choice of dimension, Ian Mitchell, 5/27/03
-     modified to allow ghostData input structure & renamed, Ian Mitchell, 1/13/04
+     modified to allow ghostData icp.t structure & renamed, Ian Mitchell, 1/13/04
 
      Lekan Molu, Circa, August Week I, 2021
     """
@@ -62,7 +62,7 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     if((width < 0) or (width > size(dataIn, dim))):
         error('Illegal width parameter')
 
-    if(np.any(ghostData) and isinstance(ghostData, Bundle)):
+    if(cp.any(ghostData) and isinstance(ghostData, Bundle)):
         slopeMultiplier = -1 if(ghostData.towardZero) else +1
     else:
         slopeMultiplier = +1
@@ -72,45 +72,45 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     sizeIn = size(dataIn)
     indicesOut = []
     for i in range(dims):
-        indicesOut.append(np.arange(sizeIn[i], dtype=np.intp))
+        indicesOut.append(cp.arange(sizeIn[i], dtype=cp.intp))
     indicesIn = copy.copy(indicesOut)
 
     # create appropriately sized output array
     sizeOut = copy.copy(list(sizeIn))
     sizeOut[dim] = sizeOut[dim] + (2 * width)
-    dataOut = np.zeros(tuple(sizeOut), dtype=np.float64)
+    dataOut = cp.zeros(tuple(sizeOut), dtype=cp.float64)
 
-    # fill output array with input data
-    indicesOut[dim] = np.arange(width, sizeOut[dim] - width, dtype=np.intp) # correct
+    # fill output array with icp.t data
+    indicesOut[dim] = cp.arange(width, sizeOut[dim] - width, dtype=cp.intp) # correct
     # dynamic slicing to save the day
-    dataOut[np.ix_(*indicesOut)] = dataIn # correct
+    dataOut[cp.ix_(*indicesOut)] = dataIn # correct
 
     # compute slopes
     indicesOut[dim] = [0]
     indicesIn[dim] = [1]
-    slopeBot = dataIn[np.ix_(*indicesOut)] - dataIn[np.ix_(*indicesIn)]
+    slopeBot = dataIn[cp.ix_(*indicesOut)] - dataIn[cp.ix_(*indicesIn)]
 
     indicesOut[dim] = [sizeIn[dim]-1]
     indicesIn[dim] = [sizeIn[dim] - 2]
-    slopeTop = dataIn[np.ix_(*indicesOut)] - dataIn[np.ix_(*indicesIn)]
+    slopeTop = dataIn[cp.ix_(*indicesOut)] - dataIn[cp.ix_(*indicesIn)]
 
     # adjust slope sign to correspond with sign of data at array edge
     indicesIn[dim] = [0]
-    slopeBot = slopeMultiplier * np.abs(slopeBot) * np.sign(dataIn[np.ix_(*indicesIn)])
+    slopeBot = slopeMultiplier * cp.abs(slopeBot) * cp.sign(dataIn[cp.ix_(*indicesIn)])
     # print(f'[@addExtrap] indicesOut[{dim}]: {indicesOut[dim]} {[indicesOut[x].shape for x in [1, 2]]}')
     indicesIn[dim] = [sizeIn[dim]-1]
-    slopeTop = slopeMultiplier * np.abs(slopeTop) * np.sign(dataIn[np.ix_(*indicesIn)])
+    slopeTop = slopeMultiplier * cp.abs(slopeTop) * cp.sign(dataIn[cp.ix_(*indicesIn)])
 
     # now extrapolate
     # print('width ', width)
     for i in range(width):
         indicesOut[dim] = [i]
         indicesIn[dim] = [0]
-        dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i) * slopeBot)
+        dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeBot)
 
         # print(f'[@addExtrap{i}] indicesIn[{dim}]: {indicesIn[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
         # print(f'[@addExtrap{i}] indicesOut[{dim}]: {indicesOut[dim]}') # ' {[indicesIn[x].shape for x in [1, 2]]}')
-        # print('[@addExtrap{i}]  dataOut[np.ix_(*indicesOut)]: ', np.linalg.norm(dataOut[np.ix_(*indicesOut)]), dataOut[np.ix_(*indicesOut)].shape)
+        # print('[@addExtrap{i}]  dataOut[cp.ix_(*indicesOut)]: ', cp.linalg.norm(dataOut[cp.ix_(*indicesOut)]), dataOut[cp.ix_(*indicesOut)].shape)
 
         # if i == 0:
         #     indicesOut[dim] = [sizeOut[dim]-i]
@@ -118,5 +118,5 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
         #     indicesOut[dim] = [sizeOut[dim] - i]
         indicesOut[dim] = [sizeOut[dim] - i-1]
         indicesIn[dim] = [sizeIn[dim]-1]
-        dataOut[np.ix_(*indicesOut)] = (dataIn[np.ix_(*indicesIn)] + (width - i) * slopeTop)
+        dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeTop)
     return dataOut

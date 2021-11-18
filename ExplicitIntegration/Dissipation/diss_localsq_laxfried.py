@@ -2,6 +2,7 @@ __all__ = ["artificialDissipationLLLF"]
 
 from Utilities import *
 import copy
+import cupy as cp
 
 def artificialDissipationLLLF(t, data, derivL, derivR, schemeData):
     """
@@ -79,9 +80,9 @@ def artificialDissipationLLLF(t, data, derivL, derivR, schemeData):
     grid = schemeData.grid
 
     # Get separate costate bounds for each node.
-    derivMin = cell(grid.dim, 1)
-    derivMax = cell(grid.dim, 1)
-    derivDiff = cell(grid.dim, 1)
+    derivMin = cell(grid.dim)
+    derivMax = cell(grid.dim)
+    derivDiff = cell(grid.dim)
 
     for i in range(grid.dim):
         # Get derivative bounds over entire grid (scalars).
@@ -101,7 +102,7 @@ def artificialDissipationLLLF(t, data, derivL, derivR, schemeData):
         alpha = schemeData.partialFunc(t, data, derivMin, derivMax, schemeData, i)
 
         diss += (0.5 * derivDiff[i] * alpha)
-        stepBoundInv += np.divide(np.max(alpha), grid.dx[i])
+        stepBoundInv += cp.divide(cp.max(alpha), grid.dx[i])
 
     stepBound = 1 / stepBoundInv
 

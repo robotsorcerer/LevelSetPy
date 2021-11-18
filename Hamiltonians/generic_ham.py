@@ -4,7 +4,7 @@ from Utilities import *
 
 def genericHam(t, data, deriv, schemeData):
 
-    # Input unpacking
+    # Icp.t ucp.cking
     dynSys = schemeData.dynSys
 
     if not isfield(schemeData, 'uMode'):

@@ -10,7 +10,7 @@ __status__ 		= "Finished"
 import sys
 import copy
 import cupy as cp
-import numpy as np
+import cupy as cp
 from Utilities import isscalar, error
 
 use_gpu = True if cp.is_available else False
@@ -24,29 +24,29 @@ def dims_check(dims=None, N=None, M=None):
 
     """
     if dims is None:
-        dims = np.arange(N)
+        dims = cp.arange(N)
 
     if isscalar(dims):
-        dims = np.array([dims])
+        dims = cp.array([dims])
 
-    if np.max(dims)<0:
-        tf = np.isin(-dims, range(N)).astype(np.int64)
-        tf = np.array([tf]) if isscalar(tf) else tf
+    if cp.max(dims)<0:
+        tf = cp.isin(-dims, range(N)).astype(cp.int64)
+        tf = cp.array([tf]) if isscalar(tf) else tf
 
         if  min(tf)==0:
             raise ValueError("Invalid dimension specified.")
         dims = list(set(range(N)).difference(-dims))
 
-    tf = np.isin(dims, range(N)).astype(np.int64)
-    tf = np.array([tf]) if isscalar(tf) else tf
+    tf = cp.isin(dims, range(N)).astype(cp.int64)
+    tf = cp.array([tf]) if isscalar(tf) else tf
 
     if min(tf)==0:
         raise ValueError("Invalid dimension specified.")
 
     P = len(dims)
 
-    sorted_dims = np.sort(dims)
-    sorted_dims_idx = np.argsort(dims)
+    sorted_dims = cp.sort(dims)
+    sorted_dims_idx = cp.argsort(dims)
     
     #print('M, N', M, N)
     if M > N: raise ValueError("We cannot have more multiplicands than dimensions")

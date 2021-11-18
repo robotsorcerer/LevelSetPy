@@ -7,7 +7,7 @@ __status__ 		= "Completed"
 
 import time
 import os, sys
-import numpy as np
+import cupy as cp
 from os.path import abspath, join
 sys.path.append( os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ) )
 
@@ -29,9 +29,9 @@ block=False
 fontdict = {'fontsize':12, 'fontweight':'bold'}
 
 from math import pi
-gridMin = np.array([[0,0]])
-gridMax = np.array([[5, 5]])
-N = 20 *np.ones((2,1)).astype(np.int64)
+gridMin = cp.array([[0,0]])
+gridMax = cp.array([[5, 5]])
+N = 20 *cp.ones((2,1)).astype(cp.int64)
 g = createGrid(gridMin, gridMax, N, low_mem=False, process=True)
 
 
@@ -47,9 +47,9 @@ viz.visGrid([g], g.dim, title='Simple 2D Grid')
 
 
 
-grid_min = expand(np.array((-5, -5, -pi)), ax = 1); # Lower corner of computation domain
-grid_max = expand(np.array((5, 5, pi)), ax = 1);   # Upper corner of computation domain
-N = 41*ones(3, 1).astype(np.int64)
+grid_min = expand(cp.array((-5, -5, -pi)), ax = 1); # Lower corner of computation domain
+grid_max = expand(cp.array((5, 5, pi)), ax = 1);   # Upper corner of computation domain
+N = 41*ones(3, 1).astype(cp.int64)
 pdDims = 3;               # 3rd dimension is periodic
 g = createGrid(grid_min, grid_max, N, pdDims);
 
@@ -70,9 +70,9 @@ viz.visGrid(g, g.dim, title='Simple 3D Grid')
 
 # this is same as sepGrid_test
 num_points=30
-gridIn=expand(np.array((0, 1, 0, 1)), 1)
-gridOut =expand(np.array((1, 2, 1, 2)), 1)
-N = num_points*ones(4,1).astype(np.int64)
+gridIn=expand(cp.array((0, 1, 0, 1)), 1)
+gridOut =expand(cp.array((1, 2, 1, 2)), 1)
+N = num_points*ones(4,1).astype(cp.int64)
 g = createGrid(gridIn, gridOut, N, process=False, low_mem=True);
 
 # print(f'len(g.xs), g.xs[0].shape {len(g.xs), g.xs[0].shape} g.N {g.N.shape}')
@@ -97,9 +97,9 @@ viz.visGrid(gs, dim= len(gs), dims=dims, title=f'A {len(gs)}-cell/{g.dim}D-Grid 
 
 # 4 subcells grid
 num_points=30
-gridIn=expand(np.array((0, 1, 0, 1)), 1)
-gridOut =expand(np.array((1, 2, 1, 2)), 1)
-N = num_points*ones(4,1).astype(np.int64)
+gridIn=expand(cp.array((0, 1, 0, 1)), 1)
+gridOut =expand(cp.array((1, 2, 1, 2)), 1)
+N = num_points*ones(4,1).astype(cp.int64)
 g = createGrid(gridIn, gridOut, N, process=True, low_mem=True);
 
 # print(f'len(g.xs), g.xs[0].shape {len(g.xs), g.xs[0].shape} g.N {g.N.shape}')
@@ -123,11 +123,11 @@ viz.visGrid(gs, len(dims), title=f'A {len(dims)}-cell Grid Example', dims=dims)
 
 ## Cells Division Example | Lekan August 05
 
-gridIn= expand(np.array((0, 1, 0, 1, 1, 2, 1, 2)), 1)
-gridOut =expand(np.array((1, 2, 1, 2, 2, 3, 2, 3)), 1)
+gridIn= expand(cp.array((0, 1, 0, 1, 1, 2, 1, 2)), 1)
+gridOut =expand(cp.array((1, 2, 1, 2, 2, 3, 2, 3)), 1)
 
 num_points = 10
-N = num_points*ones(8,1).astype(np.int64)
+N = num_points*ones(8,1).astype(cp.int64)
 
 g = createGrid(gridIn, gridOut, N, process=True);
 
@@ -145,10 +145,10 @@ viz.visGrid(gs, len(gs), title=f'A {len(N)}-sub-grid Example', dims=dims)
 
 
 # A 2D grid
-g = createGrid(np.array([[0, 0]]).T, np.array([[1, 1]]).T, np.array([[101, 101]]).T);
+g = createGrid(cp.array([[0, 0]]).T, cp.array([[1, 1]]).T, cp.array([[101, 101]]).T);
 
 bounds = [[0, 0.5, 1], [0, 0.25, 0.75, 1]]
-padding = np.array([[0, 0]]).T;
+padding = cp.array([[0, 0]]).T;
 gs = splitGrid_sameDim(g, bounds, padding);
 
 savedict["savename"] = f'{g.dim}D_grid_{len(gs)}_cell.jpg'
@@ -164,7 +164,7 @@ viz.visGrid(gs, gs[0].dim, title=f'A {len(gs)}-cell Grid Example')
 
 # A 3D grid
 gmin = zeros(3,1); gmax = ones(3,1); N = 75*ones(3,1)
-bounds = [[0, 0.33, 0.5, 0.8, 1], [0, 0.5, 0.75, 1], np.linspace(0, 1, 5).tolist()]
+bounds = [[0, 0.33, 0.5, 0.8, 1], [0, 0.5, 0.75, 1], cp.linspace(0, 1, 5).tolist()]
 padding = zeros(3,1)
 g = createGrid(gmin, gmax, N);
 gs = splitGrid_sameDim(g, bounds, padding);
@@ -188,7 +188,7 @@ plt.close()
 # Truncated grid
 
 # truncte test
-N = 101; gmin = -2*np.ones((2, 1), dtype=np.float64); gmax = 2*np.ones((2, 1), dtype=np.float64)
+N = 101; gmin = -2*cp.ones((2, 1), dtype=cp.float64); gmax = 2*cp.ones((2, 1), dtype=cp.float64)
 g = createGrid(gmin, gmax, N, process=True)
 data = shapeRectangleByCorners(g, [-1, -1], [1, 1])
 savedict = {"save": True, 'savepath': join("..", "jpeg_dumps"), 'savename': '2d_rect_by_corners.jpg'}

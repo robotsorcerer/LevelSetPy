@@ -6,7 +6,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
 import time
-import numpy as np
+import cupy as cp
 from Utilities import *
 from .data_proj import proj
 from .compute_gradients import computeGradients
@@ -20,7 +20,7 @@ def computeOptTraj(g, data, tau, dynSys, extraArgs=Bundle({})):
        represented by (g, data), associated time stamps tau, dynamics given in
        dynSys.
 
-     Inputs:
+     Icp.ts:
        g, data - grid and value function
        tau     - time stamp (must be the same length as size of last dimension of
                              data)
@@ -52,8 +52,8 @@ def computeOptTraj(g, data, tau, dynSys, extraArgs=Bundle({})):
     if isfield(extraArgs, 'visualize') and extraArgs.visualize:
         visualize = extraArgs.visualize
 
-        showDims = np.nonzero(extraArgs.projDim)
-        hideDims = np.logical_not(extraArgs.projDim).squeeze()
+        showDims = cp.nonzero(extraArgs.projDim)
+        hideDims = cp.logical_not(extraArgs.projDim).squeeze()
         # print(f'showDims: {showDims}, hideDims: {hideDims}')
         f = plt.figure(figsize=(12, 7))
         ax = f.add_subplot(111)
@@ -62,7 +62,7 @@ def computeOptTraj(g, data, tau, dynSys, extraArgs=Bundle({})):
     if isfield(extraArgs, 'subSamples'):
         subSamples = extraArgs.subSamples
 
-    if np.any(np.diff(tau, n=1, axis=0)) < 0:
+    if cp.any(cp.diff(tau, n=1, axis=0)) < 0:
         error('Time stamps must be in ascending order!')
 
     # Time parameters
@@ -72,8 +72,8 @@ def computeOptTraj(g, data, tau, dynSys, extraArgs=Bundle({})):
     # maxIter = 1.25*tauLength
 
     # Initialize trajectory
-    traj = np.empty((g.dim, tauLength))
-    traj.fill(np.nan)
+    traj = cp.empty((g.dim, tauLength))
+    traj.fill(cp.nan)
     traj[:,0] = dynSys.x
     tEarliest = 0
 

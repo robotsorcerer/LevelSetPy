@@ -8,7 +8,7 @@ __all__ = [
             "reproject_continuous",
           ]
 
-import numpy as np
+import cupy as cp
 
 
 # Reprojection schemes ========================================================
@@ -21,7 +21,7 @@ def reproject_discrete(f, Vr, x0, niters, U=None):
     ----------
     f : callable mapping (n,) ndarray (and (m,) ndarray) to (n,) ndarray
         Function defining the (full-order) discrete dynamical system. Accepts
-        a full-order state vector and (optionally) an input vector and returns
+        a full-order state vector and (optionally) an icp.t vector and returns
         another full-order state vector.
 
     Vr : (n,r) ndarray
@@ -34,7 +34,7 @@ def reproject_discrete(f, Vr, x0, niters, U=None):
         The number of iterations to do.
 
     U : (m,niters-1) or (niters-1) ndarray
-        Control inputs, one for each iteration beyond the initial condition.
+        Control icp.ts, one for each iteration beyond the initial condition.
 
     Returns
     -------
@@ -47,7 +47,7 @@ def reproject_discrete(f, Vr, x0, niters, U=None):
         raise ValueError("basis Vr and initial condition x0 not aligned")
 
     # Create the solution array and fill in the initial condition.
-    X_ = np.empty((r,niters))
+    X_ = cp.empty((r,niters))
     X_[:,0] = Vr.T @ x0
 
     # Run the re-projection iteration.
@@ -73,7 +73,7 @@ def reproject_continuous(f, Vr, X, U=None):
     ----------
     f : callable mapping (n,) ndarray (and (m,) ndarray) to (n,) ndarray
         Function defining the (full-order) differential equation. Accepts a
-        full-order state vector and (optionally) an input vector and returns
+        full-order state vector and (optionally) an icp.t vector and returns
         another full-order state vector.
 
     Vr : (n,r) ndarray
@@ -83,7 +83,7 @@ def reproject_continuous(f, Vr, X, U=None):
         State trajectories (training data).
 
     U : (m,k) or (k,) ndarray
-        Control inputs corresponding to the state trajectories.
+        Control icp.ts corresponding to the state trajectories.
 
     Returns
     -------
@@ -102,7 +102,7 @@ def reproject_continuous(f, Vr, X, U=None):
 
     # Create the solution arrays.
     X_ = Vr.T @ X
-    Xdot_ = np.empty((r,k))
+    Xdot_ = cp.empty((r,k))
 
     # Run the re-projection iteration.
     if U is None:

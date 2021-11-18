@@ -2,7 +2,7 @@ __all__ = ['upwindFirstFirst']
 
 import copy
 import logging
-import numpy as np
+import cupy as cp
 from Utilities import *
 logger = logging.getLogger(__name__)
 
@@ -65,14 +65,14 @@ def upwindFirstFirst(grid, data, dim, generateAll=False):
     indices2[dim] = indices1[dim] - 1
 
     #This array includes one extra entry in dimension of interest.
-    deriv = dxInv*(gdata[np.ix_(indices1)] - gdata[np.ix_(indices2)])
+    deriv = dxInv*(gdata[cp.ix_(indices1)] - gdata[cp.ix_(indices2)])
 
     #Take leftmost grid.N(dim) entries for left approximation.
     indices1[dim] = index_array(1, size(deriv, dim) - 1)
-    derivL = deriv[np.ix_(indices1)]
+    derivL = deriv[cp.ix_(indices1)]
 
     #Take rightmost grid.N(dim) entries for right approximation.
     indices1[dim] = index_array(2, size(deriv, dim))
-    derivR = deriv[np.ix_(indices1)]
+    derivR = deriv[cp.ix_(indices1)]
 
     return  derivL, derivR

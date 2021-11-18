@@ -2,7 +2,7 @@ __all__ = ['upwindFirstENO3']
 
 import copy
 import logging
-import numpy as np
+import cupy as cp
 from Utilities import *
 logger = logging.getLogger(__name__)
 

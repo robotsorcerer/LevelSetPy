@@ -1,5 +1,5 @@
 import cupy as cp
-import numpy as np
+import cupy as cp
 from .class_tensor import Tensor
 from .leading_vecs import nvecs
 from .tensor_utils import use_gpu
@@ -36,7 +36,7 @@ def tucker_als(X, R, options):
     global use_gpu
 
     N = X.ndim
-    normX = np.linalg.norm(X)
+    normX = cp.linalg.norm(X)
 
     tol = options.get('tol', 1e-4)
     max_iter = options.__dict__.get('max_iter', 100)
@@ -45,8 +45,8 @@ def tucker_als(X, R, options):
     verbose     = options.__dict__.get('verbose', True)
     use_gpu     = options.__dict__.get('use_gpu', use_gpu)
 
-    if np.isscalar(R):
-        R *= np.ones((N, 1), dtype=np.int64)
+    if cp.isscalar(R):
+        R *= cp.ones((N, 1), dtype=cp.int64)
     U = cell(N)
 
     assert max_iter > 0, "maximum number of iteratons cannot be negative"
@@ -54,7 +54,7 @@ def tucker_als(X, R, options):
     if strcmp(init,'random'):
         Uinit = cell(N)
         for n in dimorder[1:]:
-            Uinit[n] = npr.rand(size(X,n),R(n))
+            Uinit[n] = cp..rand(size(X,n),R(n))
     elif strcmp(init,'nvecs') or strcmp(init,'eigs'):
         # Compute an orthonormal basis for the dominant
         # Rn-dimensional left singular subspace of
@@ -88,9 +88,9 @@ def tucker_als(X, R, options):
         core = tensor_matrix_mult(Utilde, U, n, Transpose=True)
 
         # Compute the fit
-        normresidual = np.sqrt(normX**2 - norm(core)**2)
+        normresidual = cp.sqrt(normX**2 - norm(core)**2)
         fit = 1- (normresidual/normX)
-        fitchange = np.abs(fitold-fit)
+        fitchange = cp.abs(fitold-fit)
 
         if iter%5==0:
             info(f"Iter: {iter:2d}, fit: {fit:.4f}, fitdelta: {fitchange:7.1f}")

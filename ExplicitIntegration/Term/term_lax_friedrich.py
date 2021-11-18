@@ -1,7 +1,7 @@
 __all__ = ["termLaxFriedrichs"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termLaxFriedrichs(t, y, schemeData):
@@ -70,7 +70,7 @@ def termLaxFriedrichs(t, y, schemeData):
       -------
         ydot: Change in the data array, in vector form.
         stepBound: CFL bound on timestep for stability.
-        schemeData: The input structure, possibly modified.
+        schemeData: The icp.t structure, possibly modified.
 
       Author: Lekan Aug 18, 2021
     """
@@ -90,7 +90,7 @@ def termLaxFriedrichs(t, y, schemeData):
     grid = copy.copy(thisSchemeData.grid)
 
     #---------------------------------------------------------------------------
-    # print(f'y in lax friedrichs: {np.linalg.norm(y)}  {y.shape}')
+    # print(f'y in lax friedrichs: {cp.linalg.norm(y)}  {y.shape}')
     if(iscell(y)):
         data = y[0].reshape(grid.shape)
     else:
@@ -98,9 +98,9 @@ def termLaxFriedrichs(t, y, schemeData):
 
     #---------------------------------------------------------------------------
     # Get upwinded and centered derivative approximations.
-    derivL = [np.nan for i in range(grid.dim)]
-    derivR = [np.nan for i in range(grid.dim)]
-    derivC = [np.nan for i in range(grid.dim)]
+    derivL = [cp.nan for i in range(grid.dim)]
+    derivR = [cp.nan for i in range(grid.dim)]
+    derivC = [cp.nan for i in range(grid.dim)]
 
     for i in range(grid.dim):
         # Do upwinding now: for RCBRT, we use upwindENO2. I bet w/my life that this is correct

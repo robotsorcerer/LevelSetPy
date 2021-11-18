@@ -1,7 +1,7 @@
 __all__ = ["artificialDissipationLLF"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
@@ -76,17 +76,17 @@ def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
 
     #First find the global LF range of costate, since we use that in all
     #the other dimensions.
-    derivMin = cell(grid.dim, 1)
-    derivMax = cell(grid.dim, 1)
-    derivDiff = cell(grid.dim, 1)
+    derivMin = cell(grid.dim)
+    derivMax = cell(grid.dim)
+    derivDiff = cell(grid.dim)
     for i in range(grid.dim):
         # Get derivative bounds over entire grid (scalars).
-        derivMinL = np.min(derivL[i])
-        derivMinR = np.min(derivR[i])
+        derivMinL = cp.min(derivL[i])
+        derivMinR = cp.min(derivR[i])
         derivMin[i] = min(derivMinL, derivMinR)
 
-        derivMaxL = np.max(derivL[i])
-        derivMaxR = np.max(derivR[i])
+        derivMaxL = cp.max(derivL[i])
+        derivMaxR = cp.max(derivR[i])
         derivMax[i] = max(derivMaxL, derivMaxR)
 
         # Get derivative differences at each node.
@@ -116,7 +116,7 @@ def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
         derivMax[i] = derivMaxCopy[i]
 
         diss += (0.5 * derivDiff[i] * alpha)
-        stepBoundInv += np.divide(np.max(alpha), grid.dx[i])
+        stepBoundInv += cp.divide(cp.max(alpha), grid.dx[i])
 
     stepBound = 1 / stepBoundInv
 

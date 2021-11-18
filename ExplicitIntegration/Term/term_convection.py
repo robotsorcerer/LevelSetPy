@@ -1,7 +1,7 @@
 __all__ = ["termConvection"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termConvection(t, y, schemeData):
@@ -19,7 +19,7 @@ def termConvection(t, y, schemeData):
      Based on methods outlined in O&F, chapter 3.  The more conservative CFL
      condition (3.10) is used.
 
-     Input Parameters:
+     Icp.t Parameters:
 
        t: Time at beginning of timestep.
 
@@ -33,7 +33,7 @@ def termConvection(t, y, schemeData):
 
        stepBound: CFL bound on timestep for stability.
 
-       schemeData: The same as the input argument (unmodified).
+       schemeData: The same as the icp.t argument (unmodified).
 
      schemeData is a structure containing data specific to this type of term
      approximation.  For this function it contains the field(s):
@@ -59,7 +59,7 @@ def termConvection(t, y, schemeData):
        2) For general velocity fields, a function handle to a function
           with prototype velocity = velocityFunc(t, data, schemeData),
           where the output velocity is the cell vector from (1) and
-          the input arguments are the same as those of this function
+          the icp.t arguments are the same as those of this function
           (except that data = y has been reshaped to its original size).
           In this case, it may be useful to include additional fields in
           schemeData.
@@ -116,9 +116,9 @@ def termConvection(t, y, schemeData):
     grid = thisSchemeData.grid
 
     if(iscell(y)):
-        data = y[0].reshape(grid.shape, order='F')
+        data = y[0].reshape(grid.shape)
     else:
-        data = y.reshape(grid.shape, order='F')
+        data = y.reshape(grid.shape)
 
     # Get velocity field.
     if(iscell(thisSchemeData.velocity)):
@@ -130,12 +130,12 @@ def termConvection(t, y, schemeData):
             if(isfield(thisSchemeData, 'passVLS') and thisSchemeData.passVLS):
                 #Pass the vector level set information through.
                 numY = len(y)
-                vectorData = cell(numY, 1)
+                vectorData = cell(numY)
                 for i in range(numY):
                     if(iscell(schemeData)):
-                        vectorData[i] = y[i].reshape(schemeData[i].grid.shape, order='F')
+                        vectorData[i] = y[i].reshape(schemeData[i].grid.shape)
                     else:
-                        vectorData[i] = y[i].reshape(schemeData.grid.shape, order='F')
+                        vectorData[i] = y[i].reshape(schemeData.grid.shape)
                 velocity = thisSchemeData.velocity(t, vectorData, schemeData)
 
             else:
@@ -172,11 +172,11 @@ def termConvection(t, y, schemeData):
     # CFL condition.  Note that this is conservative we really should do
     # the summation over the entire grid and then take the maximum,
     # rather than maximizing for each dimension and then summing.
-    stepBoundInv += np.max(np.abs(v)) / grid.dx[i]
+    stepBoundInv += cp.max(cp.abs(v)) / grid.dx[i]
 
     stepBound = 1 / stepBoundInv
 
     # Reshape output into vector format and negate for RHS of ODE.
-    ydot = expand(-delta.flatten(order='F'), 1)
+    ydot = expand(-delta.flatten(), 1)
 
     return ydot, stepBound, schemeData

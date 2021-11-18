@@ -16,7 +16,7 @@ def computeGradients(g, data, dims=None, derivFunc=None):
      numerically taking partial derivatives along each grid direction.
      Numerical derivatives are taken using the levelset toolbox
 
-     Inputs: grid      - grid structure
+     Icp.ts: grid      - grid structure
              data      - array of g.dim dimensions containing function values
              derivFunc - derivative approximation function (from level set
                          toolbox)
@@ -44,14 +44,14 @@ def computeGradients(g, data, dims=None, derivFunc=None):
         tau_length = size(data)
         tau_length = tau_length[-1]
     else:
-        error('Dimensions of input data and grid don''t match!')
+        error('Dimensions of icp.t data and grid don''t match!')
 
     # Just in case there are NaN values in the data (usually from TTR functions)
     numInfty = 1e6
-    data[np.isnan(data)] = numInfty
+    data[cp.isnan(data)] = numInfty
 
     # Just in case there are inf values
-    data[np.isinf(data)] = numInfty
+    data[cp.isinf(data)] = numInfty
 
     for i in range(g.dim):
         if dims[i]:
@@ -71,9 +71,9 @@ def computeGradients(g, data, dims=None, derivFunc=None):
                     derivC[i][t,...] = 0.5*(derivL + derivR)
 
             # Change indices where data was nan to nan
-            derivC[i][nanInds] = np.nan
+            derivC[i][nanInds] = cp.nan
 
             # Change indices where data was inf to inf
-            derivC[i][infInds] = np.inf
+            derivC[i][infInds] = cp.inf
 
     return derivC, derivL, derivR

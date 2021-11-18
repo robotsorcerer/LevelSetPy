@@ -7,13 +7,13 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Finished"
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 from .class_tensor import Tensor
 from TenMat import matricize_tensor
 
 def matricization(T, mode=1): # pragma nocover
-    np.warnings.warn("matricization() has been matricize_tensor()",
+    cp.warnings.warn("matricization() has been matricize_tensor()",
                    DeprecationWarning, stacklevel=1)
     # return matricize_tensor
     # matricization.__doc__ = "\nDEPRECATED! use matricize_tensor(options).\n\n" \
@@ -43,17 +43,17 @@ def matricization(T, mode=1): # pragma nocover
         T = T.data
     #1-mode unfold
     if mode=='1':
-        X = np.concatenate(( [T[...,i] for i in range(T.shape[-1])]),
+        X = cp.concatenate(( [T[...,i] for i in range(T.shape[-1])]),
                                 axis=1)
 
     #2-mode unfold
     elif mode=='2':
-        X = np.concatenate(( [T[...,i].T for i in range(T.shape[-1])]),
+        X = cp.concatenate(( [T[...,i].T for i in range(T.shape[-1])]),
                                 axis=1)
 
     #3-mode unfold
     elif mode=='3':
-        X = np.concatenate(( [ np.expand_dims(T[..., i].flatten(),
+        X = cp.concatenate(( [ cp.expand_dims(T[..., i].flatten(),
                         axis=1).T for i in range(T.shape[-1])]), axis=0)
 
     else:

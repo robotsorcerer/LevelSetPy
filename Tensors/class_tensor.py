@@ -8,7 +8,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Finished"
 
 import cupy as cp
-import numpy as np
+import cupy as cp
 
 class Tensor():
     def __init__(self, array=None, shape=()):
@@ -24,10 +24,10 @@ class Tensor():
 
         assert len(shape)>=1, 'shape of Tensor cannot be null.'
 
-        assert np.any(array), 'Tensor cannot hold empty array.'
+        assert cp.any(array), 'Tensor cannot hold empty array.'
 
-        if np.any(array):
-            if isinstance(array, np.ndarray):
+        if cp.any(array):
+            if isinstance(array, cp.ndarray):
                 self.type = 'numpy'
             elif isinstance(array, cp.ndarray):
                 self.type = 'cupy'
@@ -64,7 +64,7 @@ class KruskalTensor():
                 shape: Shape of the tensor, or shape to cast array to within the tensor.
         """
         if not isinstance(T, Tensor):
-            if isinstance(T, np.ndarray):
+            if isinstance(T, cp.ndarray):
                 self.type = 'numpy'
             elif isinstance(T, cp.ndarray):
                 self.type = 'cupy'

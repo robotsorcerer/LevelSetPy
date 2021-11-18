@@ -10,7 +10,7 @@ http://www.physics.usyd.edu.au/~wheat/dpend_html/solve_dpend.c
 """
 
 from numpy import sin, cos
-import numpy as np
+import cupy as cp
 import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 import matplotlib.animation as animation
@@ -28,7 +28,7 @@ history_len = 500  # how many trajectory points to display
 
 def derivs(state, t):
 
-    dydx = np.zeros_like(state)
+    dydx = cp.zeros_like(state)
     dydx[0] = state[1]
 
     delta = state[2] - state[0]
@@ -52,7 +52,7 @@ def derivs(state, t):
 
 # create a time array from 0..t_stop sampled at 0.02 second steps
 dt = 0.02
-t = np.arange(0, t_stop, dt)
+t = cp.arange(0, t_stop, dt)
 
 # th1 and th2 are the initial angles (degrees)
 # w10 and w20 are the initial angular velocities (degrees per second)
@@ -62,7 +62,7 @@ th2 = -10.0
 w2 = 0.0
 
 # initial state
-state = np.radians([th1, w1, th2, w2])
+state = cp.radians([th1, w1, th2, w2])
 
 # integrate your ODE using scipy.integrate.
 y = integrate.odeint(derivs, state, t)

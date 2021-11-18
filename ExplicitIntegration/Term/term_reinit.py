@@ -1,7 +1,7 @@
 __all__ = ["termReinit"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termReinit(t, y, schemeData):
@@ -61,7 +61,7 @@ def termReinit(t, y, schemeData):
      Note that if the subcell fix is applied, the smoothed sgn() function is
      not used (although a similar smoothing is implicitly applied).
 
-     Input Parameters:
+     Icp.t Parameters:
 
        t: Time at beginning of timestep.
 
@@ -75,7 +75,7 @@ def termReinit(t, y, schemeData):
 
        stepBound: CFL bound on timestep for stability.
 
-       schemeData: The same as the input argument (unmodified).
+       schemeData: The same as the icp.t argument (unmodified).
 
      The parameter schemeData is a structure containing data specific to this
      type of term approximation.  For this function it contains the field(s)
@@ -163,10 +163,10 @@ def termReinit(t, y, schemeData):
     if apply_subcell_fix:
         # The sign function is only used far from the interface, so we do
         # not need to smooth it.
-        S = np.sign(thisSchemeData.initial)
+        S = cp.sign(thisSchemeData.initial)
     else:
         # Smearing factor for the smooth approximation of the sign function.
-        dx = np.max(grid.dx)
+        dx = cp.max(grid.dx)
         sgnFactor = dx**2
 
         # Sign function (smeared) identifies on which side of surface each node
@@ -198,10 +198,10 @@ def termReinit(t, y, schemeData):
 
         # Converging flow, need to check which direction arrives first.
         flows = ((S * derivR <  0) and (S * derivL >  0))
-        if(np.any(flows.flatten())):
-            conv = np.where(flows)
+        if(cp.any(flows.flatten())):
+            conv = cp.where(flows)
             s = zeros(size(flows))
-            s[conv] *=(np.abs(derivR[conv]) - np.abs(derivL[conv]))/(derivR[conv] - derivL[conv])
+            s[conv] *=(cp.abs(derivR[conv]) - cp.abs(derivL[conv]))/(derivR[conv] - derivL[conv])
 
             # If s == 0, both directions arrive at the same time.
             #   Assuming continuity, both will produce same result, so pick one.
@@ -214,7 +214,7 @@ def termReinit(t, y, schemeData):
     mag = zeros(size(grid.xs[0]))
     for i in range(grid.dim):
         mag += deriv[i]**2
-    mag = np.max(np.sqrt(mag), eps)
+    mag = cp.max(cp.sqrt(mag), eps)
 
     # Start with constant term in the reinitialization equation.
     delta = -S
@@ -229,7 +229,7 @@ def termReinit(t, y, schemeData):
         delta += v * deriv[i]
 
         # CFL condition using effective velocity.
-        stepBoundInv = stepBoundInv + np.max(np.abs(v[:])) / grid.dx[i]
+        stepBoundInv = stepBoundInv + cp.max(cp.abs(v[:])) / grid.dx[i]
 
     if apply_subcell_fix:
 
@@ -271,9 +271,9 @@ def termReinit(t, y, schemeData):
                     short_diff2 = (dx_inv@(thisSchemeData.initial[indexR[:]] - thisSchemeData.initial[indexL[:]])) ** 2
 
                     # All the various terms of (17).
-                    diff2[indexL[:]] = np.max(diff2[indexL[:]], short_diff2)
-                    diff2[indexR[:]] = np.max(diff2[indexR[:]], short_diff2)
-                    diff2 = np.max(diff2, robust_small_epsilon ** 2)
+                    diff2[indexL[:]] = cp.max(diff2[indexL[:]], short_diff2)
+                    diff2[indexR[:]] = cp.max(diff2[indexR[:]], short_diff2)
+                    diff2 = cp.max(diff2, robust_small_epsilon ** 2)
 
                 # Include this dimension's contribution to the distance.
                 denom += diff2
@@ -282,7 +282,7 @@ def termReinit(t, y, schemeData):
                 indexL[d] = quickarray(0, grid.N[d])
                 indexR[d] = quickarray(0, grid.N[d])
 
-            denom = np.sqrt(denom)
+            denom = cp.sqrt(denom)
 
             # Complete (13) or (16) or (23).  Note that delta x was already included
             # in the denominator calculation above, so it does not appear.
@@ -297,7 +297,7 @@ def termReinit(t, y, schemeData):
             # matter what the direction of the interface).  For grids with
             # different delta x, this choice may require more
             # reinitialization steps to achieve desired results.
-            delta = (delta * (not near)+(S * np.abs(data) - D) / np.max(grid.dx) * near)
+            delta = (delta * (not near)+(S * cp.abs(data) - D) / cp.max(grid.dx) * near)
 
             # We will not adjust the CFL step bound.  By Russo & Smereka, the
             # adjusted update has a bound of 1, and the regular scheme above should
@@ -321,6 +321,6 @@ def smearedSign(grid, data, sgnFactor):
 
     This version (with sgnFactor = dx**2) is (7.5) in O&F chapter 7.4.
     """
-    s = data / np.sqrt(data**2 + sgnFactor)
+    s = data / cp.sqrt(data**2 + sgnFactor)
 
     return s

@@ -1,6 +1,6 @@
 __all__ = ["splitGrid"]
 
-import numpy as np
+import cupy as cp
 from .sep_grid import sepGrid
 from .split_same_dim import splitGrid_sameDim
 
@@ -10,7 +10,7 @@ def splitGrid(g, dims, bounds, padding=None):
          Splits a high-dimensional grid to a number of lower-dimensional grids
          See splitGrid_test() for an example
 
-     Inputs:
+     Icp.ts:
          g - original grid
          dims - cell vector of output grid dimensions
                   eg. dims = {[1; 3], [2; 4]} would produce two 2D sets of grids.

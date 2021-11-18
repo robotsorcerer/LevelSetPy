@@ -1,6 +1,6 @@
 
 
-import numpy as np
+import cupy as cp
 from Utilities import zeros, ones, numel, logger, np
 from Helper.Math import cellMatrixMultiply, cellMatrixAdd
 
@@ -13,7 +13,7 @@ def shapeHyperplane(grid, normal, point):
 
      Creates a signed distance function for a hyperplane.
 
-     Input Parameters:
+     Icp.t Parameters:
 
        grid: Grid structure (see processGrid.m for details).
 
@@ -39,17 +39,17 @@ def shapeHyperplane(grid, normal, point):
      Lekan Molu, September 07, 2021
      """
 
-    if not np.any(point):
+    if not cp.any(point):
         point = zeros(grid.dim, 1)
 
     #Normalize the normal to be a unit vector.
-    normal = normal / np.norm(normal)
+    normal = normal / cp.norm(normal)
 
     #---------------------------------------------------------------------------
     #Signed distance function calculation. #TODO
     #This operation is just phi = n^T (x - p), but over the entire grid of x.
-    data = cellMatrixMultiply(num2cell(normal>T), \
-                                cellMatrixAdd(grid.xs, num2cell(-point)))
+    data = cellMatrixMultiply(list(normal>T), \
+                                cellMatrixAdd(grid.xs, list(-point)))
 
     # In fact, the cellMatrix operation generates a 1x1 cell matrix
     #   whose contents are the data array.
@@ -58,7 +58,7 @@ def shapeHyperplane(grid, normal, point):
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid
     #  (ie there will be no implicit surface to visualize).
-    if(np.all(data.flatten() < 0) or (np.all(data.flatten() > 0))):
+    if(cp.all(data.flatten() < 0) or (cp.all(data.flatten() > 0))):
         logger.warn(f'Implicit surface not visible because function has '
                 'single sign on grid')
 

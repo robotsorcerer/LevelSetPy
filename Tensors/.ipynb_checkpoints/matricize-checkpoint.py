@@ -7,11 +7,11 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Finished"
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 from .class_tensor import Tensor
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def matricization(T, mode=0): 
@@ -40,18 +40,18 @@ def matricization(T, mode=0):
 
     #1-mode unfold
     if mode==0:
-        X = np.concatenate(( [T[i,...] for i in range(T.ndim)]),
+        X = cp.concatenate(( [T[i,...] for i in range(T.ndim)]),
                                 axis=1)   
         return X
     
     #2-mode unfold
     elif mode==1:
-        X = np.concatenate(( [T[i, ...].T for i in range(T.ndim)]),
+        X = cp.concatenate(( [T[i, ...].T for i in range(T.ndim)]),
                                 axis=1)
         
     #3-mode unfold
     elif mode==2:        
-        X = np.concatenate(( [ np.expand_dims(T[i,...].flatten(),
+        X = cp.concatenate(( [ cp.expand_dims(T[i,...].flatten(),
                         axis=0) for i in range(T.ndim)]), axis=0)
         
     else:

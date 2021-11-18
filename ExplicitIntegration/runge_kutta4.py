@@ -16,7 +16,7 @@ def dynamics_RK4(OdeFun, tspan, x, u, v):
     This function must be called within a loop for a total of N
     steps of integration, Obviously, the smallet the value of T, the better
 
-    Inputs:
+    Icp.ts:
         OdeFun: Right Hand Side of Ode function to be integrated
         tspan: A list [start, end] that specifies over what time horizon to integrate the dynamics
         x: State, must be a list, initial condition
@@ -27,15 +27,15 @@ def dynamics_RK4(OdeFun, tspan, x, u, v):
     """
     M = 4 # RK4 steps per interval
     h = 0.2 # time step
-    if onp.any(tspan):
+    if ocp.any(tspan):
         hh = (tspan[1]-tspan[0])/10/M
-    X = onp.array(x)
-    U = onp.array(u)
-    V = onp.array(v)
+    X = ocp.array(x)
+    U = ocp.array(u)
+    V = ocp.array(v)
 
     for j in range(M):
-        if onp.any(tspan): # integrate for this much time steps
-            for h in np.range(tspan[0], tspan[1], hh):
+        if ocp.any(tspan): # integrate for this much time steps
+            for h in cp.range(tspan[0], tspan[1], hh):
                 k1 = OdeFun(X, U, V)
                 k2 = OdeFun(X + h/2 * k1, U, V)
                 k3 = OdeFun(X + h/2 * k2, U, V)

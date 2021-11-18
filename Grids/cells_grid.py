@@ -3,7 +3,7 @@ __all__ = [
 ]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 from Grids import getOGPBounds, createGrid
 from .cell_neighs import neighbors
@@ -15,7 +15,7 @@ def cells_from_grid(g, bounds, padding=None):
          Splits the grid into smaller grids, each with specified bounds.
          Optionally, padding can be specified so that the grids overlap
 
-     Inputs:
+     Icp.ts:
          g      - original grid
          bounds - list of bounds of the smaller grids. This should be a g.dim
                   dimensional matrix that specifies the "grid" of bounds.
@@ -31,26 +31,26 @@ def cells_from_grid(g, bounds, padding=None):
      Author: Lekan Molu, September 04, 2021
      """
     if padding is None:
-        padding = np.zeros((g.dim, 1))
+        padding = cp.zeros((g.dim, 1))
 
     assert isinstance(bounds, list), 'bounds must be a list or list of lists'
     ## Create a grid for the bounds
     if g.dim > 1:
-        bounds_grid = np.meshgrid(*bounds, sparse=False, indexing='ij');
+        bounds_grid = cp.meshgrid(*bounds, sparse=False, indexing='ij');
     else:
         # indexing and sparse flags have no effect in 1D case
-        bounds_grid = np.meshgrid(bounds, indexing='ij')[0]
+        bounds_grid = cp.meshgrid(bounds, indexing='ij')[0]
 
     ## Create grids based on the bound grid
     temp = size(bounds_grid[0])
-    temparr = np.array((temp))
-    gs = np.zeros(temparr-(temparr>1).astype(np.int64))
+    temparr = cp.array((temp))
+    gs = cp.zeros(temparr-(temparr>1).astype(cp.int64))
 
     ii = cell(g.dim, 1)
     gss = []
     partition = {}
     for i in range(numel(gs)):
-        ii = np.asarray(np.unravel_index(i, size(gs), order='F'))
+        ii = cp.asarray(cp.unravel_index(i, size(gs), order='F'))
         iip = copy.copy(ii)
         # print('iip: ', iip)
         for j in range(g.dim):
@@ -63,7 +63,7 @@ def cells_from_grid(g, bounds, padding=None):
         for j in range(g.dim):
             grid_min.append(bounds_grid[j][ii])
             grid_max.append(bounds_grid[j][iip])
-        grid_min, grid_max = np.vstack((grid_min)), np.vstack((grid_max))
+        grid_min, grid_max = cp.vstack((grid_min)), cp.vstack((grid_max))
         #print(f'grid_min: {grid_min.shape}, grid_max: {grid_max.shape}')
         grid_min, grid_max, N = getOGPBounds(g, grid_min, grid_max, padding);
 

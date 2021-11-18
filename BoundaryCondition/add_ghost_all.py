@@ -18,7 +18,7 @@ def   addGhostAllDims(grid, dataIn, width):
 
      Parameters:
        grid	Grid structure (see processGrid.m for details).
-       dataIn	Input data array.
+       dataIn	Icp.t data array.
        width	Number of ghost cells to add on each side (default = 1).
 
        dataOut	Output data array.

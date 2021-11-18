@@ -8,7 +8,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
 import cupy as cp
-import numpy as np
+import cupy as cp
 from Utilities import Bundle
 from .tensor_utils import use_gpu
 from Tensors.TenMat import tenmat
@@ -43,11 +43,11 @@ def nvecs(X,n,r,options=None):
             MATLAB struct.
 
             options.flipsign: make each column's largest element positive: Default: True
-            options.svd: use svds on Xn rather than np.linalg.eigs on Xn*Xn'; Default: False
+            options.svd: use svds on Xn rather than cp.linalg.eigs on Xn*Xn'; Default: False
 
         Example:
         --------
-           X = Tensor(npr.randn(3,2,3))
+           X = Tensor(cp..randn(3,2,3))
            nvecs(X,3,2)
 
         Author: Lekan Molux
@@ -68,7 +68,7 @@ def nvecs(X,n,r,options=None):
             Xn = cp.asarray(Xn) # Do it on gpu if available
             U,_, _ = cp.linalg.svd(Xn, full_matrices=False)
         else:
-            U,_, _ = np.linalg.svd(Xn, full_matrices=False)
+            U,_, _ = cp.linalg.svd(Xn, full_matrices=False)
         # we are only interested in the first r values, so copy those
         U = U[:,:r]
     else:
@@ -84,7 +84,7 @@ def nvecs(X,n,r,options=None):
             U = U.get()
         else:
             try:
-                U = np.linalg.eigvalsh(Y, 'U')
+                U = cp.linalg.eigvalsh(Y, 'U')
             except:
                 LinAlgError("Could not find the leading eigen values using"
                             "Numpy's eigvals method.")
@@ -93,8 +93,8 @@ def nvecs(X,n,r,options=None):
 
     if opt.flipsign:
         # Make the largest magnitude element be positive
-        maxi = np.amax(np.abs(U))
-        maxi_idx = np.where(np.abs(U)==maxi)
+        maxi = cp.amax(cp.abs(U))
+        maxi_idx = cp.where(cp.abs(U)==maxi)
 
         for i in range(r):
             if U[maxi_idx] < 0:

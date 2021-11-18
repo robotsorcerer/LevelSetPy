@@ -1,11 +1,11 @@
-import numpy as np
+import cupy as cp
 from Utilities import zeros, cell
 
 dubins_default_params = dict(
                             wRange=[-1, 1],
                             speed=5,
                             dRange=zeros(3,2),
-                            dims=np.arange(3),
+                            dims=cp.arange(3),
                             end=None,
                             nu = 1,
                             nd = 3,

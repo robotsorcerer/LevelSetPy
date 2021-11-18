@@ -21,7 +21,7 @@ def visSetIm(data, g=None, color='r', level=0, extraArgs=None): # pragma nocover
      h = visSetIm(g, data, color, level, sliceDim, applyLight)
      Code for quickly visualizing level sets
 
-     Inputs: g          - grid structure
+     Icp.ts: g          - grid structure
              data       - value function corresponding to grid g
              color      - (defaults to red)
              level      - level set to display (defaults to 0)
@@ -34,15 +34,15 @@ def visSetIm(data, g=None, color='r', level=0, extraArgs=None): # pragma nocover
 
      Lekan Molux, August, 2021
     """
-    np.warnings.warn("visSetIm() has been ValueSetVisualizer()",
+    cp.warnings.warn("visSetIm() has been ValueSetVisualizer()",
                    DeprecationWarning, stacklevel=1)
     return ValueSetVisualizer()
 visSetIm.__doc__ = "\nDEPRECATED! use ValueSetVisualizer().\n\n" \
                         + ValueSetVisualizer.__doc__
-#     ## Default parameters and input check
+#     ## Default parameters and icp.t check
 #     if g is None:
-#         N = np.asarray(size(data)).T
-#         g = createGrid(np.ones(numDims(data), 1), N, N)
+#         N = cp.asarray(size(data)).T
+#         g = createGrid(cp.ones(numDims(data), 1), N, N)
 #
 #     if g.dim != numDims(data) and g.dim+1 != numDims(data):
 #         error('Grid dimension is inconsistent with data dimension!')
@@ -103,7 +103,7 @@ visSetIm.__doc__ = "\nDEPRECATED! use ValueSetVisualizer().\n\n" \
 #
 #     if g.dim==1:
 #         extraArgs.ax.plot(g.xs[0], data, linestyle='-', color=color)
-#         extraArgs.ax.plot(g.xs[0], np.zeros(size(g.xs[0])), linestyle=':', color='k')
+#         extraArgs.ax.plot(g.xs[0], cp.zeros(size(g.xs[0])), linestyle=':', color='k')
 #
 #     elif g.dim==2:
 #         show2D(g, data, fc='g', savedict = {"save": False}, disp=extraArgs.disp)
@@ -128,7 +128,7 @@ visSetIm.__doc__ = "\nDEPRECATED! use ValueSetVisualizer().\n\n" \
 #         ax = fig.add_subplot(spR, spC, i, projection='3d')
 #         xs = g.min[sliceDim] + i/(N+1) * (g.max[sliceDim] - g.min[sliceDim])
 #
-#         dim = np.zeros(([4,1]))
+#         dim = cp.zeros(([4,1]))
 #         dim[sliceDim, 0] = 1
 #         g3D, data3D = proj(g, data, dim, xs)
 #

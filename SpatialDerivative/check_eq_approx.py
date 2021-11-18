@@ -2,7 +2,7 @@ __all__ = ['checkEquivalentApprox']
 
 import copy
 import logging
-import numpy as np
+import cupy as cp
 from Utilities import *
 logger = logging.getLogger(__name__)
 
@@ -41,18 +41,18 @@ def checkEquivalentApprox(approx1, approx2,bound):
     """
 
     # Approximate magnitude of the solution
-    magnitude = 0.5 * np.abs(approx1 + approx2)
+    magnitude = 0.5 * cp.abs(approx1 + approx2)
 
     # Which nodes deserve relative treatment, and which absolute treatment?
-    useRelative = np.nonzero(magnitude > bound)
-    useAbsolute = np.nonzero(magnitude <= bound)
+    useRelative = cp.nonzero(magnitude > bound)
+    useAbsolute = cp.nonzero(magnitude <= bound)
 
-    absError = np.abs(approx1 - approx2)
+    absError = cp.abs(approx1 - approx2)
 
     # Be careful not to divide by too small a number.
     relError = ones(size(absError))
-    relError.fill(np.nan)
-    relError[useRelative] = np.divide(absError[useRelative], magnitude[useRelative])
+    relError.fill(cp.nan)
+    relError[useRelative] = cp.divide(absError[useRelative], magnitude[useRelative])
 
     # Check that bounds are respected.
     if(max(relError[useRelative]) > bound):

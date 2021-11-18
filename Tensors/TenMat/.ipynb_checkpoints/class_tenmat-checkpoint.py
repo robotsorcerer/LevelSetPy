@@ -6,7 +6,7 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Fix Tensor Mode Swap in Memory Layout."
 
-import numpy as np
+import cupy as cp
 from Tensors import Tensor
 from Utilities import *
 
@@ -21,10 +21,10 @@ class TenMatClass():
         T:       A Tensor < see class_tensor.py />.
         options: A bundle class. If it is a dictionary, it is converted to a bundle.
                  It contains the following fields:
-            rdims: A numpy/cupy (dtype=np/cp.intp) index array which specifies the modes of T to 
+            rdims: A numpy/cupy (dtype=cp.cp.intp) index array which specifies the modes of T to 
                    which we map the rows of a matrix, and the remaining 
                    dimensions (in ascending order) map to the columns.
-            cdims:  A numpy/cupy (dtype=np/cp.intp) index array which specifies the modes of T to 
+            cdims:  A numpy/cupy (dtype=cp.cp.intp) index array which specifies the modes of T to 
                    which we map the   columns of a matrix, and the 
                    remaining dimensions (in ascending order) map 
                    to the rows.
@@ -76,12 +76,12 @@ class TenMatClass():
                (cdims) and the size of the original tensor (T.shape).
                
         Example: 
-        1.  X  = np.arange(1, 28).reshape(3,3,3)
-            options = dict(rdims=np.array([2], dtype=np.intp))
+        1.  X  = cp.arange(1, 28).reshape(3,3,3)
+            options = dict(rdims=cp.array([2], dtype=cp.intp))
             X_1 = TenMat(X, **options)
             
-        2.  X  = np.arange(1, 28).reshape(3,3,3)
-            options = dict(rdims=np.array([0, 1], dtype=np.intp))
+        2.  X  = cp.arange(1, 28).reshape(3,3,3)
+            options = dict(rdims=cp.array([0, 1], dtype=cp.intp))
             X_1 = TenMat(X, **options)
 
         Author: Lekan Molux, November 3, 2021
@@ -94,7 +94,7 @@ class TenMatClass():
             options = Bundle(options)
         assert isbundle(options), "options must be of Bundle class."
 
-        self.tsize = np.asarray(options.__dict__.get("tsize", T.shape))
+        self.tsize = cp.asarray(options.__dict__.get("tsize", T.shape))
         self.rindices = options.__dict__.get("rdims", None)
         self.cindices = options.__dict__.get("cdims", None)
         self.data = T.data    
@@ -102,7 +102,7 @@ class TenMatClass():
         if self.rindices is None and self.cindices is None:
             return
 
-        tsize = np.asarray(options.__dict__.get("tsize", T.shape))
+        tsize = cp.asarray(options.__dict__.get("tsize", T.shape))
         rdims = options.__dict__.get("rdims", None)
         cdims = options.__dict__.get("cdims", None)
         data  = T.data
@@ -111,32 +111,32 @@ class TenMatClass():
             
         #if len(options)==1:
         if isfield(options, 'rdims') and not isfield(options, 'cdims'):
-            tmp = np.zeros((n), dtype=bool)
+            tmp = cp.zeros((n), dtype=bool)
             tmp.fill(True)
             tmp[rdims] = False
-            cdims = np.nonzero(tmp)[0]
+            cdims = cp.nonzero(tmp)[0]
         elif isfield(options, 'cyclic'):
         #elif len(options)>=2: #isfield(options, 'cyclic'):
             if options.cyclic=='T':
                 cdims = options.rdims 
-                tmp = np.zeros((n,1), dtype=bool)
+                tmp = cp.zeros((n,1), dtype=bool)
                 tmp.fill(True)
                 tmp[cdims] = False
-                rdims = np.nonzero(tmp)[0]
+                rdims = cp.nonzero(tmp)[0]
             elif options.cyclic=='fc':
                 rdims = options.rdims
                 if numel(rdims)!=1:
                     raise ValueError(f'Only one row dimension if options.cyclic is ''fc''.')
-                cdims = np.concatenate((np.arange(rdims, n, dtype=np.intp), \
-                                        np.arange(rdims-1, dtype=np.intp)), dtype=np.intp)
+                cdims = cp.concatenate((cp.arange(rdims, n, dtype=cp.intp), \
+                                        cp.arange(rdims-1, dtype=cp.intp)), dtype=cp.intp)
             elif options.cyclic=='bc':
                 rdims = options.rdims
 
                 if numel(rdims)!=1:
                     raise ValueError('Only one row dimension if third argument is ''bc''.')
 
-                cdims = np.concatenate((np.arange(rdims-1, dtype=np.intp)[::-1],\
-                                        np.arange(rdims, n, dtype=np.intp)[::-1]), dtype=np.intp)
+                cdims = cp.concatenate((cp.arange(rdims-1, dtype=cp.intp)[::-1],\
+                                        cp.arange(rdims, n, dtype=cp.intp)[::-1]), dtype=cp.intp)
             else:
                 raise ValueError('Unrecognized option.')
 
@@ -145,13 +145,13 @@ class TenMatClass():
             cdims = options.cdims
 
         # Error check
-        if not np.array_equal(np.arange(n), np.sort( np.concatenate((rdims, cdims)))):
+        if not cp.array_equal(cp.arange(n), cp.sort( cp.concatenate((rdims, cdims)))):
             raise ValueError('Incorrect specification of dimensions')
 
         # Permute T so that the dimensions specified by RDIMS come first
-        T_Rot = np.transpose(T.data, axes=np.concatenate([rdims, cdims]))
-        rprods = np.prod(tsize[rdims])
-        cprods = np.prod(tsize[cdims]) 
+        T_Rot = cp.transpose(T.data, axes=cp.concatenate([rdims, cdims]))
+        rprods = cp.prod(tsize[rdims])
+        cprods = cp.prod(tsize[cdims]) 
         
         self.data     = T_Rot.reshape(rprods, cprods)
         self.rindices = rdims

@@ -10,7 +10,7 @@ import copy
 import logging
 import argparse
 import sys, os
-import numpy as np
+import cupy as cp
 from math import pi
 from Grids import createGrid
 import matplotlib.pyplot as plt
@@ -63,7 +63,7 @@ def main():
 		 4. Add disturbance
 			 dStep1: define a dMax (dMax = [.25, .25, 0])
 			 dStep2: define a dMode (opposite of uMode)
-			 dStep3: input dMax when creating your DubinsCar
+			 dStep3: icp.t dMax when creating your DubinsCar
 			 dStep4: add dMode to schemeData
 		 5. Change to an avoid BRT rather than a goal BRT
 			 uMode = 'max' <-- avoid
@@ -83,25 +83,25 @@ def main():
 			 HJIextraArgs.addGaussianNoiseStandardDeviation = [0 0 0.5]
 	"""
 	## Grid
-	grid_min = expand(np.array((-5, -5, -pi)), ax = 1) # Lower corner of computation domain
-	grid_max = expand(np.array((5, 5, pi)), ax = 1)   # Upper corner of computation domain
-	N = 41*ones(3, 1).astype(int)   # expand(np.array((41, 41,  41)), ax = 1)        # Number of grid points per dimension
+	grid_min = expand(cp.array((-5, -5, -pi)), ax = 1) # Lower corner of computation domain
+	grid_max = expand(cp.array((5, 5, pi)), ax = 1)   # Upper corner of computation domain
+	N = 41*ones(3, 1).astype(int)   # expand(cp.array((41, 41,  41)), ax = 1)        # Number of grid points per dimension
 	pdDims = 2                      # 3rd dimension is periodic
 	g = createGrid(grid_min, grid_max, N, pdDims)
 
 	## target set
 	ignoreDim, radius=2, 1.5
-	center = 2*np.ones((len(N), 1), np.float64)
+	center = 2*cp.ones((len(N), 1), cp.float64)
 	data0 = shapeCylinder(g, ignoreDim, center, radius)
 	# also try shapeRectangleByCorners, shapeSphere, etc.
 
 	## time vector
 	t0 = 0; tMax = 2; dt = 0.05
-	tau = np.arange(t0, tMax+dt, dt)
+	tau = cp.arange(t0, tMax+dt, dt)
 
 	## problem parameters
 
-	# input bounds
+	# icp.t bounds
 	speed = 1;     wMax = 1
 	# do dStep1 here
 
@@ -111,7 +111,7 @@ def main():
 
 	"Pack problem parameters"
 	# Define dynamic system
-	dCar = DubinsCar(np.zeros((3,1)), wMax, speed)
+	dCar = DubinsCar(cp.zeros((3,1)), wMax, speed)
 
 	# Put grid and dynamic systems into schemeData
 	schemeData = Bundle(dict(grid = g, dynSys = dCar, accuracy = 'high',
@@ -143,7 +143,7 @@ def main():
 							}),
 							})
 	if args.visualize and isfield( HJIextraArgs, "visualize"):
-		plotData = Bundle({'plotDims': np.asarray([1, 1, 0]), #plot x, y
+		plotData = Bundle({'plotDims': cp.asarray([1, 1, 0]), #plot x, y
 							'projpt': [0], #project at theta = 0
 							})
 		HJIextraArgs.visualize.plotData = plotData
@@ -153,7 +153,7 @@ def main():
 	## Compute optimal trajectory from some initial state
 	if args.compute_traj:
 		#set the initial state
-		xinit = np.array(([[2, 2, -pi]]))
+		xinit = cp.array(([[2, 2, -pi]]))
 
 		#check if this initial state is in the BRS/BRT
 		geval = copy.deepcopy(g)
@@ -171,12 +171,12 @@ def main():
 								visualize = True, #show plot
 								fig_num = 2, #figure number
 								#we want to see the first two dimensions (x and y)
-								projDim = np.array([[1, 1, 0]])
+								projDim = cp.array([[1, 1, 0]])
 							))
 
 
 			#flip data time points so we start from the beginning of time
-			dataTraj = np.flip(data,3)
+			dataTraj = cp.flip(data,3)
 
 			[traj, traj_tau] = computeOptTraj(g, dataTraj, tau2, dCar, TrajextraArgs)
 

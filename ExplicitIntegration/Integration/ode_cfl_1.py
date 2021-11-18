@@ -1,5 +1,6 @@
 __all__ = ["odeCFL1"]
 
+import cupy as cp
 from Utilities import *
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_call import odeCFLcallPostTimestep
@@ -57,7 +58,7 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
        not be used in this case because of the excessive memory requirements
        for storing solutions at multiple timesteps.
 
-     The output version of schemeData will normally be identical to the input
+     The output version of schemeData will normally be identical to the icp.t
        version, and therefore can be ignored.  However, it is possible for
        schemeFunc or a PostTimestep routine (see odeCFLset) to modify the
        structure during integration, and the version of schemeData at tf is
@@ -106,7 +107,7 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
         t = tspan[0]
         steps = 0; startTime = cputime(); stepBound = zeros(numY, 1)
         ydot = cell(numY, 1); y = y0
-        while(tspan[1] - t >= small * np.abs(tspan[1])):
+        while(tspan[1] - t >= small * cp.abs(tspan[1])):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # First substep: Forward Euler from t_n to t_{n+1}.
 
@@ -152,7 +153,7 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
             if options.terminalEvent:
                 eventValue, schemeData = options.terminalEvent(t, y, tOld, yOld, schemeData)
 
-                if((steps > 1) and np.any(np.sign(eventValue) != np.sign(eventValueOld))):
+                if((steps > 1) and cp.any(cp.sign(eventValue) != cp.sign(eventValueOld))):
                     break
                 else:
                     eventValueOld = eventValue

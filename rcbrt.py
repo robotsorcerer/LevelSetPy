@@ -11,7 +11,7 @@ import time
 import logging
 import argparse
 import sys, os
-import numpy as np
+import cupy as cp
 from math import pi
 from Grids import createGrid
 import matplotlib.pyplot as plt
@@ -66,9 +66,9 @@ def get_hamiltonian_func(t, data, deriv, finite_diff_data):
 	global obj
 	ham_value = deriv[0] * obj.p1_term + \
 				deriv[1] * obj.p2_term - \
-				obj.omega_e_bound*np.abs(deriv[0]*obj.grid.xs[1] - \
+				obj.omega_e_bound*cp.abs(deriv[0]*obj.grid.xs[1] - \
 				deriv[1] * obj.grid.xs[0] - deriv[2])  + \
-				obj.omega_p_bound * np.abs(deriv[2])
+				obj.omega_p_bound * cp.abs(deriv[2])
 
 	return ham_value, finite_diff_data
 
@@ -80,18 +80,20 @@ def get_partial_func(t, data, derivMin, derivMax, \
 	"""
 	global obj
 
+	# print('dim: ', dim)
 	assert dim>=0 and dim <3, "grid dimension has to be between 0 and 2 inclusive."
 
 	return obj.alpha[dim]
 
 def main(args):
-	grid_min = expand(np.array((-.75, -1.25, -pi)), ax = 1)
-	grid_max = expand(np.array((3.25, 1.25, pi)), ax = 1)
+	## Grid
+	grid_min = expand(cp.array((-.75, -1.25, -pi)), ax = 1)
+	grid_max = expand(cp.array((3.25, 1.25, pi)), ax = 1)
 	pdDims = 2                      # 3rd dimension is periodic
 	resolution = 100
-	N = np.array(([[
+	N = cp.array(([[
 					resolution,
-					np.ceil(resolution*(grid_max[1, 0] - grid_min[1, 0])/ \
+					cp.ceil(resolution*(grid_max[1, 0] - grid_min[1, 0])/ \
 								(grid_max[0, 0] - grid_min[0, 0])),
 					resolution-1
 					]])).T.astype(int)
@@ -100,7 +102,7 @@ def main(args):
 	obj.grid = createGrid(grid_min, grid_max, N, pdDims)
 
 	# global params
-	obj.axis_align, obj.center, obj.radius = 2, np.zeros((3, 1)), 0.5
+	obj.axis_align, obj.center, obj.radius = 2, cp.zeros((3, 1)), 0.5
 	data0 = get_target(obj)
 
 	data = copy.copy(data0)
@@ -113,10 +115,10 @@ def main(args):
 
 	t_range = [0, 2.5]
 
-	obj.p1_term = obj.v_e - obj.v_p * np.cos(obj.grid.xs[2])
-	obj.p2_term = -obj.v_p * np.sin(obj.grid.xs[2])
-	obj.alpha   = [ np.abs(obj.p1_term) + np.abs(obj.omega_e_bound * obj.grid.xs[1]), \
-					np.abs(obj.p2_term) + np.abs(obj.omega_e_bound * obj.grid.xs[0]), \
+	obj.p1_term = obj.v_e - obj.v_p * cp.cos(obj.grid.xs[2])
+	obj.p2_term = -obj.v_p * cp.sin(obj.grid.xs[2])
+	obj.alpha = [ cp.abs(obj.p1_term) + cp.abs(obj.omega_e_bound * obj.grid.xs[1]), \
+					cp.abs(obj.p2_term) + cp.abs(obj.omega_e_bound * obj.grid.xs[0]), \
 					obj.omega_e_bound + obj.omega_p_bound ]
 
 	small = 100*eps
@@ -165,7 +167,7 @@ def main(args):
 			 'data': data,
 			 'elevation': args.elevation,
 			 'azimuth': args.azimuth,
-			 'mesh': init_mesh,
+			 'mesh': init_mesh.get(),
 			 'init_conditions': False,
 			 'pause_time': args.pause_time,
 			 'level': 0, # which level set to visualize
@@ -187,25 +189,25 @@ def main(args):
 		y0 = data.flatten()
 
 		# How far to step?
-		t_span = np.hstack([ t_now, min(t_range[1], t_now + t_plot) ])
+		t_span = cp.hstack([ t_now, min(t_range[1], t_now + t_plot) ])
 
 		# Take a timestep.
 		t, y, _ = odeCFL2(termRestrictUpdate, t_span, y0, integratorOptions, finite_diff_data)
 		t_now = t
 
-		logger.info(f't: {t:.3f}/{t_range[-1]} TargSet Min: {min(y):.3f}, TargSet Max: {max(y):.3f} TargSet Norm: {np.linalg.norm(y)}')
+		logger.info(f't: {t:.3f}/{t_range[-1]} TargSet Min: {min(y):.3f}, TargSet Max: {max(y):.3f} TargSet Norm: {cp.linalg.norm(y)}')
 
 		# Get back the correctly shaped data array
-		data = np.reshape(y, obj.grid.shape)
+		data = cp.reshape(y, obj.grid.shape)
 
-		mesh=implicit_mesh(data, level=0, spacing=spacing,  edge_color='None',
+		mesh=implicit_mesh(data.get(), level=0, spacing=spacing,  edge_color='None',
 	                         face_color='red')
 
 		if args.visualize:
-			rcbrt_viz.update_tube(data, mesh, time_step)
+			rcbrt_viz.update_tube(data.get(), mesh.get(), time_step)
 	
 	if args.visualize:
-		rcbrt_viz.update_tube(data, params.mesh, time_step)
+		rcbrt_viz.update_tube(data.get(), params.mesh, time_step)
 
 	end_time = cputime()
 	info(f'Total execution time {end_time - start_time} seconds.')

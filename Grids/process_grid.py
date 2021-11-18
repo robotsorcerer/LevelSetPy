@@ -1,7 +1,7 @@
 __all__ = ["processGrid"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities.matlab_utils import *
 from BoundaryCondition import addGhostPeriodic
 
@@ -13,7 +13,7 @@ def processGrid(gridIn, data=None, sparse_flag=False):
 
      Processes all the various types of grid argument allowed.
 
-     Input Parameters:
+     Icp.t Parameters:
 
        gridIn: A scalar, a vector, or a structure.
 
@@ -139,32 +139,32 @@ def processGrid(gridIn, data=None, sparse_flag=False):
     if(isfield(gridOut, 'min')):
         if(not isColumnLength(gridOut.min, gridOut.dim)):
             if(isscalar(gridOut.min)):
-                gridOut.min = gridOut.min * np.ones((gridOut.dim, 1));
+                gridOut.min = gridOut.min * cp.ones((gridOut.dim, 1));
             else:
                 error('min field is not column vector of length dim or a scalar');
     else:
-        gridOut.min = defaultMin * np.ones((gridOut.dim, 1));
+        gridOut.min = defaultMin * cp.ones((gridOut.dim, 1));
 
     if(isfield(gridOut, 'max')):
         if(not isColumnLength(gridOut.max, gridOut.dim)):
             if(isscalar(gridOut.max)):
-                gridOut.max = gridOut.max * np.ones((gridOut.dim, 1));
+                gridOut.max = gridOut.max * cp.ones((gridOut.dim, 1));
             else:
                 error('max field is not column vector of length dim or a scalar');
     else:
-        gridOut.max = defaultMin * np.ones((gridOut.dim, 1));
+        gridOut.max = defaultMin * cp.ones((gridOut.dim, 1));
 
-    if(np.any(gridOut.max <= gridOut.min)):
+    if(cp.any(gridOut.max <= gridOut.min)):
         error('max bound must be strictly greater than min bound in all dimensions');
 
     # Check N field if necessary.  If N is missing but dx is present, we will
     # determine N later.
     if(isfield(gridOut, 'N')):
-        if(np.any(gridOut.N <= 0)):
+        if(cp.any(gridOut.N <= 0)):
             error('number of grid cells must be strictly positive');
         if(not isColumnLength(gridOut.N, gridOut.dim)):
             if(isscalar(gridOut.N)):
-                gridOut.N *= np.ones((gridOut.dim, 1)).astype(np.int64);
+                gridOut.N *= cp.ones((gridOut.dim, 1)).astype(cp.int64);
             else:
                 error('N field is not column vector of length dim or a scalar');
 
@@ -172,22 +172,22 @@ def processGrid(gridIn, data=None, sparse_flag=False):
     # dx.  If both are present, we will check for consistency later.  If
     # neither are present, use the defaults.
     if isfield(gridOut, 'dx'):
-        if(np.any(gridOut.dx <= 0)):
+        if(cp.any(gridOut.dx <= 0)):
             error('grid cell size dx must be strictly positive');
         if(not isColumnLength(gridOut.dx, gridOut.dim)):
             if(isscalar(gridOut.dx)):
-                gridOut.dx *= np.ones((gridOut.dim, 1), np.float64)
+                gridOut.dx *= cp.ones((gridOut.dim, 1), cp.float64)
         else:
             error('dx field is not column vector of length dim or a scalar');
     elif isfield(gridOut, 'N'):
         # Only N field is present, so infer dx.
         # print('gridOut.max - gridOut.min: ', (gridOut.max - gridOut.min).T)
         # print('gridOut.N: ', gridOut.N.T)
-        gridOut.dx = np.divide(gridOut.max - gridOut.min,  gridOut.N-1)
+        gridOut.dx = cp.divide(gridOut.max - gridOut.min,  gridOut.N-1)
     else:
         logger.warn('Neither fields dx nor dN is present, so use default N and infer dx')
-        gridOut.N = defaultN * ones(gridOut.dim, 1).astype(np.int64)
-        gridOut.dx = np.divide(gridOut.max - gridOut.min, gridOut.N-1)
+        gridOut.N = defaultN * ones(gridOut.dim, 1).astype(cp.int64)
+        gridOut.dx = cp.divide(gridOut.max - gridOut.min, gridOut.N-1)
     # print('gridOut.max aft dx in PG ', gridOut.max.T)
 
     if isfield(gridOut, 'vs'):
@@ -203,7 +203,7 @@ def processGrid(gridIn, data=None, sparse_flag=False):
     else:
         gridOut.vs = cell(gridOut.dim, 1)
         for i in range(gridOut.dim):
-            gridOut.vs[i] = expand(np.linspace(gridOut.min[i,0], gridOut.max[i,0], num=gridOut.N[i,0]), 1)
+            gridOut.vs[i] = expand(cp.linspace(gridOut.min[i,0], gridOut.max[i,0], num=gridOut.N[i,0]), 1)
     # Now we can check for consistency between dx and N, based on the size of
     # the vectors in vs.  Note that if N is present, it will be a vector.  If
     # N is not yet a field, set it to be consistent with the size of vs.
@@ -225,7 +225,7 @@ def processGrid(gridIn, data=None, sparse_flag=False):
             else:
                 if(gridOut.dim > 1):
                     for i in range(gridOut.dim):
-                        if(np.any(gridOut.xs[i]) != gridOut.N.T):
+                        if(cp.any(gridOut.xs[i]) != gridOut.N.T):
                             error('xs cell entry is not correctly sized array');
                 else:
                     if(len(gridOut.xs[0]) != gridOut.N):
@@ -233,10 +233,10 @@ def processGrid(gridIn, data=None, sparse_flag=False):
         else:
             error('xs field is not a cell vector');
     else:
-        gridOut.xs = np.meshgrid(*gridOut.vs, indexing='ij', sparse=sparse_flag)
+        gridOut.xs = cp.meshgrid(*gridOut.vs, indexing='ij', sparse=sparse_flag)
 
     if isfield(gridOut, 'bdry'):
-        if(iscell(gridOut.bdry) or isinstance(gridOut.bdry, np.ndarray)):
+        if(iscell(gridOut.bdry) or isinstance(gridOut.bdry, cp.ndarray)):
             if(not isColumnLength(gridOut.bdry, gridOut.dim)):
                 error(f'bdry field is not column cell vector of length dim: {gridOut.dim}');
             else:
@@ -248,7 +248,7 @@ def processGrid(gridIn, data=None, sparse_flag=False):
             else:
                 error('bdry field is not a cell vector or a scalar');
     else:
-        gridOut.bdry = np.zeros((gridOut.dim, 1)).fill(defaultBdry)
+        gridOut.bdry = cp.zeros((gridOut.dim, 1)).fill(defaultBdry)
 
     if(isfield(gridOut,'bdryData')):
         if(iscell(gridOut.bdryData)):
@@ -282,10 +282,10 @@ def processGrid(gridIn, data=None, sparse_flag=False):
     Nshape = tuple(gridOut.N.squeeze())
     if(isfield(gridOut, 'shape')):
         if(gridOut.dim == 1):
-            if(np.any(gridOut.shape != (Nshape + (1,)) )):
+            if(cp.any(gridOut.shape != (Nshape + (1,)) )):
                 error('shape and N fields do not agree');
         else:
-            if(np.any(gridOut.shape != gridOut.N.T)):
+            if(cp.any(gridOut.shape != gridOut.N.T)):
                 error('shape and N fields do not agree');
     else:
         if(gridOut.dim == 1):
@@ -297,7 +297,7 @@ def processGrid(gridIn, data=None, sparse_flag=False):
     if data:
         if(ndims(data) != len(gridOut.shape)):
             error('data parameter does not agree in dimension with grid');
-        if(np.any(size(data) != gridOut.shape)):
+        if(cp.any(size(data) != gridOut.shape)):
             error('data parameter does not agree in array size with grid');
     # print('gridOut.max after all PG ', gridOut.max.T)
 

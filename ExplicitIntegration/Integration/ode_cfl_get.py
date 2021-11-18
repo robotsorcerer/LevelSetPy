@@ -13,7 +13,7 @@ def odeCFLget(options=None, name=None):
        ODE integrator option structure.  Note that the type of the returned
        value depends on the named option.
 
-     If called with no input or output parameters, then all options,
+     If called with no icp.t or output parameters, then all options,
        their valid values and defaults are listed.
 
      Parameter options may be the empty vector [], in which case the default
@@ -51,7 +51,7 @@ def odeCFLget(options=None, name=None):
                                          f(t, y, deltaT, updateY, schemeDataIn)
                        which is called after every timestep and can be used to
                        halt time integration before the final time is reached.
-                       The input parameters include the state and time from
+                       The icp.t parameters include the state and time from
                        the previous timestep.  If any element of the
                        return parameter value changes sign from one timestep
                        to the next, then integration is terminated and
@@ -75,14 +75,14 @@ def odeCFLget(options=None, name=None):
 
      Lekan 08/21/21
     """
-    #No output, no input means caller just wants a list of available options.
+    #No output, no icp.t means caller just wants a list of available options.
     if not options and not name:
-        return odeCFLset
+        return odeCFLset()
 
 
-    # If first input is an empty vector, get the default option structure.
+    # If first icp.t is an empty vector, get the default option structure.
     if not options:
-        options = odeCFLset
+        options = odeCFLset()
 
     # Return the appropriate option value.
 

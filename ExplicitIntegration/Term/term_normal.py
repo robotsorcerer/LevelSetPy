@@ -1,7 +1,7 @@
 __all__ = ["termNormal"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termNormal(t, y, schemeData):
@@ -25,7 +25,7 @@ def termNormal(t, y, schemeData):
 
        ydot	 Change in the data array, in vector form.
        stepBound	 CFL bound on timestep for stability.
-       schemeData   The same as the input argument (unmodified).
+       schemeData   The same as the icp.t argument (unmodified).
 
      schemeData is a structure containing data specific to this type of
        term approximation.  For this function it contains the field(s)
@@ -44,7 +44,7 @@ def termNormal(t, y, schemeData):
           size as data.
        2) For general speed, a function handle to a function with prototype
           a = scalarGridFunc(t, data, schemeData), where the output a is the
-          scalar/array from (1) and the input arguments are the same as those
+          scalar/array from (1) and the icp.t arguments are the same as those
           of this function (except that data = y has been reshaped to its
           original size).  In this case, it may be useful to include additional
           fields in schemeData.
@@ -147,8 +147,8 @@ def termNormal(t, y, schemeData):
         # Effective velocity in this dimension (scaled by \|\grad \phi\|).
         prodL = speed * derivL
         prodR = speed * derivR
-        magL = np.abs(prodL)
-        magR = np.abs(prodR)
+        magL = cp.abs(prodL)
+        magR = cp.abs(prodR)
 
         # Determine the upwind direction.
         #   Either both sides agree in sign (take direction in which they agree),
@@ -169,13 +169,13 @@ def termNormal(t, y, schemeData):
         stepBoundInv += (dxInv@effectiveVelocity)
 
     # Finally, calculate speed * \|\grad \phi\|
-    magnitude = np.sqrt(magnitude)
+    magnitude = cp.sqrt(magnitude)
     delta = speed * magnitude
 
     # Find the most restrictive timestep bound.
-    nonZero = np.nonzero(magnitude > 0)
+    nonZero = cp.nonzero(magnitude > 0)
     stepBoundInvNonZero = stepBoundInv[nonZero] / magnitude[nonZero]
-    stepBound = 1 / np.max(stepBoundInvNonZero)
+    stepBound = 1 / cp.max(stepBoundInvNonZero)
 
     # Reshape output into vector format and negate for RHS of ODE.
     ydot = expand(-delta.flatten(order='F'), 1)

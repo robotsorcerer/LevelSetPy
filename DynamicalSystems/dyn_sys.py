@@ -1,5 +1,4 @@
 """ This file defines the base dynamical systems class. """
-import numpy as np
 from Utilities import cell
 
 class DynSys(object):
@@ -8,7 +7,7 @@ class DynSys(object):
                         hdim=None, hpxpy=None, hpxpyhist = None,
                         hvxvy=None, hvxvyhist=None, data=None):
         self.nx = nx          # Number of state dimensions
-        self.nu = nu          # Number of control inputs
+        self.nu = nu          # Number of control icp.ts
         self.nd = nd          # Number of disturbance dimensions
 
         self.x = x           # State

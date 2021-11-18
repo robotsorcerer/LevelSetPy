@@ -8,7 +8,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
 import cupy as cp
-import numpy as np
+import cupy as cp
 from Utilities import Bundle, isfield
 from .tensor_utils import use_gpu
 from Tensors.TenMat import matricize_tensor
@@ -29,7 +29,7 @@ def nvecs(X,n,r,options=None):
                      Parameters
                      ----------
                     .flipsign: make each column's largest element positive: Default: True
-                    .svd: use svds on Xn rather than np.linalg.eigs on Xn*Xn'; Default: False
+                    .svd: use svds on Xn rather than cp.linalg.eigs on Xn*Xn'; Default: False
 
         Returns
         -------
@@ -46,7 +46,7 @@ def nvecs(X,n,r,options=None):
 
         Example:
         --------
-           X = Tensor(npr.randn(3,2,3))
+           X = Tensor(cp..randn(3,2,3))
            nvecs(X,3,2)
 
         Author: Lekan Molux
@@ -59,7 +59,7 @@ def nvecs(X,n,r,options=None):
 
     options.svd      = options.__dict__.get('svd', False)
     options.flipsign = options.__dict__.get('flipsign', True)
-    options.rdims    = options.__dict__.get('rdims', np.arange(n, dtype=np.intp))
+    options.rdims    = options.__dict__.get('rdims', cp.arange(n, dtype=cp.intp))
     use_gpu          = options.__dict__.get('use_gpu', use_gpu)
     
     print('X: ', X.shape, 'options.rdims: ', options.rdims)
@@ -73,7 +73,7 @@ def nvecs(X,n,r,options=None):
             Xn = cp.asarray(Xn) # Do it on gpu if available
             U,_, _ = cp.linalg.svd(Xn, full_matrices=False)
         else:
-            U,_, _ = np.linalg.svd(Xn, full_matrices=False)
+            U,_, _ = cp.linalg.svd(Xn, full_matrices=False)
         # we are only interested in the first r values, so copy those
         #U = U[:,:r]
     else:
@@ -89,7 +89,7 @@ def nvecs(X,n,r,options=None):
             U = U.get()
         else:
             try:
-                U = np.linalg.eigvalsh(Y, 'U')
+                U = cp.linalg.eigvalsh(Y, 'U')
             except:
                 LinAlgError("Could not find the leading eigen values using"
                             "Numpy's eigvals method.")
@@ -99,8 +99,8 @@ def nvecs(X,n,r,options=None):
 
     if isfield(options, 'flipsign') and options.flipsign:
         # Make the largest magnitude element be positive
-        maxi = np.amax(np.abs(U))
-        maxi_idx = np.where(np.abs(U)==maxi)
+        maxi = cp.amax(cp.abs(U))
+        maxi_idx = cp.where(cp.abs(U)==maxi)
 
         for i in range(r):
             if U[maxi_idx] < 0:

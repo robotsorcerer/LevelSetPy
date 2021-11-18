@@ -1,7 +1,7 @@
 __all__ = ["termDiscount"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termDiscount(t, y, schemeData):
@@ -34,7 +34,7 @@ def termDiscount(t, y, schemeData):
         ydot	 Change in the data array, in vector form.
         stepBound	 CFL bound on timestep for stability.
                        Always returned as stepBound = +inf.
-        schemeData   The same as the input argument (unmodified).
+        schemeData   The same as the icp.t argument (unmodified).
 
       schemeData is a structure containing data specific to this type of
         term approximation.  For this function it contains the field(s)
@@ -49,7 +49,7 @@ def termDiscount(t, y, schemeData):
            size as data.
         2) For general discount, a function handle to a function with prototype
            lambder = scalarGridFunc(t, data, schemeData), where the output
-           lambder is the scalar/array from (1) and the input arguments are
+           lambder is the scalar/array from (1) and the icp.t arguments are
            the same as those of this function (except that data = y has been
            reshaped to its original size).  In this case, it may be useful to
            include additional fields in schemeData.
@@ -102,6 +102,6 @@ def termDiscount(t, y, schemeData):
     ydot = expand(-delta.flatten(order='F'), 1)
 
     # No derivative, so no timestep limit.
-    stepBound = np.inf
+    stepBound = cp.inf
 
     return ydot, stepBound, schemeData

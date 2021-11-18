@@ -1,6 +1,6 @@
 __all__ = ["termSum"]
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termSum(t, y, schemeData):

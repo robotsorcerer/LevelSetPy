@@ -6,7 +6,7 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Fix Tensor Mode Swap in Memory Layout."
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 class TenMat():
@@ -78,63 +78,63 @@ class TenMat():
         """
 
         assert isinstance(T, Tensor), 'T must be a tensor class.'
-        assert T.data.ndim !=2, "Input Tensor must be 2D."
+        assert T.data.ndim !=2, "Icp.t Tensor must be 2D."
         assert isinstance(T, Tensor), "T must be of class tensor type."
 
         if not isbundle(options) and isinstance(options, dict):
             options = Bundle(options)
         assert isbundle(options), "options must be of Bundle class."
 
-        self.tsize = np.asarray(options.__dict__.get("tsize", T.shape), dtype=np.intp)
+        self.tsize = cp.asarray(options.__dict__.get("tsize", T.shape), dtype=cp.intp)
         self.rindices = options.__dict__.get("rdims", None)
         self.cindices = options.__dict__.get("cdims", None)
         self.data = T.data
         self.T= T
 
-        tsize = np.asarray(options.__dict__.get("tsize", T.shape), dtype=np.intp)
+        tsize = cp.asarray(options.__dict__.get("tsize", T.shape), dtype=cp.intp)
         rdims = options.__dict__.get("rdims", None)
         cdims = options.__dict__.get("cdims", None)
         data  = T.data
 
         n = numel(tsize)
 
-        if np.any(rdims) and np.any(cdims):
-            dims_joined = np.concatenate((rdims, cdims))
-        elif np.any(rdims) and not np.any(cdims):
+        if cp.any(rdims) and cp.any(cdims):
+            dims_joined = cp.concatenate((rdims, cdims))
+        elif cp.any(rdims) and not cp.any(cdims):
             dims_joined = rdims
-        elif not np.any(rdims) and np.any(cdims):
+        elif not cp.any(rdims) and cp.any(cdims):
             dims_joined = cdims
 
-        if not np.allclose(range(n), np.sort(dims_joined)):
+        if not cp.allclose(range(n), cp.sort(dims_joined)):
             raise ValueError('Incorrect dimension specifications.')
-        elif (np.prod(self.tsize[rdims]) != size(self.data, 0)):
+        elif (cp.prod(self.tsize[rdims]) != size(self.data, 0)):
             raise ValueError('T.shape[0] does not match size specified by rdims and shape.')
-        elif (np.prod(self.tsize[cdims]) != size(self.data, 1)):
+        elif (cp.prod(self.tsize[cdims]) != size(self.data, 1)):
             raise ValueError('T.shape[1] does not match size specified by cdims and shape.')
 
         tsize = T.shape
         n     = T.ndim
 
-        tmp = np.zeros((n), dtype=bool)
+        tmp = cp.zeros((n), dtype=bool)
         tmp.fill(True)
-        if np.any(rdims):
-            tmp[np.ix_(*rdims)] = False
-            cdims = np.nonzero(tmp)
+        if cp.any(rdims):
+            tmp[cp.ix_(*rdims)] = False
+            cdims = cp.nonzero(tmp)
 
         if isfield(options, 'cyclic') and options.cyclic=='T':
             cdims = copy.copy(options.rdims)
-            tmp = np.zeros((n), dtype=bool)
+            tmp = cp.zeros((n), dtype=bool)
             tmp.fill(True)
-            tmp[np.ix_(*cdims)] = False
-            rdims = np.nonzero(tmp)
+            tmp[cp.ix_(*cdims)] = False
+            rdims = cp.nonzero(tmp)
 
         elif isfield(options, 'cyclic') and options.cyclic=='fc':
             rdims = options.rdims
 
             if numel(rdims)!=1:
                 raise ValueError('Only one row dimension if third argument is ''fc''.')
-            cdims = np.concatenate((np.arange(rdims, n, dtype=np.intp), \
-                                    np.arange(rdims-1, dtype=np.intp)), dtype=np.intp)
+            cdims = cp.concatenate((cp.arange(rdims, n, dtype=cp.intp), \
+                                    cp.arange(rdims-1, dtype=cp.intp)), dtype=cp.intp)
 
         elif isfield(options, 'cyclic') and options.cyclic=='bc':
             rdims = options.rdims
@@ -142,8 +142,8 @@ class TenMat():
             if numel(rdims)!=1:
                 raise ValueError('Only one row dimension if third argument is ''bc''.')
 
-            cdims = np.concatenate((np.arange(rdims, -1, 1, dtype=np.intp),\
-                                    np.arange(n-1, -1, rdims+1, dtype=np.intp)), dtype=np.intp)
+            cdims = cp.concatenate((cp.arange(rdims, -1, 1, dtype=cp.intp),\
+                                    cp.arange(n-1, -1, rdims+1, dtype=cp.intp)), dtype=cp.intp)
         else:
             raise ValueError('Unrecognized option.')
 

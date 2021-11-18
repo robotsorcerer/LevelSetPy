@@ -1,7 +1,7 @@
 __all__ = ["odeCFL3"]
 
 import copy
-import numpy as np
+import cupy as cp
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_call import odeCFLcallPostTimestep
 from Utilities import *
@@ -55,7 +55,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
        not be used in this case because of the excessive memory requirements
        for storing solutions at multiple timesteps.
 
-     The output version of schemeData will normally be identical to the input
+     The output version of schemeData will normally be identical to the icp.t
        version, and therefore can be ignored.  However, if a PostTimestep
        routine is used (see odeCFLset) then schemeData may be modified during
        integration, and the version of schemeData at tf is returned in this
@@ -118,11 +118,11 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
         t = tspan[0]
         steps = 0
         startTime = cputime()
-        stepBound = zeros(numY, 1, dtype=np.float64)
+        stepBound = cp.zeros((numY), dtype=cp.float64)
         ydot = cell(numY)
         y = copy.copy(y0)
 
-        while(tspan[1] - t >= small * np.abs(tspan[1])):
+        while(tspan[1] - t >= small * cp.abs(tspan[1])):
             # Approximate the derivative and CFL restriction.
             for i in range(numY):
                 # approximate H(x,p) term in the HJ PDE with Lax-Friedrichs
@@ -140,8 +140,8 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             #   We'll use this fixed timestep for both substeps..
 
             # print('stepBound ', stepBound, ' options.maxStep ', options.maxStep)
-            deltaT = min(np.min(options.factorCFL*stepBound),  tspan[1] - t, options.maxStep)
-
+            deltaT = cp.min(cp.hstack((options.factorCFL*stepBound
+                        tspan[1] - t, options.maxStep)))
             # Take the first substep.
             t1 = t + deltaT
             # print('y first substep: ', y.shape)
@@ -179,7 +179,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             # Take the second substep.
             t2 = t1 + deltaT
             if(iscell(y1)):
-                y2 = cell(numY, 1)
+                y2 = cell(numY)
                 for i in range(numY):
                     y2[i] = y1[i] + deltaT * ydot[i]
             else:
@@ -258,7 +258,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             if options.terminalEvent:
                 eventValue, schemeData = options.terminalEvent(t, y, tOld, yOld, schemeData)
 
-                if((steps > 1) and np.any(np.sign(eventValue) != np.sign(eventValueOld))):
+                if((steps > 1) and cp.any(cp.sign(eventValue) != cp.sign(eventValueOld))):
                     break
                 else:
                     eventValueOld = eventValue

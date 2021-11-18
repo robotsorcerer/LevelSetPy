@@ -34,7 +34,7 @@ def neighbors(idx, out_shape):
 
 def neighs2d(idx, out_shape):
     '''
-        Inputs:
+        Icp.ts:
             idx: index of the cell within the 2D grid.
             out_shape: shape of the containing grid for all the cells.
         Output:
@@ -74,7 +74,7 @@ def neighs2d(idx, out_shape):
 
 def neighs3d(idx, out_shape):
     '''
-        Inputs:
+        Icp.ts:
             idx: Tuple representing index of the cell within the 3D grid.
             out_shape: Tuple representing the shape of the containing grid for all the cells.
         Output:

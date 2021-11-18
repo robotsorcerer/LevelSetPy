@@ -9,7 +9,7 @@ __all__ = [
             "minimal_projection_error",
           ]
 
-import numpy as np
+import cupy as cp
 from scipy import linalg as la
 from scipy.sparse import linalg as spla
 from sklearn.utils import extmath as sklmath
@@ -82,8 +82,8 @@ def pod_basis(X, r=None, mode="dense", **options):
         if get_smallest:
             V1, smallest, _ = spla.svds(X, 1, which="SM",
                                         return_singular_vectors='u', **options)
-            V = np.concatenate((V, V1), axis=1)
-            svdvals = np.concatenate((svdvals, smallest))
+            V = cp.concatenate((V, V1), axis=1)
+            svdvals = cp.concatenate((svdvals, smallest))
             r += 1
 
     elif mode == "randomized":
@@ -118,16 +118,16 @@ def svdval_decay(singular_values, eps, plot=False):
         The number of singular values greater than the cutoff value(s).
     """
     # Calculate the number of singular values above the cutoff value(s).
-    one_eps = np.isscalar(eps)
+    one_eps = cp.isscalar(eps)
     if one_eps:
         eps = [eps]
-    singular_values = np.array(singular_values)
-    ranks = [np.count_nonzero(singular_values > ep) for ep in eps]
+    singular_values = cp.array(singular_values)
+    ranks = [cp.count_nonzero(singular_values > ep) for ep in eps]
 
     if plot:
         # Visualize singular values and cutoff value(s).
         ax = plt.gca()
-        j = np.arange(1, singular_values.size + 1)
+        j = cp.arange(1, singular_values.size + 1)
         ax.semilogy(j, singular_values, 'C0*', ms=10, mew=0, zorder=3)
         ax.set_xlim((0,j.size))
         ylim = ax.get_ylim()
@@ -167,19 +167,19 @@ def cumulative_energy(singular_values, thresh, plot=False):
         energy capture threshold.
     """
     # Calculate the cumulative energy.
-    svdvals2 = np.array(singular_values)**2
-    cum_energy = np.cumsum(svdvals2) / np.sum(svdvals2)
+    svdvals2 = cp.array(singular_values)**2
+    cum_energy = cp.cumsum(svdvals2) / cp.sum(svdvals2)
 
     # Determine the points at which the cumulative energy passes the threshold.
-    one_thresh = np.isscalar(thresh)
+    one_thresh = cp.isscalar(thresh)
     if one_thresh:
         thresh = [thresh]
-    ranks = [np.searchsorted(cum_energy, th) + 1 for th in thresh]
+    ranks = [cp.searchsorted(cum_energy, th) + 1 for th in thresh]
 
     if plot:
         # Visualize cumulative energy and threshold value(s).
         ax = plt.gca()
-        j = np.arange(1, singular_values.size + 1)
+        j = cp.arange(1, singular_values.size + 1)
         ax.plot(j, cum_energy, 'C2.-', ms=10, lw=1, zorder=3)
         ax.set_xlim(0, j.size)
         ylim = ax.get_ylim()
@@ -253,20 +253,20 @@ def minimal_projection_error(X, V, eps, plot=False):
         raise ValueError("data X must be two-dimensional")
     if V.ndim != 2:
         raise ValueError("basis V must be two-dimensional")
-    one_eps = np.isscalar(eps)
+    one_eps = cp.isscalar(eps)
     if one_eps:
         eps = [eps]
 
     # Calculate the projection errors.
     X_norm = la.norm(X, ord="fro")
-    rs = np.arange(1, V.shape[1])
-    errors = np.empty_like(rs, dtype=np.float)
+    rs = cp.arange(1, V.shape[1])
+    errors = cp.empty_like(rs, dtype=cp.float)
     for r in rs:
         # Get the POD basis of rank r and calculate the projection error.
         Vr = V[:,:r]
         errors[r-1] = la.norm(X - Vr @ Vr.T @ X, ord="fro") / X_norm
     # Calculate the ranks needed to get under each cutoff value.
-    ranks = [np.count_nonzero(errors > ep)+1 for ep in eps]
+    ranks = [cp.count_nonzero(errors > ep)+1 for ep in eps]
 
     if plot:
         ax = plt.gca()

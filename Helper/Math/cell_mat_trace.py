@@ -14,6 +14,6 @@ def cellMatrixTrace(A):
 
     traceA = 0
     for k in range(A.shape[0]):
-        traceA += np.trace(A[k])
+        traceA += cp.trace(A[k])
 
     return traceA

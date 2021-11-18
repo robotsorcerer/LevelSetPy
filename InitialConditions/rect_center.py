@@ -1,6 +1,6 @@
 __all__ = ["shapeRectangleByCenter"]
 
-import numpy as np
+import cupy as cp
 from Utilities.matlab_utils import *
 from .rect_corners import shapeRectangleByCorners
 
@@ -20,7 +20,7 @@ def shapeRectangleByCenter(grid, center=None, widths=None):
      The default parameters for shapeRectangleByCenter and
      shapeRectangleByCorners produce different rectangles.
 
-     Input Parameters:
+     Icp.t Parameters:
 
        grid: Grid structure (see processGrid.m for details).
 
@@ -49,12 +49,12 @@ def shapeRectangleByCenter(grid, center=None, widths=None):
      Lekan Molu, Sept 07, 2021
     """
     #Default parameter values.
-    if not np.any(center):
+    if not cp.any(center):
         center = zeros(grid.dim, 1)
     elif(numel(center) == 1):
         center *= ones(grid.dim, 1)
 
-    if not np.any(widths):
+    if not cp.any(widths):
         widths = ones(grid.dim, 1);
     elif numel(widths) == 1:
         widths *= ones(grid.dim, 1)
@@ -77,7 +77,7 @@ def shapeRectangleByCenter(grid, center=None, widths=None):
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid
     #  (ie there will be no implicit surface to visualize).
-    if(np.all(data.flatten() < 0) or (np.all(data.flatten() > 0))):
+    if(cp.all(data.flatten() < 0) or (cp.all(data.flatten() > 0))):
         logger.warn(f'Implicit surface not visible because function has '
                 'single sign on grid')
 

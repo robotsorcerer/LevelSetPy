@@ -1,6 +1,6 @@
 __all__ = ["artificialDissipationGLF"]
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
@@ -77,19 +77,19 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
 
     #---------------------------------------------------------------------------
     # Global LF stability dissipation.
-    derivMin = cell(grid.dim, 1)
-    derivMax = cell(grid.dim, 1)
-    derivDiff = cell(grid.dim, 1)
+    derivMin = cell(grid.dim)
+    derivMax = cell(grid.dim)
+    derivDiff = cell(grid.dim)
 
     # Revusut this
     for i in range(grid.dim):
         # Get derivative bounds over entire grid (scalars).
-        derivMinL = np.min(derivL[i].flatten())
-        derivMinR = np.min(derivR[i].flatten())
+        derivMinL = cp.min(derivL[i].flatten())
+        derivMinR = cp.min(derivR[i].flatten())
         derivMin[i] = min(derivMinL, derivMinR)
 
-        derivMaxL = np.max(derivL[i].flatten())
-        derivMaxR = np.max(derivR[i].flatten())
+        derivMaxL = cp.max(derivL[i].flatten())
+        derivMaxR = cp.max(derivR[i].flatten())
         derivMax[i] = max(derivMaxL, derivMaxR)
 
         # print(f'{i} derivMinL: {derivMinL} derivMaxL: {derivMaxL} derivMinR: {derivMinR} derivMaxR: {derivMaxR}')
@@ -106,8 +106,8 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
                       schemeData, i)
         # print(f'@aGLF: alpha: {alpha.shape}')
         diss += (0.5 * derivDiff[i] * alpha)
-        if isinstance(alpha, np.ndarray):
-          alpha = np.max(alpha.flatten())
+        if isinstance(alpha, cp.ndarray):
+          alpha = cp.max(alpha.flatten())
 
         stepBoundInv += (alpha / grid.dx.item(i))
 

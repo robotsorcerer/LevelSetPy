@@ -1,6 +1,6 @@
 __all__ = ["odeCFLmultipleSteps"]
 
-
+import cupy as cp
 from Utilities import *
 
 
@@ -66,17 +66,17 @@ def odeCFLmultipleSteps(intFunc, schemeFunc, tspan, y0, options, schemeData):
 
         if(iscell(y)):
             numY = len(y)
-            y = cell(numY, 1)
+            y = cell(numY)
             for i in range(numY):
-                y[i] = np.zeros((numT, len(y0[i])), dtype=np.float64)
+                y[i] = cp.zeros((numT, len(y0[i])), dtype=cp.float64)
                 y[i][0,:] = y0[i].T
         else:
-            y = np.zeros((numT, len(y0)), dtype=np.float64)
+            y = cp.zeros((numT, len(y0)), dtype=cp.float64)
             y[0,:] = y0.T
 
         yout = y
         for n in range(1, numT):
-            t[n], yout, schemeData = intFunc(schemeFunc, np.hstack((t[n-1], t[n])), yout, schemeData, options)
+            t[n], yout, schemeData = intFunc(schemeFunc, cp.hstack((t[n-1], t[n])), yout, schemeData, options)
 
             if(iscell(y)):
                 for i in range(numY):

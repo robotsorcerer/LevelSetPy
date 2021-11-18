@@ -1,7 +1,7 @@
 __all__ = ["shapeHyperplaneByPoints"]
 
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 
@@ -26,7 +26,7 @@ def shapeHyperplaneByPoints(grid, points, positivePoint):
        if the normal points out of the "clock".  This method does not work
        in 2D.
 
-     Input Parameters:
+     Icp.t Parameters:
 
        grid: Grid structure (see processGrid.m for details).
 
@@ -58,7 +58,7 @@ def shapeHyperplaneByPoints(grid, points, positivePoint):
     """
     #---------------------------------------------------------------------------
     # For the positivePoint parameter, what is "too close" to the interface?
-    small = 1e3 * np.finfo(float).eps
+    small = 1e3 * cp.finfo(float).eps
 
     #---------------------------------------------------------------------------
     if not positivePoint:
@@ -75,7 +75,7 @@ def shapeHyperplaneByPoints(grid, points, positivePoint):
     # We single out the first point.  Lines from this point to all the others
     # should lie on the hyperplane.
     point0 = points[0,:]
-    A = points[1:,:] - np.tile(point0, (grid.dim - 1, 1))
+    A = points[1:,:] - cp.tile(point0, (grid.dim - 1, 1))
 
     # Extract the normal to the hyperplane.
     normal = null(A)
@@ -100,7 +100,7 @@ def shapeHyperplaneByPoints(grid, points, positivePoint):
     if check_positive_point:
         positivePointCell = num2cell(positivePoint)
         positivePointValue = interpn(grid.xs{:}, data, positivePointCell{:})
-    if np.isnan(positivePointValue):
+    if cp.isnan(positivePointValue):
         error('positivePoint must be within the bounds of the grid.')
     elif(abs(positivePointValue) < small):
         error('positivePoint parameter is too close to the hyperplane.')
@@ -110,7 +110,7 @@ def shapeHyperplaneByPoints(grid, points, positivePoint):
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid
     #  (ie there will be no implicit surface to visualize).
-    if(np.all(data.flatten() < 0) or (np.all(data.flatten() > 0))):
+    if(cp.all(data.flatten() < 0) or (cp.all(data.flatten() > 0))):
     logger.warn(f'Implicit surface not visible because function has '
             'single sign on grid')
 

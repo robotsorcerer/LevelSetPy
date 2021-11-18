@@ -3,7 +3,7 @@ __all__ = ['matricize', 'tensor_matrix_mult' ]
 from .class_tensor import Tensor
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities.matlab_utils import *
 
 # class TensorAlgebra():
@@ -33,17 +33,17 @@ def matricize(T, mode=1):
 
     #1-mode unfold
     if mode=='1':
-        X = np.concatenate(( [T[...,i] for i in range(T.shape[-1])]),
+        X = cp.concatenate(( [T[...,i] for i in range(T.shape[-1])]),
                                 axis=1)
 
     #2-mode unfold
     elif mode=='2':
-        X = np.concatenate(( [T[...,i].T for i in range(T.shape[-1])]),
+        X = cp.concatenate(( [T[...,i].T for i in range(T.shape[-1])]),
                                 axis=1)
 
     #3-mode unfold
     elif mode=='3':
-        X = np.concatenate(( [ np.expand_dims(T[..., i].flatten(),
+        X = cp.concatenate(( [ cp.expand_dims(T[..., i].flatten(),
                         axis=1).T for i in range(T.shape[-1])]), axis=0)
 
     else:
@@ -60,16 +60,16 @@ def dims_check(self, dims=None, N=None, M=None):
 
     """
     if dims is None:
-        dims = np.arange(N)
+        dims = cp.arange(N)
 
-    if np.max(dims)<0:
+    if cp.max(dims)<0:
         raise ValueError('negative dims are not accounted for now.')
         #dims = set(matlab_array(1, N)).difference(-dims)
 
     P = len(dims)
 
-    sorted_dims = np.sort(dims)
-    sorted_dims_idx = np.argsort(dims)
+    sorted_dims = cp.sort(dims)
+    sorted_dims_idx = cp.argsort(dims)
 
     assert M < N, "We cannot have more multiplicands than dimensions"
 
@@ -132,9 +132,9 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False):
        the matrices are transposed.
 
        Examples
-       import numpy.random as npr
-       X = npr.rand(5,3,4,2)
-       A = npr.rand(4,5); B = npr.rand(4,3); C = npr.rand(3,4); D = npr.rand(3,2);
+       import numpy.random as cp.
+       X = cp..rand(5,3,4,2)
+       A = cp..rand(4,5); B = cp..rand(4,3); C = cp..rand(3,4); D = cp..rand(3,2);
        Y = tensor_matrix_mult(X, A, 1)         <-- computes X times A in mode-1
        Y = tensor_matrix_mult(X, [A,B,C,D], 1) <-- same as above
        Y = tensor_matrix_mult(X, A.T, 1, Transpose)   <-- same as above
@@ -156,7 +156,7 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False):
         X = X.data
     
     if n is None:      
-        n = np.arange(X.ndim)
+        n = cp.arange(X.ndim)
         
     if isinstance(V, list) or isinstance(V, tuple):
         dims = n
@@ -188,24 +188,24 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False):
     else:
         p = V.shape[0]
     
-    if np.isscalar(n) and n==0:
+    if cp.isscalar(n) and n==0:
         A = X.reshape(sz[n], -1)
         if Transpose:
             B = V.T@A
         else:
             B = V@A
-    elif np.isscalar(n) and n==N-1:
+    elif cp.isscalar(n) and n==N-1:
         At = X.reshape(-1, sz[n])
         if Transpose:
             B = At@V
         else:
             B = At@V.T
     else:
-        nblocks = np.prod(sz[n+1:N])
-        ncols   = np.prod(sz[:n-1])
+        nblocks = cp.prod(sz[n+1:N])
+        ncols   = cp.prod(sz[:n-1])
         nAk = sz[n] * ncols
         nBk = p  *  ncols
-        B = np.zeros(p * nblocks * ncols, 1)
+        B = cp.zeros(p * nblocks * ncols, 1)
 
         for k in range(nblocks):
             Akt = X[k * nAk: k*nAK].reshape(ncols, sz[n])
@@ -213,7 +213,7 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False):
                 Bkt = Akt @ V
             else:
                 Bkt = Akt @ V.T
-            B[(k-1)*nBk + 1: k * nBk] = np.ravel(Bkt)
+            B[(k-1)*nBk + 1: k * nBk] = cp.ravel(Bkt)
     newsz = copy.copy(sz)
     newsz[n] = p
     

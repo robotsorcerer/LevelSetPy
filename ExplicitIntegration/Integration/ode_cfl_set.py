@@ -8,7 +8,7 @@ def odeCFLset(kwargs=None):
      CFL: Courant–Friedrichs–Lewy condition
 
      See: https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition
-      Inputs:
+      Icp.ts:
         options = {'name1': value1, 'name2': value2, ...}
       Output:
         options = odeCFLset('name1', value1, 'name2', value2, ...)
@@ -18,7 +18,7 @@ def odeCFLset(kwargs=None):
        constrained ODE integrators.  Basically the same as Matlab's odeset
        but with not nearly as many options.
 
-     If called with no input or output parameters, then all options,
+     If called with no icp.t or output parameters, then all options,
        their valid values and defaults are listed.
 
      Available options (options names are case insensitive):
@@ -55,7 +55,7 @@ def odeCFLset(kwargs=None):
                     [ value, schemeDataOut ] = f(t, y, tOld, yOld, schemeDataIn)
                        which is called after every timestep and can be used to
                        halt time integration before the final time is reached.
-                       The input parameters include the state and time from
+                       The icp.t parameters include the state and time from
                        the previous timestep.  If any element of the
                        return parameter value changes sign from one timestep
                        to the next, then integration is terminated and
@@ -77,7 +77,7 @@ def odeCFLset(kwargs=None):
      Lekan: August 16, 2021
     """
     #---------------------------------------------------------------------------
-    # No output, no input means caller just wants a list of available options.
+    # No output, no icp.t means caller just wants a list of available options.
     if not kwargs:
         info(f'    factorCFL: [ positive scalar {0.5} ]')
         info('      maxStep: [ positive scalar {REALMAX} ]')

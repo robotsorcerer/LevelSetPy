@@ -7,7 +7,7 @@ __status__ 		= "Completed"
 
 import argparse
 from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
+import cupy as cp
 import os, sys
 from os.path import abspath, dirname, exists, join
 sys.path.append(dirname(dirname(abspath(__file__))))
@@ -67,27 +67,27 @@ def levelset_viz(g, ax, fig, mesh, title='', savedict=None, fontdict=None, fc='c
 
 def get_grid():
 
-	g2min = -2*np.ones((2, 1),dtype=np.float64)
-	g2max = +2*np.ones((2, 1),dtype=np.float64)
-	g2N = 51*np.ones((2, 1),dtype=np.int64)
+	g2min = -2*cp.ones((2, 1),dtype=cp.float64)
+	g2max = +2*cp.ones((2, 1),dtype=cp.float64)
+	g2N = 51*cp.ones((2, 1),dtype=cp.int64)
 	g2 = createGrid(g2min, g2max, g2N, process=True)
 
 	return g2
 
 def main(savedict):
 	# generate signed distance function for cylinder
-	center = np.array(([[-.5,.5]]), np.float64).T
+	center = cp.array(([[-.5,.5]]), cp.float64).T
 
 	g2 = get_grid()
 	# shapes generation
 	axis_align, radius=2, 1
 	cylinder = shapeCylinder(g2, axis_align, center, radius);
 	sphere = shapeSphere(g2, center, radius=1)
-	sphere2 = shapeSphere(g2, center=np.array(([-0., 0.])).T, radius=1)
+	sphere2 = shapeSphere(g2, center=cp.array(([-0., 0.])).T, radius=1)
 	rect = shapeRectangleByCorners(g2)
-	rect2 = shapeRectangleByCorners(g2, np.array([[ -1.0,  -np.inf,  ]]).T, np.array([[ np.inf, -1.0 ]]).T, )
-	rect3 = shapeRectangleByCorners(g2, np.array([[ -1.0,  -0.5,  ]]).T, np.array([[ .5, 1.0 ]]).T)
-	rect4 = shapeRectangleByCenter(g2, np.array([[ -1.0,  -0.5,  ]]).T, np.array([[ .5, 1.0 ]]).T)
+	rect2 = shapeRectangleByCorners(g2, cp.array([[ -1.0,  -cp.inf,  ]]).T, cp.array([[ cp.inf, -1.0 ]]).T, )
+	rect3 = shapeRectangleByCorners(g2, cp.array([[ -1.0,  -0.5,  ]]).T, cp.array([[ .5, 1.0 ]]).T)
+	rect4 = shapeRectangleByCenter(g2, cp.array([[ -1.0,  -0.5,  ]]).T, cp.array([[ .5, 1.0 ]]).T)
 	# Set Ops
 	sphere_union = shapeUnion(sphere, sphere2)
 	rect_union = shapeUnion(rect, rect3)

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from skimage import measure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
+import cupy as cp
 import os, sys
 from os.path import abspath, dirname, exists, join
 sys.path.append(dirname(dirname(abspath(__file__))))
@@ -21,16 +21,16 @@ from Visualization.mesh_implicit import implicit_mesh
 fig = plt.figure(figsize=(16, 9))
 def get_grid():
 
-	g3min = -.6*np.ones((3, 1),dtype=np.float64)
-	g3max = +6*np.ones((3, 1),dtype=np.float64)
-	g3N = 51*np.ones((3, 1),dtype=np.int64)
+	g3min = -.6*cp.ones((3, 1),dtype=cp.float64)
+	g3max = +6*cp.ones((3, 1),dtype=cp.float64)
+	g3N = 51*cp.ones((3, 1),dtype=cp.int64)
 	g3 = createGrid(g3min, g3max, g3N, process=True)
 
 	return g3
 
 def slender_cylinder(g3):
 	axis_align, radius=2, .5
-	center = 2*np.ones((3, 1), np.float64)
+	center = 2*cp.ones((3, 1), cp.float64)
 	cylinder = shapeCylinder(g3, axis_align, center, radius);
 
 	spacing = tuple(g3.dx.flatten().tolist())
@@ -56,7 +56,7 @@ def cylinder_sphere(g3, savedict):
     spacing = tuple(g3.dx.flatten().tolist())
 
     # generate signed distance function for cylinder
-    center = 2*np.ones((3, 1), np.float64)
+    center = 2*cp.ones((3, 1), cp.float64)
     ignoreDim, radius=2, 1.5
     cylinder = shapeCylinder(g3, ignoreDim, center, radius);
     cyl_mesh = implicit_mesh(cylinder, level=0., spacing=spacing)

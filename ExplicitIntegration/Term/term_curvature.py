@@ -1,7 +1,7 @@
 __all__ = ["termCurvature"]
 
 import copy
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def termCurvature(t, y, schemeData):
@@ -28,7 +28,7 @@ def termCurvature(t, y, schemeData):
 
        ydot	 Change in the data array, in vector form.
        stepBound	 CFL bound on timestep for stability.
-       schemeData   The same as the input argument (unmodified).
+       schemeData   The same as the icp.t argument (unmodified).
 
      schemeData is a structure containing data specific to this type of
        term approximation.  For this function it contains the field(s)
@@ -48,7 +48,7 @@ def termCurvature(t, y, schemeData):
           size as data.
        2) For general multipliers, a function handle to a function with prototype
           b = scalarGridFunc(t, data, schemeData), where the output b is the
-          scalar/array from (1) and the input arguments are the same as those
+          scalar/array from (1) and the icp.t arguments are the same as those
           of this function (except that data = y has been reshaped to its
           original size).  In this case, it may be useful to include additional
           fields in schemeData.
@@ -102,9 +102,9 @@ def termCurvature(t, y, schemeData):
     grid = thisSchemeData.grid
 
     if(iscell(y)):
-        data = y[0].reshape(grid.shape, order='F')
+        data = y[0].reshape(grid.shape)
     else:
-        data = y.reshape(grid.shape, order='F')
+        data = y.reshape(grid.shape)
 
     # Get multiplier
     if(isfloat(thisSchemeData.b, 'double')):
@@ -119,9 +119,9 @@ def termCurvature(t, y, schemeData):
                 dataV = cell(numY, 1)
                 for i in range(numY):
                     if(iscell(schemeData)):
-                        dataV[i] = y[i].reshape(schemeData[i].grid.shape, order='F')
+                        dataV[i] = y[i].reshape(schemeData[i].grid.shape)
                     else:
-                        dataV[i] = y[i].reshape(schemeData.grid.shape, order='F')
+                        dataV[i] = y[i].reshape(schemeData.grid.shape)
 
                 b = thisSchemeData.b(t, dataV, schemeData)
 
@@ -141,7 +141,7 @@ def termCurvature(t, y, schemeData):
     delta = -b * curvature * gradMag
 
     #According to O&F equation (4.7).
-    stepBound = 1 / (2 * np.max(b) * np.sum(grid.dx ** -2))
+    stepBound = 1 / (2 * cp.max(b) * cp.sum(grid.dx ** -2))
 
     # Reshape output into vector format and negate for RHS of ODE.
     ydot = expand(-delta.flatten(order='F'), 1)

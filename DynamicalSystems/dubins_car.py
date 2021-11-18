@@ -1,6 +1,6 @@
 from .dyn_sys import DynSys
 import copy
-import numpy as np
+import cupy as np
 from Utilities import *
 from ExplicitIntegration.runge_kutta4 import dynamics_RK4
 
@@ -14,27 +14,27 @@ class DubinsCar(DynSys):
         self.x = to_column_mat(x)
         # Angle bounds
         if wRange is None:
-            self.wRange = np.array([[-1, 1]]).T
+            self.wRange = cp.array([[-1, 1]]).T
         elif numel(wRange) == 2:
             self.wRange = wRange
         else:
-            self.wRange = [-wRange, wRange] #np.array([[-wRange, wRange]]).T
+            self.wRange = [-wRange, wRange] #cp.array([[-wRange, wRange]]).T
 
         self.speed = 5 if not speed else speed # Constant speed = speed
 
         # Disturbance
         if dRange is None:
-            self.dRange = np.zeros((2, 3))
-        elif np.any(dRange.shape)==1:
+            self.dRange = cp.zeros((2, 3))
+        elif cp.any(dRange.shape)==1:
             # make it 2 x 3 by stacking
-            self.dRange = np.vstack([-dRange, dRange])
+            self.dRange = cp.vstack([-dRange, dRange])
         else:
             self.dRange = dRange
 
         # Dimensions that are active
-        self.dims = np.arange(3) if dims is None else dims
+        self.dims = cp.arange(3) if dims is None else dims
 
-        pdim = np.where((self.dims==0) | (self.dims==1))
+        pdim = cp.where((self.dims==0) | (self.dims==1))
         DynSys.__init__(self, nx=len(self.dims), nu=1,nd=3,
                                 x = self.x, xhist=self.x, pdim=pdim
                                )
@@ -46,15 +46,15 @@ class DubinsCar(DynSys):
         #    \dot{x}_3 = w
         #   Control: u = w;
         if not d:
-            d = np.zeros((3,1))
+            d = cp.zeros((3,1))
         if iscell(x):
             dx = cell(len(self.dims), 1)
             for i in range(len(self.dims)):
                 dx[i] = self.dynamics_helper(x, u, d, self.dims, self.dims[i])
         else:
-            dx = np.zeros((self.nx, 1), dtype=np.float64)
-            dx[0] = self.speed * np.cos(x[2]) + d[0]
-            dx[1] = self.speed * np.sin(x[2]) + d[1]
+            dx = cp.zeros((self.nx, 1), dtype=cp.float64)
+            dx[0] = self.speed * cp.cos(x[2]) + d[0]
+            dx[1] = self.speed * cp.sin(x[2]) + d[1]
             dx[2] = u + d[2]
 
         return dx
@@ -62,9 +62,9 @@ class DubinsCar(DynSys):
     def dynamics_helper(self, x, u, d, dims, dim):
         if dim==0:
             # print('dims: ', dims, 'x: ', [d.shape for d in x])
-            dx = self.speed * np.cos(x[2]) + d[0]
+            dx = self.speed * cp.cos(x[2]) + d[0]
         elif dim==1:
-            dx = self.speed * np.sin(x[2]) + d[1]
+            dx = self.speed * cp.sin(x[2]) + d[1]
         elif dim==2:
             dx = u + d[2]
         else:
@@ -98,13 +98,13 @@ class DubinsCar(DynSys):
         ## Optimal control
         if dMode=='max':
           for i in range(3):
-              if np.any(self.dims == i):
+              if cp.any(self.dims == i):
                   vOpt.append((deriv[i]>=0)*self.dRange[1][i] + \
                             (deriv[i]<0)*(self.dRange[0][i]))
 
         elif dMode=='min':
           for i in range(3):
-              if np.any(self.dims[self.dims == i]):
+              if cp.any(self.dims[self.dims == i]):
                   vOpt.append((deriv[i]>=0)*self.dRange[0][i] + \
                             (deriv[i]<0)*(self.dRange[1][i]))
         else:
@@ -115,7 +115,7 @@ class DubinsCar(DynSys):
     def update_state(self, u, T=0, x0=None, d=[]):
         # Updates state based on control
         #
-        # Inputs:   obj - current quardotor object
+        # Icp.ts:   obj - current quardotor object
         #           u   - control (defaults to previous control)
         #           T   - duration to hold control
         #           x0  - initial state (defaults to current state if set to [])
@@ -131,22 +131,22 @@ class DubinsCar(DynSys):
         if u is None:
             return x0
 
-        if np.isnan(u):
+        if cp.isnan(u):
             warn(f'u is Nan')
             return x0
 
         if u.shape[0]<u.shape[1]:
             u = u.T
 
-        if not np.any(d):
+        if not cp.any(d):
             x = dynamics_RK4(self.dynamics, [0, T], x0, u, [])
         else:
             x = dynamics_RK4(self.dynamics, [0, T], x0, u, d)
 
-        x1 = np.asarray(x)
+        x1 = cp.asarray(x)
 
         self.x = x1
         self.u = u
 
-        self.xhist = np.concatenate((x1, self.xhist), 1)
-        self.uhist = np.concatenate((u, self.uhist), 1)
+        self.xhist = cp.concatenate((x1, self.xhist), 1)
+        self.uhist = cp.concatenate((u, self.uhist), 1)

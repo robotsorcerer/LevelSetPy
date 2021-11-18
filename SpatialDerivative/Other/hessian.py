@@ -41,7 +41,7 @@ def hessianSecond(grid, data):
 
      Ian Mitchell, 6/3/03
     """
-    dxInv = np.divide(1, grid.dx)
+    dxInv = cp.divide(1, grid.dx)
 
     # How big is the stencil?
     stencil = 1
@@ -74,7 +74,7 @@ def hessianSecond(grid, data):
     # Centered second partials (Hessian approximation).
     #   We will only fill the lower half of second,
     #   since mixed partials' derivative ordering doesn't matter.
-    second = np.empty((grid.dim, grid.dim))
+    second = cp.empty((grid.dim, grid.dim))
     for i  in range(grid.dim):
         # First, the pure second partials.
         #   Get rid of ghost cells on other dimensions.

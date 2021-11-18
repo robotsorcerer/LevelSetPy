@@ -5,7 +5,7 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 from BoundaryCondition import addGhostPeriodic
 from .augment_periodic import augmentPeriodicData
@@ -18,7 +18,7 @@ def eval_u(gs, datas, xs, interp_method='linear'):
        Computes the interpolated value of the value function data at the
        states xs
 
-     Inputs:
+     Icp.ts:
        Option 1: Single grid, single value function, multiple states
          gs    - a single grid structure
          datas - a single matrix (look-up table) representing the value
@@ -42,7 +42,7 @@ def eval_u(gs, datas, xs, interp_method='linear'):
      Lekan Molux, 2021-08-09
      """
 
-    if isinstance(gs, Bundle) and isinstance(datas, np.ndarray) and len(xs.shape)>=2:
+    if isinstance(gs, Bundle) and isinstance(datas, cp.ndarray) and len(xs.shape)>=2:
         # Option 1
         v = eval_u_single(gs, datas, xs, interp_method)
     elif isinstance(gs, Bundle) and iscell(datas) and isvector(xs):
@@ -50,15 +50,15 @@ def eval_u(gs, datas, xs, interp_method='linear'):
         v = cell(len(datas), 1)
         for i in range(len(datas)):
             v[i] = eval_u_single(gs, datas[i], xs, interp_method)
-        v = np.array(v)
+        v = cp.array(v)
     elif iscell(gs) and iscell(datas) and iscell(xs):
         # Option 3
         v = cell(len(gs), 1)
         for i in range(len(gs)):
             v[i] = eval_u_single(gs[i], datas[i], xs[i], interp_method)
-        v = np.array(v)
+        v = cp.array(v)
     else:
-        error('Unrecognized combination of input data types!')
+        error('Unrecognized combination of icp.t data types!')
 
     return v
 
@@ -67,7 +67,7 @@ def  eval_u_single(g, data, x, interp_method):
      v = eval_u_single(g, data, x)
        Computes the interpolated value of a value function data at state x
 
-     Inputs:
+     Icp.ts:
        g       - grid
        data    - implicit function describing the set
        x       - points to check each row is a point
@@ -88,18 +88,18 @@ def  eval_u_single(g, data, x, interp_method):
     ## Dealing with periodicity
     for i in range(g.dim):
         if (isfield(g, 'bdry') and id(g.bdry[i])==id(addGhostPeriodic)):
-            # Map input points within grid bounds
+            # Map icp.t points within grid bounds
             period = max(g.vs[i]) - min(g.vs[i])
 
             i_above_bounds = x[:,i] > max(g.vs[i])
-            while np.any(i_above_bounds):
+            while cp.any(i_above_bounds):
                 # print(f'i_above_bounds: {i_above_bounds}')
                 # print('x: ', x, ' x[i_above_bounds, i]: ', x[i_above_bounds, i])
                 x[i_above_bounds, i] -= period
                 i_above_bounds = x[:,i] > max(g.vs[i])
 
             i_below_bounds = x[:,i] < min(g.vs[i])
-            while np.any(i_below_bounds):
+            while cp.any(i_below_bounds):
                 x[i_below_bounds, i] += period
                 i_below_bounds = x[:,i] < min(g.vs[i])
 

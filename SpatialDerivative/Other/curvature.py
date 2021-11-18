@@ -40,7 +40,7 @@ def curvatureSecond(grid, data):
     for i in range(1,grid.dim):
         gradMag2 += first[i]**2
 
-    gradMag = np.sqrt(gradMag2)
+    gradMag = cp.sqrt(gradMag2)
 
     curvature = zeros(size(data))
     for i in range(grid.dim):
@@ -51,7 +51,7 @@ def curvatureSecond(grid, data):
     # Be careful not to stir the wrath of "Divide by Zero".
     #  Note that gradMag == 0 implies curvature == 0 already, since all the
     #  terms in the curvature approximation involve at least one first dervative.
-    nonzero = np.nonzero(gradMag > 0)
+    nonzero = cp.nonzero(gradMag > 0)
     curvature[nonzero] = curvature[nonzero] / gradMag[nonzero]**3
 
     return curvature, gradMag

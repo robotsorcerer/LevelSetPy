@@ -1,6 +1,6 @@
 __all__ = ["genericPartial"]
 
-import numpy as np
+import cupy as cp
 from Utilities import *
 
 def genericPartial(t, data, derivMin, derivMax, schemeData, dim):
@@ -46,8 +46,8 @@ def genericPartial(t, data, derivMin, derivMax, schemeData, dim):
     dxLU = dynSys.dynamics(t, schemeData.grid.xs, uL, dU)
 
     # print(f'dxUU : {dxUU[-1]}, dim {dim}, dxUL: {dxUL[-1]}')
-    alpha = np.maximum(np.abs(dxUU[dim]), np.abs(dxUL[dim]))
-    alpha = np.maximum(alpha, np.abs(dxLL[dim]))
-    alpha = np.maximum(alpha, np.abs(dxLU[dim]))
+    alpha = cp.maximum(cp.abs(dxUU[dim]), cp.abs(dxUL[dim]))
+    alpha = cp.maximum(alpha, cp.abs(dxLL[dim]))
+    alpha = cp.maximum(alpha, cp.abs(dxLU[dim]))
 
     return alpha

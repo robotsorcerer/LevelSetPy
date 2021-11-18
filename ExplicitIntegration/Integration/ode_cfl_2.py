@@ -2,7 +2,7 @@ __all__ = ["odeCFL2"]
 
 import copy
 import time
-import numpy as np
+import cupy as cp
 from Utilities import *
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_mult import odeCFLmultipleSteps
@@ -58,7 +58,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
        not be used in this case because of the excessive memory requirements
        for storing solutions at multiple timesteps.
 
-     The output version of schemeData will normally be identical to the input
+     The output version of schemeData will normally be identical to the icp.t
        version, and therefore can be ignored.  However, if a PostTimestep
        routine is used (see odeCFLset) then schemeData may be modified during
        integration, and the version of schemeData at tf is returned in this
@@ -103,6 +103,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             if(iscell(schemeFunc)):
                 schemeFuncCell = schemeFunc
             else:
+                # schemeFuncCell[:numY] = schemeFunc
                 schemeFuncCell = [schemeFunc for i in range(numY)]
         else:
             # Set numY, but be careful: ((numY == 1) & iscell(y0)) is possible.
@@ -110,15 +111,16 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
             # We need a cell vector form of schemeFunc.
             schemeFuncCell = [schemeFunc]
+        # print(f'y0 odeCFL2 b4: , {cp.linalg.norm(y0)}')
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         t = tspan[0]
         steps = 0
         startTime = cputime()
-        stepBound = np.zeros((numY), dtype=np.float64)
+        stepBound = cp.zeros((numY), dtype=cp.float64)
         ydot = cell(numY)
         y = copy.copy(y0)
 
-        while(tspan[1] - t >= small * np.abs(tspan[1])):
+        while(tspan[1] - t >= small * cp.abs(tspan[1])):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # First substep: Forward Euler from t_n to t_{n+1}.
 
@@ -136,7 +138,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             #   For vector level sets, use the most restrictive stepBound.
             #   We'll use this fixed timestep for both substeps..
 
-            deltaT = np.min(np.hstack((options.factorCFL*stepBound,  \
+            deltaT = cp.min(cp.hstack((options.factorCFL*stepBound,  \
                            tspan[1] - t, options.maxStep)))
 
             # Take the first substep.
@@ -168,7 +170,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             #   the CFL condition by a significant amount, throw a warning.
             #   For vector level sets, use the most restrictive stepBound.
             # Occasional failure should not cause too many problems.
-            if(deltaT > np.min(safetyFactorCFL * stepBound)):
+            if(deltaT > cp.min(safetyFactorCFL * stepBound)):
                 violation = deltaT / stepBound
                 warn(f'Second substep violated CFL effective number {violation}')
 
@@ -211,7 +213,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             if options.terminalEvent:
                 eventValue, schemeData = options.terminalEvent(t, y, tOld, yOld, schemeData)
 
-                if((steps > 1) and np.any(np.sign(eventValue) != np.sign(eventValueOld))):
+                if((steps > 1) and cp.any(cp.sign(eventValue) != cp.sign(eventValueOld))):
                     break
                 else:
                     eventValueOld = eventValue

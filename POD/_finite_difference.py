@@ -7,7 +7,7 @@ __all__ = [
             "xdot",
           ]
 
-import numpy as np
+import cupy as cp
 
 # Finite difference stencils ==================================================
 def _fwd4(y, dt):                                           # pragma: no cover
@@ -69,16 +69,16 @@ def xdot_uniform(X, dt, order=2):
         Approximate time derivative of the snapshot data. The jth column is
         the derivative dx / dt corresponding to the jth snapshot, X[:,j].
     """
-    # Check dimensions and input types.
+    # Check dimensions and icp.t types.
     if X.ndim != 2:
         raise ValueError("data X must be two-dimensional")
-    if not np.isscalar(dt):
+    if not cp.isscalar(dt):
         raise TypeError("time step dt must be a scalar (e.g., float)")
 
     if order == 2:
-        return np.gradient(X, dt, edge_order=2, axis=1)
+        return cp.gradient(X, dt, edge_order=2, axis=1)
 
-    Xdot = np.empty_like(X)
+    Xdot = cp.empty_like(X)
     n,k = X.shape
     if order == 4:
         # Central difference on interior
@@ -136,7 +136,7 @@ def xdot_nonuniform(X, t):
         raise ValueError("data X not aligned with time t")
 
     # Compute the derivative with a second-order difference scheme.
-    return np.gradient(X, t, edge_order=2, axis=-1)
+    return cp.gradient(X, t, edge_order=2, axis=-1)
 
 
 def xdot(X, *args, **kwargs):
@@ -193,7 +193,7 @@ def xdot(X, *args, **kwargs):
             arg = args[0]
             if isinstance(arg, float):          # arg = dt.
                 func = xdot_uniform
-            elif isinstance(arg, np.ndarray):  # arg = t; do uniformity test.
+            elif isinstance(arg, cp.ndarray):  # arg = t; do uniformity test.
                 func = xdot_nonuniform
             else:
                 raise TypeError(f"invalid argument type '{type(arg)}'")

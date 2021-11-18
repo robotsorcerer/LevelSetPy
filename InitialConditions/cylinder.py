@@ -1,6 +1,6 @@
 __all__ = ["shapeCylinder"]
 
-import numpy as np
+import cupy as cp
 from Utilities.matlab_utils import *
 
 def shapeCylinder(grid, axis_align=[], center=None, radius=1):
@@ -17,7 +17,7 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
        Intervals, circles and spheres (if axis_align is empty).
        Slabs (if axis_align contains all dimensions except one).
 
-     Input Parameters:
+     Icp.t Parameters:
 
        grid: Grid structure (see processGrid.py for details).
 
@@ -42,23 +42,23 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
      Default parameter values.
     """
 
-    if not np.any(center):
+    if not cp.any(center):
         center = zeros(grid.dim, 1);
     elif(numel(center) == 1):
-        center = center * ones(grid.dim, 1, dtype=np.float64);
+        center = center * ones(grid.dim, 1, dtype=cp.float64);
 
     #---------------------------------------------------------------------------
     # Signed distance function calculation.
-    data = np.zeros((grid.shape));
+    data = cp.zeros((grid.shape));
     for i in range(grid.dim):
         if(i != axis_align):
             data += (grid.xs[i] - center[i])**2
-    data = np.sqrt(data) - radius;
+    data = cp.sqrt(data) - radius;
 
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid
     #  (ie there will be no implicit surface to visualize).
-    if(np.all(data.flatten() < 0) or (np.all(data.flatten() > 0))):
+    if(cp.all(data.flatten() < 0) or (cp.all(data.flatten() > 0))):
         logger.warn(f'Implicit surface not visible because function has '
                 'single sign on grid');
     return data

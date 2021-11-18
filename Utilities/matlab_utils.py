@@ -18,7 +18,7 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Completed"
 
 
-import numpy as np
+import cupy as cp
 import logging
 import time
 import numbers
@@ -27,8 +27,8 @@ import sys, copy
 logger = logging.getLogger(__name__)
 
 # DEFAULT TYPES
-ZEROS_TYPE = np.int64
-ONES_TYPE = np.int64
+ZEROS_TYPE = cp.int64
+ONES_TYPE = cp.int64
 realmin = sys.float_info.min
 realmax = sys.float_info.max
 eps     = sys.float_info.epsilon
@@ -70,7 +70,7 @@ def index_array(start=1, end=None, step=1):
         in python.
     """
     assert end is not None, "end in index array must be an integer"
-    return np.arange(start-1, end, step, dtype=np.intp)
+    return cp.arange(start-1, end, step, dtype=cp.intp)
 
 def quickarray(start, end, step=1):
     "A quick python array."
@@ -89,26 +89,26 @@ def ismember(a, b):
 def omin(y, ylast):
     "Determines the minimum among both y and ylast arrays."
     if y.shape == ylast.shape:
-        temp = np.vstack((y, ylast))
-        return np.min(temp)
+        temp = cp.vstack((y, ylast))
+        return cp.min(temp)
     else:
         ylast = expand(ylast.flatten(), 1)
         if y.shape[-1]!=1:
             y = expand(y.flatten(), 1)
-        temp = np.vstack((y, ylast))
-    return np.min(temp)
+        temp = cp.vstack((y, ylast))
+    return cp.min(temp)
 
 def omax(y, ylast):
     "Determines the maximum among both y and ylast arrays."
     if y.shape == ylast.shape:
-        temp = np.vstack((y, ylast))
-        return np.max(temp)
+        temp = cp.vstack((y, ylast))
+        return cp.max(temp)
     else:
         ylast = expand(ylast.flatten(), 1)
         if y.shape[-1]!=1:
             y = expand(y.flatten(), 1)
-        temp = np.vstack((y, ylast))
-    return np.max(temp)
+        temp = cp.vstack((y, ylast))
+    return cp.max(temp)
 
 def strcmp(str1, str2):
     "Compares if strings str1 and atr2 are equal."
@@ -148,13 +148,13 @@ def warn(arg):
 def length(A):
     "Length of an array A similar to matlab's length function."
     if isinstance(A, list):
-        A = np.asarray(A)
+        A = cp.asarray(A)
     return max(A.shape)
 
 def size(A, dim=None):
     "Size of a matrix A. If dim is specified, returns the size for that dimension."
     if isinstance(A, list):
-        A = np.asarray(A)
+        A = cp.asarray(A)
     if dim is not None:
         return A.shape[dim]
     return A.shape
@@ -170,13 +170,13 @@ def to_column_mat(A):
 def numel(A):
     "Returns the number of elements in an array."
     if isinstance(A, list):
-        A = np.asarray(A)
-    return np.size(A)
+        A = cp.asarray(A)
+    return cp.size(A)
 
 def numDims(A):
     "Returns the numbers of dimensions in an array."
     if isinstance(A, list):
-        A = np.asarray(A)
+        A = cp.asarray(A)
     return A.ndim
 
 def ndims(A):
@@ -185,7 +185,7 @@ def ndims(A):
 
 def expand(x, ax):
     "Expands an array along axis, ax."
-    return np.expand_dims(x, ax)
+    return cp.expand_dims(x, ax)
 
 def ones(rows, cols=None, dtype=ONES_TYPE):
     "Generates a row X col array filled with ones."
@@ -193,7 +193,7 @@ def ones(rows, cols=None, dtype=ONES_TYPE):
         shape = (rows, cols)
     else:
         shape = (rows, rows)
-    return np.ones(shape, dtype=dtype)
+    return cp.ones(shape, dtype=dtype)
 
 def zeros(rows, cols=None, dtype=ZEROS_TYPE):
     "Generates a row X col array filled with zeros."
@@ -204,7 +204,7 @@ def zeros(rows, cols=None, dtype=ZEROS_TYPE):
             shape = rows
         else:
             shape = (rows, rows)
-    return np.zeros(shape, dtype=dtype)
+    return cp.zeros(shape, dtype=dtype)
 
 def isvector(x):
     "Determines if x is a vector."
@@ -218,18 +218,18 @@ def isvector(x):
 def isColumnLength(x1, x2):
     "Determines if x1 and x2 have the same length along their second dimension."
     if isinstance(x1, list):
-        x1 = np.expand_dims(np.asarray(x1), 1)
+        x1 = cp.expand_dims(cp.asarray(x1), 1)
     return ((ndims(x1) == 2) and (x1.shape[0] == x2) and (x1.shape[1] == 1))
 
 def cell(grid_len, dim=1):
     "Returns a matlab-like cell."
     if dim!=1:
         logger.fatal('This has not been implemented for n>1 cells')
-    return [np.nan for i in range(grid_len)]
+    return [cp.nan for i in range(grid_len)]
 
 def iscell(cs):
     "Determines if cs is an instance of a cell."
-    if isinstance(cs, list): # or isinstance(cs, np.ndarray):
+    if isinstance(cs, list): # or isinstance(cs, cp.ndarray):
         return True
     else:
         return False
@@ -240,12 +240,12 @@ def isnumeric(A):
         return True
     else:
         return False
-    # if isinstance(A, np.ndarray):
+    # if isinstance(A, cp.ndarray):
     #     dtype = A.dtype
     # else:
     #     dtype = type(A)
     #
-    # acceptable_types=[list, np.float64, np.float32, np.int64, np.int32, float, int]
+    # acceptable_types=[list, cp.float64, cp.float32, cp.int64, cp.int32, float, int]
     #
     # if dtype in acceptable_types:
     #     return True
@@ -253,12 +253,12 @@ def isnumeric(A):
 
 def isfloat(A):
     "Determines if A is a float type."
-    if isinstance(A, np.ndarray):
+    if isinstance(A, cp.ndarray):
         dtype = A.dtype
     else:
         dtype = type(A)
 
-    acceptable_types=[np.float64, np.float32, float]
+    acceptable_types=[cp.float64, cp.float32, float]
 
     if dtype in acceptable_types:
         return True
@@ -266,9 +266,9 @@ def isfloat(A):
 
 def isscalar(x):
     "Determines if s is a scalar."
-    if (isinstance(x, np.ndarray) and numel(x)==1):
+    if (isinstance(x, cp.ndarray) and numel(x)==1):
         return True
-    elif (isinstance(x, np.ndarray) and numel(x)>1):
+    elif (isinstance(x, cp.ndarray) and numel(x)>1):
         return False
-    elif not (isinstance(x, np.ndarray) or isinstance(x, list)):
+    elif not (isinstance(x, cp.ndarray) or isinstance(x, list)):
         return True

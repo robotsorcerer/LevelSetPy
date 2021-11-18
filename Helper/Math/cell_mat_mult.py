@@ -16,7 +16,7 @@ def cellMatrixMultiply(A, B):
             if(sizeA[1] != sizeB[0]):
                 error('Inner dimensions of A and B must match.')
 
-            C = np.empty((sizeA[0], sizeB[1]))
+            C = cp.empty((sizeA[0], sizeB[1]))
             for i in range(sizeA[0]):
                 for j in range(sizeB[1]):
                     C[i,j] = A[i,0] * B[i,j]
@@ -29,7 +29,7 @@ def cellMatrixMultiply(A, B):
             scalar = B
             array = A
         else:
-            error('Input B must be a numeric array or a cell matrix')
+            error('Icp.t B must be a numeric array or a cell matrix')
 
     elif(isnumeric(A)):
         if(iscell(B)):
@@ -43,12 +43,12 @@ def cellMatrixMultiply(A, B):
             return C
 
         else:
-            error('Input B must be a numeric array or a cell matrix')
+            error('Icp.t B must be a numeric array or a cell matrix')
     else:
-        error('Input A must be a numeric array or a cell matrix')
+        error('Icp.t A must be a numeric array or a cell matrix')
 
 
-    # If we drop through to here, one of the inputs was not a cell matrix.
+    # If we drop through to here, one of the icp.ts was not a cell matrix.
     sizeArray = size(array)
     if(len(sizeArray) != 2):
         error('Cell array must be of dimension 2')

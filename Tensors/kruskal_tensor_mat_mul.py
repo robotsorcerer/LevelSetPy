@@ -9,7 +9,7 @@ __status__ 		= "Testing"
 
 import copy
 import cupy as cp
-import numpy as np
+import cupy as cp
 from Utilities import *
 from .tensor_utils import dims_check
 from .class_tensor import KruskalTensor
@@ -84,7 +84,7 @@ def  ktensor_matrix_mult(X,V,**args):
 
     # Check for dims argument
     if not('dims' in locals()):
-        dims = np.array([])
+        dims = cp.array([])
 
     # Check that 2nd argument is list array. If not, recall with V as a
     # cell array with one element.

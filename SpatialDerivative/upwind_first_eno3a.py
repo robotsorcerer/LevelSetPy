@@ -2,7 +2,7 @@ __all__ = ['upwindFirstENO3']
 
 import copy
 import logging
-import numpy as np
+import cupy as cp
 from Utilities import *
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def upwindFirstENO3a(grid, data, dim, generateAll=False):
         sizeData = size(data)
         indices1 = []
         for i in range(grid.dim):
-            indices1.append(np.arange(sizeData[i], dtype=np.intp))
+            indices1.append(cp.arange(sizeData[i], dtype=cp.intp))
         indices2 = copy.copy(indices1)
 
         #---------------------------------------------------------------------------
@@ -101,39 +101,39 @@ def upwindFirstENO3a(grid, data, dim, generateAll=False):
         #   difference entries, not to left and right approximations.
 
         # Pick out minimum modulus neighboring D2 term.
-        D2abs = np.abs(DD.D2)
-        indices1[dim] = np.arange(size(D2abs, dim)-1, dtype=np.intp)
+        D2abs = cp.abs(DD.D2)
+        indices1[dim] = cp.arange(size(D2abs, dim)-1, dtype=cp.intp)
         indices2[dim] = indices1[dim] + 1
 
-        smallerL = (D2abs[np.ix_(*indices1)] < D2abs[np.ix_(*indices2)])
-        smallerR = np.logical_not(smallerL)
+        smallerL = (D2abs[cp.ix_(*indices1)] < D2abs[cp.ix_(*indices2)])
+        smallerR = cp.logical_not(smallerL)
 
         #---------------------------------------------------------------------------
         # Figure out smallest modulus D3 terms,
         #   given choice of smallest modulus D2 terms above.
-        D3abs = np.abs(DD.D3)
+        D3abs = cp.abs(DD.D3)
         indices1[dim] = index_array(1,size(D3abs, dim)-1)
         indices2[dim] = indices1[dim] + 1
-        smallerTemp = (D3abs[np.ix_(*indices1)] < D3abs[np.ix_(*indices2)])
+        smallerTemp = (D3abs[cp.ix_(*indices1)] < D3abs[cp.ix_(*indices2)])
 
         indices1[dim] = index_array(1,size(smallerTemp, dim)-1)
         indices2[dim] = indices1[dim] +1
-        smallerLL = np.logical_and(smallerTemp[np.ix_(*indices1)], smallerL)
-        smallerRL = np.logical_and(smallerTemp[np.ix_(*indices2)], smallerR)
-        smallerTemp = np.logical_not(smallerTemp)
-        smallerLR = np.logical_and(smallerTemp[np.ix_(*indices1)], smallerL)
-        smallerRR = np.logical_and(smallerTemp[np.ix_(*indices2)], smallerR)
+        smallerLL = cp.logical_and(smallerTemp[cp.ix_(*indices1)], smallerL)
+        smallerRL = cp.logical_and(smallerTemp[cp.ix_(*indices2)], smallerR)
+        smallerTemp = cp.logical_not(smallerTemp)
+        smallerLR = cp.logical_and(smallerTemp[cp.ix_(*indices1)], smallerL)
+        smallerRR = cp.logical_and(smallerTemp[cp.ix_(*indices2)], smallerR)
 
-        smallerM = np.logical_or(smallerRL, smallerLR)
+        smallerM = cp.logical_or(smallerRL, smallerLR)
 
         #---------------------------------------------------------------------------
         # Pick out the best third order approximation
         indices1[dim] = index_array(1,size(smallerLL, dim)-1)
-        derivL = (dL[0] * smallerLL[np.ix_(*indices1)] + dL[1] * smallerM[np.ix_(*indices1)] + dL[2] * smallerRR[np.ix_(*indices1)])
+        derivL = (dL[0] * smallerLL[cp.ix_(*indices1)] + dL[1] * smallerM[cp.ix_(*indices1)] + dL[2] * smallerRR[cp.ix_(*indices1)])
 
         indices1[dim] = index_array(2,size(smallerLL, dim))
-        derivR = (dR[0] * smallerLL[np.ix_(*indices1)]
-                + dR[1] * smallerM[np.ix_(*indices1)]
-                + dR[2] * smallerRR[np.ix_(*indices1)])
+        derivR = (dR[0] * smallerLL[cp.ix_(*indices1)]
+                + dR[1] * smallerM[cp.ix_(*indices1)]
+                + dR[2] * smallerRR[cp.ix_(*indices1)])
 
     return derivL, derivR

@@ -11,7 +11,7 @@ from DynamicalSystems import DubinsCar, dubins_default_params
 def test_dubins_dyn_sys(params):
         obj = Bundle(dict())
         obj.nx = 3          # Number of state dimensions
-        obj.nu = 1          # Number of control inputs
+        obj.nu = 1          # Number of control icp.ts
         obj.nd = 3          # Number of disturbance dimensions
 
         obj.x = None           # State
@@ -49,7 +49,7 @@ def test_dubins_dyn_sys(params):
 
 def main():
 
-    x= np.array(([[6, 7, 8, 9, 10, 11, 12]]))
+    x= cp.array(([[6, 7, 8, 9, 10, 11, 12]]))
     new_params = dict(x=x, nu=2, nd=6,  speed=5.0)
     print(f'x: {dubins_default_params['x']}\nnu: \'
             '{dubins_default_params['nu']},\nnd: \'

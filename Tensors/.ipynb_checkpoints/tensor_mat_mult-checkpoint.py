@@ -10,7 +10,7 @@ __status__ 		= "Finished"
 from .class_tensor import Tensor
 import copy
 import cupy as cp
-import numpy as np
+import cupy as cp
 from Utilities.matlab_utils import numel
 from .tensor_utils import dims_check, use_gpu
 
@@ -50,9 +50,9 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
        the matrices are transposed.
 
        Examples
-       import numpy.random as npr
-       X = npr.rand(5,3,4,2)
-       A = npr.rand(4,5); B = npr.rand(4,3); C = npr.rand(3,4); D = npr.rand(3,2);
+       import numpy.random as cp.
+       X = cp..rand(5,3,4,2)
+       A = cp..rand(4,5); B = cp..rand(4,3); C = cp..rand(3,4); D = cp..rand(3,2);
        Y = tensor_matrix_mult(X, A, 1)         <-- computes X times A in mode-1
        Y = tensor_matrix_mult(X, [A,B,C,D], 1) <-- same as above
        Y = tensor_matrix_mult(X, A.T, 1, Transpose)   <-- same as above
@@ -74,7 +74,7 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
         X = X.data
 
     if n is None:
-        n = np.arange(X.ndim)
+        n = cp.arange(X.ndim)
 
     if V.dtype=='O':
 
@@ -107,13 +107,13 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
     else:
         p = V.shape[0]
 
-    if np.isscalar(n) and n==0:
+    if cp.isscalar(n) and n==0:
         A = X.reshape(sz[n], -1)
         if Transpose:
             B = V.T@A
         else:
             B = V@A
-    elif np.isscalar(n) and n==N-1:
+    elif cp.isscalar(n) and n==N-1:
         At = X.reshape(-1, sz[n])
         if Transpose:
             B = At@V
@@ -121,11 +121,11 @@ def tensor_matrix_mult(X, V, n=None, Transpose=False, use_gpu=True):
             B = At@V.T
     else:
         to_tensor = False
-        nblocks   = int(np.prod(sz[n+1:]))
-        ncols = int(np.prod(sz[:n]))
+        nblocks   = int(cp.prod(sz[n+1:]))
+        ncols = int(cp.prod(sz[:n]))
         nAk       = sz[n] * ncols
         nBk       = p  *  ncols
-        B         = cp.zeros((p * nblocks * ncols, 1)) if use_gpu else np.zeros((p * nblocks * ncols, 1))
+        B         = cp.zeros((p * nblocks * ncols, 1)) if use_gpu else cp.zeros((p * nblocks * ncols, 1))
 
         for k in range(nblocks):
             # Extract k-th sub-block of A (in column-major order)

@@ -1,7 +1,7 @@
 __all__ = ["createGrid"]
 
 import logging
-import numpy as np
+import cupy as cp
 from Utilities import *
 from .process_grid import processGrid
 from BoundaryCondition import addGhostExtrapolate, addGhostPeriodic
@@ -16,7 +16,7 @@ def  createGrid(grid_min, grid_max, N, pdDims=None, process=True, low_mem=False)
      Thin wrapper around processGrid to create a grid compatible with the
      level set toolbox
 
-     Inputs:
+     Icp.ts:
        grid_min, grid_max - minimum and maximum bounds on computation domain
        N                  - number of grid points in each dimension
        pdDims             - periodic dimensions (eg. pdDims = [2 3] if 2nd and
@@ -33,9 +33,9 @@ def  createGrid(grid_min, grid_max, N, pdDims=None, process=True, low_mem=False)
     if not pdDims:
         pdDims = []
 
-    # Input checks
+    # Icp.t checks
     if isscalar(N):
-        N = N*np.ones(grid_min.shape).astype(np.int64)
+        N = N*cp.ones(grid_min.shape).astype(cp.int64)
 
     if not isvector(grid_min) or not isvector(grid_max) or not isvector(N):
         logger.fatal('grid_min, grid_max, N must all be vectors!')
@@ -56,17 +56,17 @@ def  createGrid(grid_min, grid_max, N, pdDims=None, process=True, low_mem=False)
 
     # g.bdry = cell(g.dim, 1);
     for i in range(g.dim):
-        if np.any(i == pdDims):
+        if cp.any(i == pdDims):
             g.bdry[i] = addGhostPeriodic;
             #g.max[i,0] = g.min[i,0] + (g.max[i,0] - g.min[i,0]) * (1 - 1/g.N[i,0]);
         else:
             g.bdry[i] = addGhostExtrapolate
 
     # if low_mem:
-    #   g.dx = np.divide(grid_max - grid_min, N)
+    #   g.dx = cp.divide(grid_max - grid_min, N)
     #   g.vs = cell(g.dim, 1);
     #   for i in range(g.dim):
-    #       g.vs[i] = expand(np.arange(grid_min[i,0],  grid_max[i,0],  g.dx[i,0]), 1)
+    #       g.vs[i] = expand(cp.arange(grid_min[i,0],  grid_max[i,0],  g.dx[i,0]), 1)
     if process:
       g = processGrid(g)
     return g

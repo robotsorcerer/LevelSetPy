@@ -8,12 +8,12 @@ __status__ 		= "Testing"
 from Utilities import size, error
 
 
-def checkInterpIcp.t(g, x):
+def checkInterpInput(g, x):
     if size(x, 1) != g.dim:
         if size(x, 0) == g.dim:
             # Take transpose if number of icp.t rows is same as grid dimension
             x = x.T;
         else:
-            error('Icp.t points must have the same dimension as grid!')
+            error('Input points must have the same dimension as grid!')
 
     return x

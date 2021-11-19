@@ -12,6 +12,7 @@ import logging
 import argparse
 import sys, os
 import cupy as cp
+import numpy  as np
 from math import pi
 from Grids import createGrid
 import matplotlib.pyplot as plt
@@ -87,22 +88,22 @@ def get_partial_func(t, data, derivMin, derivMax, \
 
 def main(args):
 	## Grid
-	grid_min = expand(cp.array((-.75, -1.25, -pi)), ax = 1)
-	grid_max = expand(cp.array((3.25, 1.25, pi)), ax = 1)
+	grid_min = expand(np.array((-.75, -1.25, -pi)), ax = 1)
+	grid_max = expand(np.array((3.25, 1.25, pi)), ax = 1)
 	pdDims = 2                      # 3rd dimension is periodic
 	resolution = 100
-	N = cp.array(([[
+	N = np.array(([[
 					resolution,
-					cp.ceil(resolution*(grid_max[1, 0] - grid_min[1, 0])/ \
+					np.ceil(resolution*(grid_max[1, 0] - grid_min[1, 0])/ \
 								(grid_max[0, 0] - grid_min[0, 0])),
 					resolution-1
 					]])).T.astype(int)
-	grid_max[2, 0]*= (1-2/N[2])
+	grid_max[2, 0]*= (1-2/N[2,0])
 
 	obj.grid = createGrid(grid_min, grid_max, N, pdDims)
 
 	# global params
-	obj.axis_align, obj.center, obj.radius = 2, cp.zeros((3, 1)), 0.5
+	obj.axis_align, obj.center, obj.radius = 2, np.zeros((3, 1)), 0.5
 	data0 = get_target(obj)
 
 	data = copy.copy(data0)
@@ -157,17 +158,18 @@ def main(args):
 
 	# Visualization paramters
 	spacing = tuple(obj.grid.dx.flatten().tolist())
-	init_mesh = implicit_mesh(data, level=0, spacing=spacing, edge_color='b', face_color='b')
+	data_np = data.get()
+	init_mesh = implicit_mesh(data_np, level=0, spacing=spacing, edge_color='b', face_color='b')
 	params = Bundle(
 			{"grid": obj.grid,
 			 'disp': True,
 			 'labelsize': 16,
 			 'labels': "Initial 0-LevelSet",
 			 'linewidth': 2,
-			 'data': data,
+			 'data': data_np,
 			 'elevation': args.elevation,
 			 'azimuth': args.azimuth,
-			 'mesh': init_mesh.get(),
+			 'mesh': init_mesh,
 			 'init_conditions': False,
 			 'pause_time': args.pause_time,
 			 'level': 0, # which level set to visualize

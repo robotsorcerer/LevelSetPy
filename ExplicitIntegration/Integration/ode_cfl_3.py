@@ -140,8 +140,8 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             #   We'll use this fixed timestep for both substeps..
 
             # print('stepBound ', stepBound, ' options.maxStep ', options.maxStep)
-            deltaT = cp.min(cp.hstack((options.factorCFL*stepBound
-                        tspan[1] - t, options.maxStep)))
+            deltaT = cp.min(cp.hstack((options.factorCFL*stepBound,  \
+                                tspan[1] - t, options.maxStep)))
             # Take the first substep.
             t1 = t + deltaT
             # print('y first substep: ', y.shape)

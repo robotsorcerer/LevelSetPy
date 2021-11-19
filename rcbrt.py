@@ -45,7 +45,7 @@ parser.add_argument('--pause_time', '-pz', type=float, default=4, help='pause ti
 args = parser.parse_args()
 args.verbose = True if not args.silent else False
 
-print('args: ', args)
+info('args: ', args)
 
 if not args.silent:
 	logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)

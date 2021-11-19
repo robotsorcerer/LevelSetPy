@@ -126,7 +126,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             # Approximate the derivative and CFL restriction.
             for i in range(numY):
                 ydot[i], stepBound[i], schemeData = schemeFuncCell[i](t, y, schemeData)
-                
+
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y)):
                     y = y[1:]
@@ -160,10 +160,10 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y1)):
-                    y1 = y1[ 1:]
+                    y1 = y1[1:]
 
                 if(iscell(schemeData)):
-                    schemeData = schemeData[ 1:]
+                    schemeData = schemeData[1:]
 
             # Check CFL bound on timestep:
             #   If the timestep chosen on the first substep violates
@@ -230,6 +230,6 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
     #---------------------------------------------------------------------------
     else:
         # Malformed time span.
-        error('tspan must contain at least two entries')
+        ValueError('tspan must contain at least two entries')
 
     return t, y, schemeData

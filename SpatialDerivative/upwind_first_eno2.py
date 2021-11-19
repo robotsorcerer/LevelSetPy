@@ -49,10 +49,10 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
 
      Ian Mitchell, 1/22/04
      Lekan on August 16, 2021
-    ---------------------------------------------------------------------------
     """
     if isinstance(data, np.ndarray):
       data = cp.asarray(data)
+
     if((dim < 0) or (dim > grid.dim)):
         raise ValueError('Illegal dim parameter')
 
@@ -149,4 +149,5 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
 
         indices1[dim] = cp.arange(1,size(smallerL, dim), dtype=cp.intp)
         derivR = dR[0] * smallerL[cp.ix_(*indices1)] + dR[1] * smallerR[cp.ix_(*indices1)]
+
     return derivL, derivR

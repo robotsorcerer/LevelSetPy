@@ -36,7 +36,7 @@ def computeGradients(g, data, dims=None, derivFunc=None):
 
 
     # Go through each dimension and compute the gradient in each dim
-    derivC = cell(g.dim, 1)
+    derivC = cell(g.dim)
 
     if numDims(data) == g.dim:
         tau_length = 1

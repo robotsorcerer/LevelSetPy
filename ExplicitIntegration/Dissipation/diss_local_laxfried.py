@@ -1,6 +1,7 @@
 __all__ = ["artificialDissipationLLF"]
 
 import copy
+import cupy as cp
 import numpy as np
 from Utilities import *
 
@@ -79,14 +80,15 @@ def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
     derivMin = cell(grid.dim)
     derivMax = cell(grid.dim)
     derivDiff = cell(grid.dim)
+
     for i in range(grid.dim):
         # Get derivative bounds over entire grid (scalars).
-        derivMinL = np.min(derivL[i])
-        derivMinR = np.min(derivR[i])
+        derivMinL = cp.min(derivL[i].flatten())
+        derivMinR = cp.min(derivR[i].flatten())
         derivMin[i] = min(derivMinL, derivMinR)
 
-        derivMaxL = np.max(derivL[i])
-        derivMaxR = np.max(derivR[i])
+        derivMaxL = cp.max(derivL[i].flatten())
+        derivMaxR = cp.max(derivR[i].flatten())
         derivMax[i] = max(derivMaxL, derivMaxR)
 
         # Get derivative differences at each node.
@@ -106,8 +108,8 @@ def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
         # For each dimension, LLF restricts the range of that dimension's
         #   costate at each node to the range between left and right
         #   approximations at that node.
-        derivMin[i] = min(derivL[i], derivR[i])
-        derivMax[i] = max(derivL[i], derivR[i])
+        derivMin[i] = cp.minimum(derivL[i], derivR[i])
+        derivMax[i] = cp.maximum(derivL[i], derivR[i])
 
         alpha = schemeData.partialFunc(t, data, derivMin, derivMax, schemeData, i)
 
@@ -116,8 +118,8 @@ def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
         derivMax[i] = derivMaxCopy[i]
 
         diss += (0.5 * derivDiff[i] * alpha)
-        stepBoundInv += np.divide(np.max(alpha), grid.dx[i])
+        stepBoundInv +=  (alpha / grid.dx.item(i))
 
-    stepBound = 1 / stepBoundInv
+    stepBound = (1 / stepBoundInv).get().item()
 
     return  diss, stepBound

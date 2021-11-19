@@ -38,6 +38,7 @@ parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
 parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
 parser.add_argument('--silent', '-si', action='store_false',  default=0, help='silent debug print outs' )
 parser.add_argument('--visualize', '-vz', action='store_true', help='visualize level sets?' )
+parser.add_argument('--verify', '-vz', action='store_true', help='visualize level sets?' )
 parser.add_argument('--elevation', '-el', type=float, default=5., help='elevation angle for target set plot.' )
 parser.add_argument('--azimuth', '-az', type=float, default=5., help='azimuth angle for target set plot.' )
 parser.add_argument('--pause_time', '-pz', type=float, default=4, help='pause time between successive updates of plots' )
@@ -162,24 +163,24 @@ def main(args):
 	spacing = tuple(obj.grid.dx.flatten().tolist())
 	init_mesh = implicit_mesh(data.get(), level=0, spacing=spacing, edge_color='b', face_color='b')
 	params = Bundle(
-			{"grid": obj.grid,
-			 'disp': True,
-			 'labelsize': 16,
-			 'labels': "Initial 0-LevelSet",
-			 'linewidth': 2,
-			 'data': data,
-			 'elevation': args.elevation,
-			 'azimuth': args.azimuth,
-			 'mesh': init_mesh,
-			 'init_conditions': False,
-			 'pause_time': args.pause_time,
-			 'level': 0, # which level set to visualize
-			 'winsize': (16,9),
-			 'fontdict': Bundle({'fontsize':12, 'fontweight':'bold'}),
-			 "savedict": Bundle({"save": False,
-			 				"savename": "rcbrt",
-			 				"savepath": "../jpeg_dumps/rcbrt"})
-			 })
+					{"grid": obj.grid,
+					 'disp': True,
+					 'labelsize': 16,
+					 'labels': "Initial 0-LevelSet",
+					 'linewidth': 2,
+					 'data': data,
+					 'elevation': args.elevation,
+					 'azimuth': args.azimuth,
+					 'mesh': init_mesh,
+					 'init_conditions': False,
+					 'pause_time': args.pause_time,
+					 'level': 0, # which level set to visualize
+					 'winsize': (16,9),
+					 'fontdict': Bundle({'fontsize':12, 'fontweight':'bold'}),
+					 "savedict": Bundle({"save": False,
+					 				"savename": "rcbrt",
+					 				"savepath": "../jpeg_dumps/rcbrt"})
+					 })
 
 	if args.visualize:
 		rcbrt_viz = RCBRTVisualizer(params=params)
@@ -206,10 +207,10 @@ def main(args):
 
 		if args.visualize:
 			data_np = data.get()
-			mesh=implicit_mesh(data_np, level=0, spacing=spacing,  
+			mesh=implicit_mesh(data_np, level=0, spacing=spacing,
 								edge_color='None',  face_color='red')
 			rcbrt_viz.update_tube(data_np, mesh, time_step)
-	
+
 	# if we are done, update target set on frame II
 	if args.visualize:
 		rcbrt_viz.update_tube(init_mesh, params.mesh, time_step)

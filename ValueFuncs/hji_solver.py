@@ -431,7 +431,7 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 
 	## Numerical approximation functions
 	dissType = 'global';
-	schemeData.dissFunc, integratorFunc, schemeData.derivFunc = getNumericalFuncs(dissType, accuracy);
+	schemeData.dissFunc, schemeData.derivFunc = artificialDissipationGLF, upwindFirstWENO5
 
 	# if we're doing minWithZero or zero as the comp method, actually implement
 	# correctly using level set toolbox
@@ -444,7 +444,7 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 	## Time integration
 	ode_cfl_opts = Bundle({'factorCFL': 0.8, 'singleStep': 'on'})
 	integratorOptions = odeCFLset(ode_cfl_opts)
-	startTime = np.time();
+	startTime = cputime();
 
 	## Stochastic additive terms
 	if isfield(extraArgs, 'addGaussianNoiseStandardDeviation'):
@@ -506,7 +506,6 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 	if isfield(extraArgs,'ignoreBoundary') and extraArgs.ignoreBoundary:
 		_, dataTrimmed = truncateGrid(g, data0, g.min+4*g.dx, g.max-4*g.dx);
 
-	# print('istart: ', istart)
 	for i in range(istart, len(tau)):
 		if not extraArgs.quiet:
 			 info(f'Computing value function at time tau[{i}]: {tau[i]:.4f}')
@@ -530,7 +529,7 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 		else:
 			y0 = data[i-1, ...]
 
-		y = expand(y0.flatten(order=DEFAULT_ORDER), 1)
+		y = expand(y0.flatten(), 1)
 
 		tNow = tau[i-1]
 		## Main integration loop to get to the next tau(i)
@@ -540,17 +539,8 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 				yLast = y;
 			if not quiet:
 				info(f'Cur Time {tNow} bound: {tau[i] - small}')
-			"""
-				Solve hamiltonian and apply to value function (y) to get updated
-				value function # integrator function is an odeCFL function
-				integratorFunc is @OdeCFL3, derivFunc is upwindFirstWENO5,
-				dissipator=artificialDissipationGLF, schemeFunc is termLaxFriedrichs
-			"""
-			# print('y: ', y.shape)
-			# tNow, y, _ = integratorFunc(schemeFunc, [tNow, tau[i]], y, integratorOptions, schemeData)
 			tNow, y, _ = odeCFL3(termLaxFriedrichs, [tNow, tau[i]], y, integratorOptions, schemeData)
-			# import time
-			# time.sleep(40)
+
 			if np.any(np.isnan(y)):
 				error(f'Nans encountered in the integrated result of HJI PDE data')
 
@@ -659,14 +649,9 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 					target_i = targets[i,...]
 
 		# Reshape value function
-		data_i = y.reshape(g.shape, order=DEFAULT_ORDER)
+		data_i = y.reshape(g.shape)
 		if keepLast:
 			data = data_i
-		elif lowMemory:
-			if flipOutput:
-				data = np.concatenate((y.reshape(g.shape, order=DEFAULT_ORDER), data), g.dim+1)
-			else:
-				data = np.concatenate((data, y.reshape(g.shape, order=DEFAULT_ORDER)), g.dim+1)
 		else:
 			data[i,...] = data_i
 
@@ -880,55 +865,4 @@ def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):
 			#     export_fig(sprintf('#s#d', \
 			#         extraArgs.visualize.figFilename, i), '-png')
 
-
-		# ## Save the results if needed
-		# if extraArgs.saveFilename
-		#     if mod(i, extraArgs.saveFrequency) == 0
-		#         ilast = i;
-		#         save(extraArgs.saveFilename, 'data', 'tau', 'ilast', '-v7.3')
-
-
-	# ## Finish up
-	# if extraArgs.discountFactor and extraArgs.discountFactor
-	#     extraOuts.discountFactor = extraArgs.discountFactor;
-
-
-	# Time = np.time;
-	# if not quiet
-	#     print('Total execution time #g seconds ', Time - startTime);
-	#
-	#
-	# if extraArgs.makeVideo and extraArgs.makeVideo
-	#     vout.close
-
 	return data, tau, extraOuts
-
-
-def getNumericalFuncs(dissType='global', accuracy='medium'):
-	# Dissipation
-	if (dissType == 'global'):
-		dissFunc = artificialDissipationGLF
-	elif (dissType == 'local'):
-		dissFunc = artificialDissipationLLF
-	elif (dissType == 'locallocal'):
-		dissFunc = artificialDissipationLLLF
-	else:
-		error('Unknown dissipation function #s'.format(dissType))
-
-	# Accuracy
-	if accuracy is 'low':
-		derivFunc = upwindFirstFirst
-		integratorFunc = odeCFL1
-	elif accuracy is 'medium':
-		derivFunc = upwindFirstENO2
-		integratorFunc = odeCFL2
-	elif accuracy is 'high':
-		derivFunc = upwindFirstENO3
-		integratorFunc = odeCFL3
-	elif accuracy is 'veryHigh':
-		derivFunc = upwindFirstWENO5
-		integratorFunc = odeCFL3
-	else:
-		error(f'Unknown accuracy level {accuracy}')
-
-	return dissFunc, integratorFunc, derivFunc

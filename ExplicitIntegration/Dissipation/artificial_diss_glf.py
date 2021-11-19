@@ -104,6 +104,5 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
         stepBoundInv += (alpha / grid.dx.item(i))
 
     stepBound = (1 / stepBoundInv).get().item()
-    diss      = diss 
 
     return diss, stepBound

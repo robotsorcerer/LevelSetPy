@@ -2,6 +2,7 @@ __all__ = ['upwindFirstENO3aHelper']
 
 import copy
 import logging
+import cupy as cp
 import numpy as np
 from Utilities import *
 logger = logging.getLogger(__name__)
@@ -46,12 +47,13 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
        DD          Cell vector containing the divided difference tables
                      (optional).
 
-    Copyright Lekan Molu, 8/21/2021 Adopted from
-            2004 Ian M. Mitchell (mitchell@cs.ubc.ca)
-            LevelSets Toolbox. Ian Mitchell, 1/26/04
+    Copyright Lekan Molu, 8/21/2021 Adopted from Ian M. Mitchell (mitchell@cs.ubc.ca).
     """
     #---------------------------------------------------------------------------
-    dxInv = 1/grid.dx[dim]
+    if isinstance(data, cp.ndarray):
+      data = cp.asarray(data)
+
+    dxInv = 1 / grid.dx.item(dim)
 
     # How big is the stencil?
     stencil = 3
@@ -64,24 +66,24 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
     sizeData = size(gdata)
     indices1 = []
     for i in range(grid.dim):
-        indices1.append(np.arange(sizeData[i], dtype=np.intp))
-
+        indices1.append(cp.arange(sizeData[i], dtype=cp.intp))
     indices2 = copy.copy(indices1)
 
     #---------------------------------------------------------------------------
     # First divided differences (first entry corresponds to D^1_{-3/2}).
-    indices1[dim] = np.arange(1,size(gdata, dim), dtype=np.intp)
-    indices2[dim] = indices1[dim] - 1
-    D1 = dxInv*(gdata[np.ix_(*indices1)] - gdata[np.ix_(*indices2)])
+    indices1[dim] = cp.arange(1,size(gdata, dim), dtype=cp.intp)
+    indices2[dim] = copy.copy(indices1[dim]) - 1
+    D1 = dxInv*(gdata[cp.ix_(*indices1)] - gdata[cp.ix_(*indices2)])
+
     # Second divided differences (first entry corresponds to D^2_{-1}).
-    indices1[dim] = np.arange(1,size(D1, dim), dtype=np.intp)
-    indices2[dim] = indices1[dim] - 1
-    D2 = 0.5 * dxInv*(D1[np.ix_(*indices1)] - D1[np.ix_(*indices2)])
+    indices1[dim] = cp.arange(1,size(D1, dim), dtype=cp.intp)
+    indices2[dim] = copy.copy(indices1[dim])  - 1
+    D2 = 0.5 * dxInv*(D1[cp.ix_(*indices1)] - D1[cp.ix_(*indices2)])
 
     # Third divided differences (first entry corresponds to D^3_{-1/2}).
-    indices1[dim] = np.arange(1,size(D2, dim), dtype=np.intp)
-    indices2[dim] = indices1[dim] - 1
-    D3 = (1/3) * dxInv*(D2[np.ix_(*indices1)] - D2[np.ix_(*indices2)])
+    indices1[dim] = cp.arange(1,size(D2, dim), dtype=cp.intp)
+    indices2[dim] = copy.copy(indices1[dim])  - 1
+    D3 = (1/3) * dxInv*(D2[cp.ix_(*indices1)] - D2[cp.ix_(*indices2)])
 
     #---------------------------------------------------------------------------
     # If we want the unstripped divided difference entries, make a copy now.
@@ -92,14 +94,14 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
     # First divided difference array has 2 extra entries at top and bottom
     #   (from stencil width 3), so strip them off.
     # Now first entry corresponds to D^1_{1/2}.
-    indices1[dim] = np.arange(2, size(D1, dim)-2, dtype=np.intp)
-    D1 = D1[np.ix_(*indices1)]
+    indices1[dim] = cp.arange(2, size(D1, dim)-2, dtype=cp.intp)
+    D1 = D1[cp.ix_(*indices1)]
 
     # Second divided difference array has an extra entry at top and bottom
     #   (from stencil width 3), so strip them off.
     # Now first entry corresponds to D^2_0.
-    indices1[dim] = np.arange(1, size(D2, dim)-1, dtype=np.intp)
-    D2 = D2[np.ix_(*indices1)]
+    indices1[dim] = cp.arange(1, size(D2, dim)-1, dtype=cp.intp)
+    D2 = D2[cp.ix_(*indices1)]
 
     # If we want the stripped divided difference entries, make a copy now.
     DD = Bundle({ 'D1': D1, 'D2': D2, 'D3': D3 })
@@ -111,11 +113,11 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
 
     M = 4 if approx4 else 3
     # Take leftmost grid.N(dim) entries for left approximation.
-    indices1[dim] =np.arange(size(D1, dim)-1, dtype=np.intp)
-    dL = [D1[np.ix_(*indices1)] for i in range(M)]
+    indices1[dim] =cp.arange(size(D1, dim)-1, dtype=cp.intp)
+    dL = [D1[cp.ix_(*indices1)] for i in range(M)]
     # Take rightmost grid.N(dim) entries for right approximation.
-    indices1[dim] = np.arange(1, size(D1, dim), dtype=np.intp)
-    dR = [D1[np.ix_(*indices1)] for i in range(M)]
+    indices1[dim] = cp.arange(1, size(D1, dim), dtype=cp.intp)
+    dR = [D1[cp.ix_(*indices1)] for i in range(M)]
     #---------------------------------------------------------------------------
     # Each copy gets modified by one of the second order terms.
     #   Second order terms are sorted left to right.
@@ -125,27 +127,27 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
 
     # Coefficients for second order depend only on left or right approximation
     #   (from O&F, depends only on k = i-1 (left) or k = i (right)).
-    coeffL = +1 * grid.dx[dim]
-    coeffR = -1 * grid.dx[dim]
+    coeffL = +1 * grid.dx.item(dim)
+    coeffR = -1 * grid.dx.item(dim)
 
-    indices1[dim] = np.arange(size(D2, dim)-2, dtype=np.intp)
-    indices2[dim] = np.arange(1, size(D2, dim)-1, dtype=np.intp)
+    indices1[dim] = cp.arange(size(D2, dim)-2, dtype=cp.intp)
+    indices2[dim] = cp.arange(1, size(D2, dim)-1, dtype=cp.intp)
 
 
-    dL[0] += coeffL*D2[np.ix_(*indices1)]
-    dL[1] += coeffL*D2[np.ix_(*indices1)]
-    dL[2] += coeffL*D2[np.ix_(*indices2)]
+    dL[0] += coeffL*D2[cp.ix_(*indices1)]
+    dL[1] += coeffL*D2[cp.ix_(*indices1)]
+    dL[2] += coeffL*D2[cp.ix_(*indices2)]
     if(approx4):
-        dL[3] += coeffL*D2[np.ix_(*indices2)]
+        dL[3] += coeffL*D2[cp.ix_(*indices2)]
 
     indices1[dim] += 1
     indices2[dim] += 1
-    dR[0] += coeffR*D2[np.ix_(*indices1)]
-    dR[1] += coeffR*D2[np.ix_(*indices1)]
-    dR[2] += coeffR*D2[np.ix_(*indices2)]
+    dR[0] += coeffR*D2[cp.ix_(*indices1)]
+    dR[1] += coeffR*D2[cp.ix_(*indices1)]
+    dR[2] += coeffR*D2[cp.ix_(*indices2)]
 
     if(approx4):
-        dR[3] += coeffR * D2[np.ix_(*indices2)]
+        dR[3] += coeffR * D2[cp.ix_(*indices2)]
 
 
     #---------------------------------------------------------------------------
@@ -158,30 +160,30 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
     # Coefficients for third order depend on second order term chosen
     #   (from O&F, depends on k* = k-1 (left choice) or k* = k (right choice)).
     # The second L or R refers to whether we went left or right on the D2 term.
-    coeffLL = +2 * grid.dx[dim]**2
-    coeffLR = -1 * grid.dx[dim]**2
-    coeffRL = -1 * grid.dx[dim]**2
-    coeffRR = +2 * grid.dx[dim]**2
+    coeffLL = +2 * grid.dx.item(dim)**2
+    coeffLR = -1 * grid.dx.item(dim)**2
+    coeffRL = -1 * grid.dx.item(dim)**2
+    coeffRR = +2 * grid.dx.item(dim)**2
 
-    indices1[dim] =np.arange(size(D3, dim) - 3, dtype=np.intp)
-    dL[0] += coeffLL*D3[np.ix_(*indices1)]
-
-    indices1[dim] += 1
-    dL[1] += coeffLL*D3[np.ix_(*indices1)]
-    if(approx4):
-        dL[3] += coeffLR*D3[np.ix_(*indices1)]
+    indices1[dim] =cp.arange(size(D3, dim) - 3, dtype=cp.intp)
+    dL[0] += coeffLL*D3[cp.ix_(*indices1)]
 
     indices1[dim] += 1
-    dL[2] += coeffLR*D3[np.ix_(*indices1)]
-
-    indices1[dim] = np.arange(1 ,size(D3, dim) - 2, dtype=np.intp)
-    dR[0] += coeffRL*D3[np.ix_(*indices1)]
-    indices1[dim] +=1
-    dR[1] +=coeffRL*D3[np.ix_(*indices1)]
+    dL[1] += coeffLL*D3[cp.ix_(*indices1)]
     if(approx4):
-        dR[3] += coeffRR*D3[np.ix_(*indices1)]
+        dL[3] += coeffLR*D3[cp.ix_(*indices1)]
+
+    indices1[dim] += 1
+    dL[2] += coeffLR*D3[cp.ix_(*indices1)]
+
+    indices1[dim] = cp.arange(1 ,size(D3, dim) - 2, dtype=cp.intp)
+    dR[0] += coeffRL*D3[cp.ix_(*indices1)]
+    indices1[dim] +=1
+    dR[1] +=coeffRL*D3[cp.ix_(*indices1)]
+    if(approx4):
+        dR[3] += coeffRR*D3[cp.ix_(*indices1)]
 
     indices1[dim] +=1
-    dR[2] += coeffRR*D3[np.ix_(*indices1)]
+    dR[2] += coeffRR*D3[cp.ix_(*indices1)]
 
     return dL, dR, DD

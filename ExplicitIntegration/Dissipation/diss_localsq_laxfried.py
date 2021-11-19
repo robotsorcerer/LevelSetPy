@@ -98,11 +98,9 @@ def artificialDissipationLLLF(t, data, derivL, derivR, schemeData):
     diss = 0
     stepBoundInv = 0
     for i in range(grid.dim):
-
         alpha = schemeData.partialFunc(t, data, derivMin, derivMax, schemeData, i)
-
         diss += (0.5 * derivDiff[i] * alpha)
-        stepBoundInv += np.divide(np.max(alpha), grid.dx[i])
+        stepBoundInv +=  (alpha / grid.dx.item(i))
 
     stepBound = 1 / stepBoundInv
 

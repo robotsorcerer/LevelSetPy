@@ -1,5 +1,6 @@
 __all__ = ["odeCFL1"]
 
+import cupy as cp
 import numpy as np
 from Utilities import *
 from .ode_cfl_set import odeCFLset
@@ -82,7 +83,7 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
     #---------------------------------------------------------------------------
     # Make sure we have the default options settings
     if not options:
-        options = odeCFLset
+        options = odeCFLset()
 
     # Number of timesteps to be returned.
     numT = len(tspan)
@@ -97,7 +98,7 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
             if(iscell(schemeFunc)):
                 schemeFuncCell = schemeFunc
             else:
-                schemeFuncCell[:numY] = schemeFunc
+                schemeFuncCell = [schemeFunc for i in range(numY)]
         else:
             # Set numY, but be careful: ((numY == 1) & iscell(y0)) is possible.
             numY = 1
@@ -105,8 +106,9 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
             schemeFuncCell = schemeFunc
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         t = tspan[0]
-        steps = 0; startTime = cputime(); stepBound = zeros(numY, 1)
-        ydot = cell(numY, 1); y = y0
+        steps = 0; startTime = cputime(); stepBound = np.zeros((numY), dtype=np.float64)
+        ydot = cell(numY, 1); y = copy.copy(y0)
+
         while(tspan[1] - t >= small * np.abs(tspan[1])):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # First substep: Forward Euler from t_n to t_{n+1}.
@@ -116,16 +118,16 @@ def odeCFL1(schemeFunc, tspan, y0, options=None, schemeData=None):
                 ydot[i], stepBound[i], schemeData = schemeFuncCell[i](t, y, schemeData)
                 # If this is a vector level set, rotate the lists of vector arguments.
                 if(iscell(y)):
-                    y = y[ 1:, 0 ]
+                    y = y[1:]
 
                 if(iscell(schemeData)):
-                    schemeData = schemeData[ 1:, 0 ]
+                    schemeData = schemeData[1:]
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # Determine CFL bound on timestep, but not beyond the final time.
             #   For vector level sets, use the most restrictive stepBound.
             #   We'll use this fixed timestep for both substeps.
-            deltaT = min(min(options.factorCFL@stepBound),  \
-                           min(tspan[1] - t, options.maxStep))
+            deltaT = np.min(np.hstack((options.factorCFL*stepBound,  \
+                                        tspan[1] - t, options.maxStep)))
             # If there is a terminal event function registered, we need
             #   to maintain the info from the last timestep.
             if options.terminalEvent:

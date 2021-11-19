@@ -2,6 +2,7 @@ __all__ = ['upwindFirstENO3b']
 
 import copy
 import logging
+import cupy as cp
 import numpy as np
 from Utilities import *
 logger = logging.getLogger(__name__)
@@ -44,33 +45,33 @@ def  upwindFirstENO3b(grid, data, dim, generateAll=0):
        derivL      Left approximation of first derivative (same size as data).
        derivR      Right approximation of first derivative (same size as data).
 
-     Copyright 2004 Ian M. Mitchell (mitchell@cs.ubc.ca).
-     This software is used, copied and distributed under the licensing
-       agreement contained in the file LICENSE in the top directory of
-       the distribution.
 
      Ian Mitchell, 1/26/04
     Lekan on August 16, 2021
+    Added cupy impl on Nov 18, 21
     """
+    if isinstance(data, cp.ndarray):
+      data = cp.asarray(data)
+
     if((dim < 0) or (dim > grid.dim)):
-        error('Illegal dim parameter')
+        ValueError('Illegal dim parameter')
 
     # How big is the stencil?
-    stencil = 3;
+    stencil = 3
 
     # Check that approximations that should be equivalent are equivalent
     #   (for debugging purposes, only used if generateAll == 1).
-    checkEquivalentApproximations = 1;
-    small = 100 * eps;             # a small number for "equivalence"
+    checkEquivalentApproximations = 1
+    small = 100 * eps            # a small number for "equivalence"
 
     # Add ghost cells.
     gdata = grid.bdry[dim](data, dim, stencil, grid.bdryData[dim])
     if(generateAll):
         # Compute the left and right approximations.
         # No need to build WENO approximation, just return all the ENO approx.
-        res = upwindFirstENO3bHelper(grid, gdata, dim, -1);
+        res = upwindFirstENO3bHelper(grid, gdata, dim, -1)
         derivL = res.eno_approx
-        res = upwindFirstENO3bHelper(grid, gdata, dim, +1);
+        res = upwindFirstENO3bHelper(grid, gdata, dim, +1)
         derivR = res.eno_approx
 
         #---------------------------------------------------------------------------
@@ -104,12 +105,12 @@ def choose(d, s):
     #
     # Helper function to choose least oscillatory ENO approximant.
 
-    choose1over2 = (s[0] < s[1]);
-    choose1over3 = (s[0] < s[2]);
-    choose2over3 = (s[1] < s[2]);
+    choose1over2 = (s[0] < s[1])
+    choose1over3 = (s[0] < s[2])
+    choose2over3 = (s[1] < s[2])
 
     deriv = ((choose1over2 and choose1over3) * d[0] \
-         + (not choose1over2 and choose2over3) * d[1] \
-         + (not choose1over3 and not choose2over3) * d[2]);
+            + (cp.logical_not(choose1over2) and choose2over3) * d[1] \
+            + (cp.logical_not(choose1over3) and cp.logical_not(choose2over3)) * d[2])
 
     return deriv

@@ -2,6 +2,7 @@ __all__ = ['upwindFirstWENO5b']
 
 import copy
 import logging
+import cupy as cp
 import numpy as np
 from Utilities import *
 logger = logging.getLogger(__name__)
@@ -52,13 +53,13 @@ def upwindFirstWENO5b(grid, data, dim, generateAll=False):
        agreement contained in the file LICENSE in the top directory of
        the distribution.
 
-     Copyright Lekan Molu, 8/21/2021 Adopted from
-             2004 Ian M. Mitchell (mitchell@cs.ubc.ca)
-             LevelSets Toolbox. Ian Mitchell, 1/26/04
+     Copyright Lekan Molu, 8/21/2021.
     """
+    if isinstance(data, cp.ndarray):
+      data = cp.asarray(data)
 
     if((dim < 0) or (dim > grid.dim)):
-        error('Illegal dim parameter')
+        ValueError('Illegal dim parameter')
 
     # How big is the stencil?
     stencil = 3

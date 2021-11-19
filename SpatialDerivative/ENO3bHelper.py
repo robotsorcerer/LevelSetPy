@@ -2,6 +2,7 @@ __all__ = ['upwindFirstENO3bHelper']
 
 import copy
 import logging
+import cupy as cp
 import numpy as np
 from Utilities import *
 logger = logging.getLogger(__name__)
@@ -50,7 +51,11 @@ def upwindFirstENO3bHelper(grid, gdata, dim, direction):
      Ian Mitchell, 1/23/03
      Lekan on August 16, 2021
     """
-    dxInv = np.divide(1, grid.dx(dim))
+    #---------------------------------------------------------------------------
+    if isinstance(data, cp.ndarray):
+      data = cp.asarray(data)
+
+    dxInv = 1 / grid.dx.item(dim)
 
     # How big is the stencil?
     stencil = 3
@@ -59,7 +64,7 @@ def upwindFirstENO3bHelper(grid, gdata, dim, direction):
     sizeData = size(gdata)
     indices = []
     for i in range(grid.dim):
-      indices[i] = np.arange(sizeData[i], dtype=np.intp)
+      indices[i] = cp.arange(sizeData[i], dtype=cp.intp)
 
     # Compute the appropriate approximations.
     if direction ==-1:
@@ -79,7 +84,7 @@ def derivativeLeft(data, dxInv, dim, indices1, stencil):
     indices2 = copy.copy(indices1)
 
     # Where does the actual data lie?
-    indexDer = np.arange(stencil, (size(data, dim) - stencil), dtype=np.intp)
+    indexDer = cp.arange(stencil, (size(data, dim) - stencil), dtype=cp.intp)
 
     # The five v terms.
     terms = 5
@@ -88,7 +93,7 @@ def derivativeLeft(data, dxInv, dim, indices1, stencil):
         offset = i - 3
         indices1[dim] = indexDer + offset
         indices2[dim] = indexDer + offset - 1
-        v.append((data[np.ix_(*indices1)] - data[np.ix_(*indices2)]) * dxInv)
+        v.append((data[cp.ix_(*indices1)] - data[cp.ix_(*indices2)]) * dxInv)
 
     return derivativeWENO(v)
 
@@ -100,7 +105,7 @@ def derivativeRight(data, dxInv, dim, indices1, stencil):
     indices2 = copy.copy(indices1)
 
     # where does the actual data lie?
-    indexDer = np.arange(stencil, (size(data, dim) - stencil))
+    indexDer = cp.arange(stencil, (size(data, dim) - stencil))
 
     # the five v terms
     terms = 5
@@ -110,7 +115,7 @@ def derivativeRight(data, dxInv, dim, indices1, stencil):
         offset = 3 - i
         indices1[dim] = indexDer + offset + 1
         indices2[dim] = indexDer + offset
-        v[i] = (data[np.ix_(*indices1)] - data[np.ix_(*indices2)]) * dxInv
+        v[i] = (data[cp.ix_(*indices1)] - data[cp.ix_(*indices2)]) * dxInv
 
     return derivativeWENO(v)
 
@@ -149,7 +154,7 @@ def derivativeWENO(v, use_comp=False):
     if(use_comp):
         epsilon = v[0]**2
         for i in range(1, len(v)):
-            epsilon = np.max(epsilon, v[i]**2)
+            epsilon = cp.max(epsilon, (v[i]**2).flatten())
         epsilon = epsilon*1e-6 + 1e-99
     else:
         epsilon = 1e-6

@@ -1,8 +1,10 @@
 __all__ = ["odeCFL3"]
 
 import copy
+import cupy as cp
 import numpy as np
 from .ode_cfl_set import odeCFLset
+from .ode_cfl_mult import odeCFLmultipleSteps
 from .ode_cfl_call import odeCFLcallPostTimestep
 from Utilities import *
 
@@ -99,17 +101,15 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
     #---------------------------------------------------------------------------
     # If we were asked to integrate forward to a final time.
     if(numT == 2):
-        if(isinstance(y0, list)):
+        if(iscell(y0)):
             numY = len(y0)
 
             # We need a cell vector form of schemeFunc.
             if(isinstance(schemeFunc, list)):
                 schemeFuncCell = schemeFunc
             else:
-                # schemeFuncCell[:numY] = schemeFunc
                 schemeFuncCell = [schemeFunc for i in range(numY)]
         else:
-            # Set numY, but be careful: ((numY == 1) & iscell(y0)) is possible.
             numY = 1
 
             # We need a cell vector form of schemeFunc.
@@ -144,7 +144,6 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
                                 tspan[1] - t, options.maxStep)))
             # Take the first substep.
             t1 = t + deltaT
-            # print('y first substep: ', y.shape)
             if(iscell(y)):
                 y1 = cell(numY)
                 for i in range(numY):
@@ -172,8 +171,8 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             #   the CFL condition by a significant amount, throw a warning.
             #   For vector level sets, use the most restrictive stepBound.
             # Occasional failure should not cause too many problems.
-            if(deltaT > min(safetyFactorCFL * stepBound)):
-                violation = deltaT / stepBound
+            if(deltaT > np.min(safetyFactorCFL * stepBound)):
+                violation = deltaT / np.asarray(stepBound)
                 warn(f'Second substep violated CFL effective number {violation}')
 
             # Take the second substep.
@@ -215,8 +214,8 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
                 For vector level sets, use the most restrictive stepBound.
                 Occasional failure should not cause too many problems.
             """
-            if(deltaT > min(safetyFactorCFL * stepBound)):
-                violation = deltaT / stepBound
+            if(deltaT > np.min(safetyFactorCFL * stepBound)):
+                violation = deltaT / np.asarray(stepBound)
                 warn(f'Third substep violated CFL effective number {violation}')
 
             # Take the third substep.
@@ -266,7 +265,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
         endTime = cputime()
 
         if(strcmp(options.stats, 'on')):
-            info(f'\t{steps} steps in {endTime-startTime} seconds from  {tspan[0]}, to {t}')
+            info(f'{steps} steps in {endTime-startTime} seconds from  {tspan[0]}, to {t}.')
 
     elif(numT > 2):
         # If we were asked for the solution at multiple timesteps.
@@ -275,6 +274,6 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
     #---------------------------------------------------------------------------
     else:
         # Malformed time span.
-        error('tspan must contain at least two entries')
+        ValueError('tspan must contain at least two entries')
 
     return t, y, schemeData

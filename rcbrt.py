@@ -38,7 +38,9 @@ parser = argparse.ArgumentParser(description='Hamilton-Jacobi Analysis')
 parser.add_argument('--compute_traj', '-ct', action='store_true', default=False, help='compute trajectory?')
 parser.add_argument('--silent', '-si', action='store_false',  default=0, help='silent debug print outs' )
 parser.add_argument('--visualize', '-vz', action='store_true', help='visualize level sets?' )
-parser.add_argument('--verify', '-vz', action='store_true', help='visualize level sets?' )
+parser.add_argument('--stochastic', '-st', action='store_true', help='Run trajectories with stochastic dynamics?' )
+parser.add_argument('--compute_traj', '-ct', action='store_true', help='Run trajectories with stochastic dynamics?' )
+parser.add_argument('--verify', '-vf', action='store_true', help='visualize level sets?' )
 parser.add_argument('--elevation', '-el', type=float, default=5., help='elevation angle for target set plot.' )
 parser.add_argument('--azimuth', '-az', type=float, default=5., help='azimuth angle for target set plot.' )
 parser.add_argument('--pause_time', '-pz', type=float, default=4, help='pause time between successive updates of plots' )
@@ -216,7 +218,13 @@ def main(args):
 		rcbrt_viz.update_tube(init_mesh, params.mesh, time_step)
 
 	end_time = cputime()
-	info(f'Total execution time {end_time - start_time} seconds.')
+	info(f'Total BRS/BRT execution time {end_time - start_time} seconds.')
+
+	 if args.verify:
+		 x0 = np.array([[1.25, 0, pi]])
+
+		 #examine to see if the initial state is in the BRS/BRT
+		 gexam = copy.deepcopy(g)
 
 if __name__ == '__main__':
 	main(args)

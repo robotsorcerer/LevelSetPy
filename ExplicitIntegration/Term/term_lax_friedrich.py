@@ -3,7 +3,7 @@ __all__ = ["termLaxFriedrichs"]
 import copy
 import cupy as cp
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termLaxFriedrichs(t, y, schemeData):
     """
@@ -98,9 +98,9 @@ def termLaxFriedrichs(t, y, schemeData):
 
     #---------------------------------------------------------------------------
     # Get upwinded and centered derivative approximations.
-    derivL = [np.nan for i in range(grid.dim)]
-    derivR = [np.nan for i in range(grid.dim)]
-    derivC = [np.nan for i in range(grid.dim)]
+    derivL = [cp.nan for i in range(grid.dim)]
+    derivR = [cp.nan for i in range(grid.dim)]
+    derivC = [cp.nan for i in range(grid.dim)]
 
     for i in range(grid.dim):
         # Do upwinding now: for RCBRT, we use upwindENO2. I bet w/my life that this is correct
@@ -108,7 +108,6 @@ def termLaxFriedrichs(t, y, schemeData):
         derivC[i] = 0.5 * (derivL[i] + derivR[i])
 
     # Analytic Hamiltonian with centered difference derivatives.
-    # derivs from upwindENO2 is incorrect. Investigate this
     result = thisSchemeData.hamFunc(t, data, derivC, thisSchemeData)
     if isinstance(result, tuple):
         ham, thisSchemeData = result

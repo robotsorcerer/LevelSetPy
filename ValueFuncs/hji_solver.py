@@ -11,14 +11,14 @@ import numpy as np
 from os.path import join
 from datetime import datetime
 
-from Utilities import *
-from ValueFuncs import *
-from Hamiltonians import *
-from Visualization import *
-from SpatialDerivative import *
-from ExplicitIntegration import *
+from LevelSetPy.Utilities import *
+from LevelSetPy.ValueFuncs import *
+from LevelSetPy.Hamiltonians import *
+from LevelSetPy.Visualization import *
+from LevelSetPy.SpatialDerivative import *
+from LevelSetPy.ExplicitIntegration import *
 
-from Visualization.value_viz import ValueVisualizer
+from LevelSetPy.Visualization.value_viz import ValueVisualizer
 import matplotlib.pyplot as plt
 
 def HJIPDE_solve(data0, tau, schemeData, compMethod, extraArgs):

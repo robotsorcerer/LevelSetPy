@@ -3,7 +3,7 @@ __all__ = ["artificialDissipationLLF"]
 import copy
 import cupy as cp
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def artificialDissipationLLF(t, data, derivL, derivR, schemeData):
     """

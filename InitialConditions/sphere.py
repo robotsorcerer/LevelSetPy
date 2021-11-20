@@ -2,7 +2,7 @@ __all__ = ["shapeSphere"]
 
 import numpy as np
 import logging
-from Utilities.matlab_utils import *
+from LevelSetPy.Utilities.matlab_utils import *
 
 logger = logging.getLogger(__name__)
 

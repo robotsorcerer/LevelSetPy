@@ -1,6 +1,6 @@
 __all__ = ["odeCFLcallPostTimestep"]
 
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def odeCFLcallPostTimestep(t, yIn, schemeDataIn, options):
     """

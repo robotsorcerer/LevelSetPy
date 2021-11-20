@@ -4,8 +4,8 @@ import copy
 import cupy as cp
 import numpy as np
 import logging
-from Utilities.matlab_utils import *
-from BoundaryCondition import addGhostPeriodic
+from LevelSetPy.Utilities.matlab_utils import *
+from LevelSetPy.BoundaryCondition import addGhostPeriodic
 
 logger = logging.getLogger(__name__)
 

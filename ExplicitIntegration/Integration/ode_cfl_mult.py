@@ -1,7 +1,7 @@
 __all__ = ["odeCFLmultipleSteps"]
 
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 
 def odeCFLmultipleSteps(intFunc, schemeFunc, tspan, y0, options, schemeData):

@@ -2,7 +2,7 @@ __all__ = ["termRestrictUpdate"]
 
 import cupy as cp
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termRestrictUpdate(t, y, schemeData):
     """
@@ -80,7 +80,6 @@ def termRestrictUpdate(t, y, schemeData):
 
     #Get the unrestricted update. # this is usually termLaxFriedrichs
     unRestricted, stepBound, innerData = thisSchemeData.innerFunc(t, y, innerData)
-    #print(f'unRestricted: {unRestricted.shape}, stepBound: {stepBound}')
 
     #Store any modifications of the inner data structure.
     if(iscell(schemeData)):
@@ -100,7 +99,5 @@ def termRestrictUpdate(t, y, schemeData):
         ydot = cp.maximum(unRestricted, 0).squeeze()
     else:
         ydot = cp.minimum(unRestricted, 0).squeeze()
-
-    # print(f'ydot in restrict update: {ydot.shape}')
 
     return ydot, stepBound, schemeData

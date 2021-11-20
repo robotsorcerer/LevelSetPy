@@ -1,7 +1,7 @@
 __all__ = ["shapeCylinder"]
 
 import numpy as np
-from Utilities.matlab_utils import *
+from LevelSetPy.Utilities.matlab_utils import *
 
 def shapeCylinder(grid, axis_align=[], center=None, radius=1):
     """

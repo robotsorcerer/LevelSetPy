@@ -5,8 +5,8 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
-from Utilities import *
-from SpatialDerivative import upwindFirstWENO5
+from LevelSetPy.Utilities import *
+from LevelSetPy.SpatialDerivative import upwindFirstWENO5
 
 def computeGradients(g, data, dims=None, derivFunc=None):
     """

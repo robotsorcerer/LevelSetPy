@@ -1,6 +1,6 @@
 __all__ = ["genericHam"]
 
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def genericHam(t, data, deriv, schemeData):
 

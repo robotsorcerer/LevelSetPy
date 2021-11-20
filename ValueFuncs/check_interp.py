@@ -5,7 +5,7 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
-from Utilities import size, error
+from LevelSetPy.Utilities import size, error
 
 
 def checkInterpInput(g, x):

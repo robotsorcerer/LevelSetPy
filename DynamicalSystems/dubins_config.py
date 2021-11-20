@@ -1,6 +1,6 @@
 
 import numpy as np
-from Utilities import zeros, cell
+from LevelSetPy.Utilities import zeros, cell
 
 dubins_default_params = dict(
                             wRange=[-1, 1],

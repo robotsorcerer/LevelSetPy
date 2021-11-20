@@ -4,7 +4,7 @@ __all__ = [
     "neighs3d"
 ]
 
-from Utilities import error
+from LevelSetPy.Utilities import error
 
 def hit_edge3d(out, x, y, z):
     """

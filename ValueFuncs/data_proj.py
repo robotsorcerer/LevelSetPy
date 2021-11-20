@@ -6,10 +6,9 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
 import numpy as np
-from Utilities import *
-from ValueFuncs import *
-from Grids import processGrid
-from BoundaryCondition import addGhostPeriodic
+from LevelSetPy.Utilities import *
+from LevelSetPy.Grids import processGrid
+from LevelSetPy.BoundaryCondition import addGhostPeriodic
 from scipy import interpolate
 from scipy.interpolate import RegularGridInterpolator
 import logging

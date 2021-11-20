@@ -11,12 +11,12 @@ import numpy as np
 from os.path import join
 import matplotlib.pylab as plt
 import matplotlib.gridspec as gridspec
-from Utilities.matlab_utils import *
-from Grids.create_grid import createGrid
+from ..Utilities.matlab_utils import *
+from ..Grids.create_grid import createGrid
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from Visualization.mesh_implicit import implicit_mesh
-from Visualization.settings import buffered_axis_limits
+from ..Visualization.mesh_implicit import implicit_mesh
+from ..Visualization.settings import buffered_axis_limits
 
 def get_field(field, bundle):
 	if isfield(field, bundle):

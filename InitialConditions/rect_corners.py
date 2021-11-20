@@ -2,7 +2,7 @@ __all__ = ["shapeRectangleByCorners"]
 
 import logging
 import numpy as np
-from Utilities.matlab_utils import *
+from LevelSetPy.Utilities.matlab_utils import *
 
 logger = logging.getLogger(__name__)
 

@@ -3,9 +3,9 @@ __all__ = ["createGrid"]
 import logging
 import numpy as np
 import numpy as np
-from Utilities import *
 from .process_grid import processGrid
-from BoundaryCondition import addGhostExtrapolate, addGhostPeriodic
+from LevelSetPy.Utilities import *
+from LevelSetPy.BoundaryCondition import addGhostExtrapolate, addGhostPeriodic
 
 logger = logging.getLogger(__name__)
 

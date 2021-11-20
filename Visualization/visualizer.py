@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from os.path import join
-from Utilities import error
+from LevelSetPy.Utilities import error
 from .color_utils import cmaps
 from mpl_toolkits.mplot3d import Axes3D
 

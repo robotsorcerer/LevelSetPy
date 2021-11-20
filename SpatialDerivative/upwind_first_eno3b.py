@@ -4,7 +4,7 @@ import copy
 import logging
 import cupy as cp
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 logger = logging.getLogger(__name__)
 
 from .ENO3bHelper import upwindFirstENO3bHelper

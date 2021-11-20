@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from Visualization.mesh_implicit import implicit_mesh
+from ..Visualization.mesh_implicit import implicit_mesh
 
 import os, sys
 from os.path import abspath, dirname, exists, join

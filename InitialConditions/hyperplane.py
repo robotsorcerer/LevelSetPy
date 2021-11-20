@@ -1,8 +1,8 @@
 
 
 import numpy as np
-from Utilities import zeros, ones, numel, logger, np
-from Helper.Math import cellMatrixMultiply, cellMatrixAdd
+from LevelSetPy.Utilities import zeros, ones, numel, logger, np
+from LevelSetPy.Helper.Math import cellMatrixMultiply, cellMatrixAdd
 
 
 def shapeHyperplane(grid, normal, point):

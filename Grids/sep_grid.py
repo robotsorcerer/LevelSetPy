@@ -1,9 +1,9 @@
 __all__ = ["sepGrid"]
 
 import numpy as np
-from Utilities import expand, ones
+from LevelSetPy.Utilities import expand, ones
 from .create_grid import createGrid
-from ValueFuncs import proj
+from LevelSetPy.ValueFuncs import proj
 
 
 def sepGrid(g, dims, data=np.empty((0, 0))):

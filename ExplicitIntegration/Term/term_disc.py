@@ -2,7 +2,7 @@ __all__ = ["termDiscount"]
 
 import copy
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termDiscount(t, y, schemeData):
     """

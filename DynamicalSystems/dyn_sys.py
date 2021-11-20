@@ -1,5 +1,5 @@
 """ This file defines the base dynamical systems class. """
-from Utilities import cell
+from LevelSetPy.Utilities import cell
 
 class DynSys(object):
     def __init__(self, nx=None, nu=None, nd=None, x=None, u=None,

@@ -7,13 +7,13 @@ __status__ 		= "Testing"
 
 import time
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 from .data_proj import proj
 from .compute_gradients import computeGradients
 from matplotlib import pyplot as plt
-from ExplicitIntegration import dynamics_RK4
+from LevelSetPy.ExplicitIntegration import dynamics_RK4
 
-def computeOptTraj(g, data, tau, dynSys, extraArgs=Bundle({})):
+def computeOptTraj(g, data, tau, dynSys, extraArgs=None):
     """
      [traj, traj_tau] = computeOptTraj(g, data, tau, dynSys, extraArgs)
        Computes the optimal trajectories given the optimal value function

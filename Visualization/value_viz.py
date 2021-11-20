@@ -11,13 +11,13 @@ import numpy as np
 from os.path import join
 import matplotlib.pylab as plt
 import matplotlib.gridspec as gridspec
-from Utilities.matlab_utils import *
-from Grids.create_grid import createGrid
+from LevelSetPy.Utilities.matlab_utils import *
+from LevelSetPy.Grids.create_grid import createGrid
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from Visualization.mesh_implicit import implicit_mesh
-from ValueFuncs import proj
-from Visualization.settings import buffered_axis_limits
+from LevelSetPy.Visualization.mesh_implicit import implicit_mesh
+from LevelSetPy.ValueFuncs import proj
+from LevelSetPy.Visualization.settings import buffered_axis_limits
 
 class ValueVisualizer(object):
 	def __init__(self, params={}):

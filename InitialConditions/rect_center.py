@@ -1,7 +1,7 @@
 __all__ = ["shapeRectangleByCenter"]
 
 import numpy as np
-from Utilities.matlab_utils import *
+from LevelSetPy.Utilities.matlab_utils import *
 from .rect_corners import shapeRectangleByCorners
 
 def shapeRectangleByCenter(grid, center=None, widths=None):

@@ -1,7 +1,7 @@
 __all__ = ["getOGPBounds"]
 
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def  getOGPBounds(gBase, gMinIn, gMaxIn, padding):
     """"

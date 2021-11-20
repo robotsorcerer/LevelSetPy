@@ -1,7 +1,7 @@
 __all__ = ["termSum"]
 
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termSum(t, y, schemeData):
     """

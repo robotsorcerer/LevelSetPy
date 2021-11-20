@@ -2,7 +2,7 @@ __all__ = ["termConvection"]
 
 import copy
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termConvection(t, y, schemeData):
     """

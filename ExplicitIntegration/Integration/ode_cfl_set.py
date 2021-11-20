@@ -1,6 +1,6 @@
 __all__ = ["odeCFLset"]
 
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def odeCFLset(kwargs=None):
     """

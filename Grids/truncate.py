@@ -2,7 +2,7 @@ __all__ = ["truncateGrid"]
 
 import copy
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 from .process_grid import processGrid
 
 def truncateGrid(gOld, dataOld=None, xmin=None, xmax=None, process=True):

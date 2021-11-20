@@ -2,7 +2,7 @@ __all__ = ["termReinit"]
 
 import copy
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termReinit(t, y, schemeData):
     """

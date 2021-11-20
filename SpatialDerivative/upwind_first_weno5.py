@@ -3,7 +3,7 @@ __all__ = ['upwindFirstWENO5']
 import copy
 import logging
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 logger = logging.getLogger(__name__)
 
 from .upwind_first_weno5a import upwindFirstWENO5a

@@ -1,4 +1,4 @@
-from Utilities import error, size, quickarray, size
+from Utilities import *
 
 def centeredFirstSecond(grid, data, dim):
     """

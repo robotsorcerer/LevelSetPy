@@ -6,7 +6,7 @@ import numpy as np
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_mult import odeCFLmultipleSteps
 from .ode_cfl_call import odeCFLcallPostTimestep
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
     """
@@ -265,7 +265,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
         endTime = cputime()
 
         if(strcmp(options.stats, 'on')):
-            info(f'{steps} steps in {endTime-startTime} seconds from  {tspan[0]}, to {t}.')
+            info(f'{steps} steps in {(endTime-startTime):.2} seconds from  {tspan[0]} to {t}.')
 
     elif(numT > 2):
         # If we were asked for the solution at multiple timesteps.

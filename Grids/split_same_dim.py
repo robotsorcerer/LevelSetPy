@@ -1,8 +1,8 @@
 __all__ =[ "splitGrid_sameDim"]
 
 import numpy as np
-from Utilities import *
-from Grids import createGrid, getOGPBounds
+from LevelSetPy.Utilities import *
+from LevelSetPy.Grids import createGrid, getOGPBounds
 import copy
 
 def splitGrid_sameDim(g, bounds, padding=None):

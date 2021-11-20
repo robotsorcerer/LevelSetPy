@@ -2,7 +2,7 @@ __all__ = [
             "Bundle", "ZEROS_TYPE", "ONES_TYPE",
             "realmin", "DEFAULT_ORDER", "mat_like_array", "index_array",
             "quickarray", "ismember", "omin", "omax", "strcmp",
-            "isbundle","isfield", "cputime","error", "realmax", "eps",
+            "isbundle", "isfield", "cputime","error", "realmax", "eps",
             "info","warn",  "length","size",  "to_column_mat", "numel",
             "numDims", "ndims", "expand", "ones", "zeros", "isvector",
             "isColumnLength", "cell",  "iscell", "isnumeric", "isfloat", "isscalar",
@@ -133,7 +133,7 @@ def cputime():
 def error(arg):
     "Pushes std errors out to screen."
     assert isinstance(arg, str), 'logger.fatal argument must be a string'
-    logger.fatal(arg)
+    raise ValueError(arg)
 
 def info(arg):
     "Pushes std info out to screen."
@@ -240,16 +240,6 @@ def isnumeric(A):
         return True
     else:
         return False
-    # if isinstance(A, np.ndarray):
-    #     dtype = A.dtype
-    # else:
-    #     dtype = type(A)
-    #
-    # acceptable_types=[list, np.float64, np.float32, np.int64, np.int32, float, int]
-    #
-    # if dtype in acceptable_types:
-    #     return True
-    # return False
 
 def isfloat(A):
     "Determines if A is a float type."

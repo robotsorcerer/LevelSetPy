@@ -2,7 +2,7 @@ __all__ = ["termNormal"]
 
 import copy
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def termNormal(t, y, schemeData):
     """

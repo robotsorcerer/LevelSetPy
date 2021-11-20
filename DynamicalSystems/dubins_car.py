@@ -1,8 +1,8 @@
 from .dyn_sys import DynSys
 import copy
 import cupy as np
-from Utilities import *
-from ExplicitIntegration.runge_kutta4 import dynamics_RK4
+from LevelSetPy.Utilities import *
+from LevelSetPy.ExplicitIntegration.runge_kutta4 import dynamics_RK4
 
 class DubinsCar(DynSys):
     def __init__(self, x, wRange, speed, dRange=None, dims=None):

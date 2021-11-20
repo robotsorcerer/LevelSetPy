@@ -1,6 +1,6 @@
 __all__ = ["artificialDissipationLLLF"]
 
-from Utilities import *
+from LevelSetPy.Utilities import *
 import copy
 import numpy as np
 

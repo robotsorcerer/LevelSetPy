@@ -1,7 +1,7 @@
 __all__ = ["genericPartial"]
 
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def genericPartial(t, data, derivMin, derivMax, schemeData, dim):
     g = schemeData.grid

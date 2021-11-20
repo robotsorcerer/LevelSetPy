@@ -2,8 +2,8 @@ __all__ = ["termTraceHessian"]
 
 
 import numpy as np
-from Utilities import *
-from Helper.Math import *
+from LevelSetPy.Utilities import *
+from LevelSetPy.Helper.Math import *
 
 def termTraceHessian(t, y, schemeData):
     """

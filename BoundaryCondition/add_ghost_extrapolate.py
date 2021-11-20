@@ -9,7 +9,7 @@ __all__ = ["addGhostExtrapolate"]
 import copy
 import cupy as cp
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     """

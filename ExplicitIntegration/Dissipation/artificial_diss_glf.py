@@ -2,7 +2,7 @@ __all__ = ["artificialDissipationGLF"]
 
 import cupy as cp
 import numpy as np
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
     """

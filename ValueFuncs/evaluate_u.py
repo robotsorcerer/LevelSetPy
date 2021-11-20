@@ -6,10 +6,10 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Testing"
 
 import numpy as np
-from Utilities import *
-from BoundaryCondition import addGhostPeriodic
+from LevelSetPy.Utilities import *
+from LevelSetPy.BoundaryCondition import addGhostPeriodic
 from .augment_periodic import augmentPeriodicData
-from ValueFuncs import *
+from LevelSetPy.ValueFuncs import *
 from scipy.interpolate import RegularGridInterpolator, LinearNDInterpolator
 
 def eval_u(gs, datas, xs, interp_method='linear'):
@@ -93,8 +93,6 @@ def  eval_u_single(g, data, x, interp_method):
 
             i_above_bounds = x[:,i] > max(g.vs[i])
             while np.any(i_above_bounds):
-                # print(f'i_above_bounds: {i_above_bounds}')
-                # print('x: ', x, ' x[i_above_bounds, i]: ', x[i_above_bounds, i])
                 x[i_above_bounds, i] -= period
                 i_above_bounds = x[:,i] > max(g.vs[i])
 
@@ -103,8 +101,7 @@ def  eval_u_single(g, data, x, interp_method):
                 x[i_below_bounds, i] += period
                 i_below_bounds = x[:,i] < min(g.vs[i])
 
-    # Interpolate
-
+    # Interpolate 
     data_tup = [x.squeeze() for x in g.vs]
     interp_func = RegularGridInterpolator(data_tup, data)
     if len(x)==len(g.vs):

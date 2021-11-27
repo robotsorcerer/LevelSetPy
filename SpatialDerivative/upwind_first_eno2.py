@@ -42,12 +42,6 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
        derivL      Left approximation of first derivative (same size as data).
        derivR      Right approximation of first derivative (same size as data).
 
-     Copyright 2004 Ian M. Mitchell (mitchell@cs.ubc.ca).
-     This software is used, copied and distributed under the licensing
-       agreement contained in the file LICENSE in the top directory of
-       the distribution.
-
-     Ian Mitchell, 1/22/04
      Lekan on August 16, 2021
     """
     if isinstance(data, np.ndarray):
@@ -147,7 +141,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
         indices1[dim] = cp.arange(0, size(smallerL, dim) - 1, dtype=cp.intp)
         derivL = dL[0] * smallerL[cp.ix_(*indices1)] + dL[1] * smallerR[cp.ix_(*indices1)]
 
-        indices1[dim] = cp.arange(1,size(smallerL, dim), dtype=cp.intp)
+        indices1[dim] = cp.arange(1, size(smallerL, dim), dtype=cp.intp)
         derivR = dR[0] * smallerL[cp.ix_(*indices1)] + dR[1] * smallerR[cp.ix_(*indices1)]
 
     return derivL, derivR

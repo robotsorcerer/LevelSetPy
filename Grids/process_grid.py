@@ -298,11 +298,5 @@ def processGrid(gridIn, data=None, sparse_flag=False):
             error('data parameter does not agree in dimension with grid')
         if(np.any(size(data) != gridOut.shape)):
             error('data parameter does not agree in array size with grid')
-    
-    # gridOut.vs = [cp.asarray(x) for x in gridOut.vs]
-    # gridOut.xs = [cp.asarray(x) for x in gridOut.xs]
-    # gridOut.min = gridOut.min#.get()
-    # gridOut.max = gridOut.max#.get()
-    # gridOut.dx = gridOut.dx.get()
 
     return  gridOut

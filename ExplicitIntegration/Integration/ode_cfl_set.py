@@ -34,7 +34,7 @@ def odeCFLset(kwargs=None):
        MaxStep       Maximum step size (independent of CFL).
                        Default is sys.float_info.max.
 
-       PostTimestep  Function handle to a routine with prototype
+       PostTimeStep  Function handle to a routine with prototype
                             [ yOut, schemeDataOut ] = f(t, yIn, schemeDataIn)
                        which is called after every timestep and can be used
                        to modify the state vector y or to modify or record
@@ -66,7 +66,7 @@ def odeCFLset(kwargs=None):
                        to accurately locate the time at which the event
                        function passed through zero.
                      If both are present, the terminalEvent function will be
-                       called after all postTimestep functions.
+                       called after all postTimeStep functions.
                      Defaults to [], which calls no function.
 
      Copyright 2005-2008 Ian M. Mitchell (mitchell@cs.ubc.ca).
@@ -81,7 +81,7 @@ def odeCFLset(kwargs=None):
     if not kwargs:
         info(f'    factorCFL: [ positive scalar {0.5} ]')
         info('      maxStep: [ positive scalar {REALMAX} ]')
-        info(f' postTimestep: [ function handle | '
+        info(f' postTimeStep: [ function handle | '
                 'cell vector of function handles | {[]} ]')
         info('   singleStep: [ on | {off} ]')
         info('        stats: [ on | {off} ]')
@@ -94,7 +94,7 @@ def odeCFLset(kwargs=None):
     options = Bundle({})
     options.factorCFL = kwargs.__dict__.get('factorCFL', 0.5)
     options.maxStep  = kwargs.__dict__.get('realmax', realmax)
-    options.postTimestep = kwargs.__dict__.get('postTimestep', None)
+    options.postTimeStep = kwargs.__dict__.get('postTimeStep', None)
     options.singleStep = kwargs.__dict__.get("singleStep", 'off')
     options.stats = kwargs.__dict__.get("stats", 'off')
     options.terminalEvent = kwargs.__dict__.get("terminalEvent", None)
@@ -107,14 +107,14 @@ def odeCFLset(kwargs=None):
     if options.maxStep < 0.0:
         raise ValueError('MaxStep must be a positive scalar double value')
 
-    if options.postTimestep is not None:
-        if (isinstance(options.postTimestep, list)):
-            for j in range(len(options.postTimestep)):
-                if(not hasattr(options.postTimestep[j], '__call__')):
-                    raise ValueError('Each element in a postTimestep cell vector must '
+    if options.postTimeStep is not None:
+        if (isinstance(options.postTimeStep, list)):
+            for j in range(len(options.postTimeStep)):
+                if(not hasattr(options.postTimeStep[j], '__call__')):
+                    raise ValueError('Each element in a postTimeStep cell vector must '
                     'be a function handle.')
         else:
-            raise ValueError('PostTimestep parameter must be a function handle or '
+            raise ValueError('PostTimeStep parameter must be a function handle or '
                                 'a list of function handles.')
 
     # print('options.singleStep ', options.singleStep)
@@ -128,6 +128,6 @@ def odeCFLset(kwargs=None):
         raise ValueError('Stats must be one of the strings \'on\' or \'off\'')
 
     if(options.terminalEvent is not None and not hasattr(options.terminalEvent, '__call__')):
-        raise ValueError('PostTimestep parameter must be a function handle.')
+        raise ValueError('PostTimeStep parameter must be a function handle.')
 
     return options

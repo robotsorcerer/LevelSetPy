@@ -1,5 +1,6 @@
 __all__ = ["odeCFLcallPostTimestep"]
 
+import copy
 from LevelSetPy.Utilities import *
 
 def odeCFLcallPostTimestep(t, yIn, schemeDataIn, options):
@@ -40,14 +41,15 @@ def odeCFLcallPostTimestep(t, yIn, schemeDataIn, options):
     """
 
     # Copy over the current version of data and scheme structure.
-    yOut = yIn
-    schemeDataOut = schemeDataIn
+    yOut = copy.copy(yIn)
+    schemeDataOut = copy.copy(schemeDataIn)
 
     # Check to see if there is anything to do.
     if not (options):
-        return yOut, SchemeDataOut
+        return yOut, schemeDataOut
+
     if isfield(options, 'postTimestep') and options.postTimestep:
-        return yOut, SchemeDataOut
+        return yOut, schemeDataOut
 
     # Make the necessary calls.
     if callable(options.postTimestep):

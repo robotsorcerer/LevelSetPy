@@ -99,6 +99,8 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
                       schemeData, i)
         diss += (0.5 * derivDiff[i] * alpha)
         if isinstance(alpha, cp.ndarray):
+          #from O&F, the coeffs are 
+          # set to the max possible values of |H_{x|y}| respectively
           alpha = cp.max(alpha.flatten())
 
         stepBoundInv += (alpha / grid.dx.item(i))

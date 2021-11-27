@@ -1,7 +1,9 @@
 __all__ = ["shapeCylinder"]
 
 import numpy as np
+from .utils import check_target
 from LevelSetPy.Utilities.matlab_utils import *
+from .utils import check_target
 
 def shapeCylinder(grid, axis_align=[], center=None, radius=1):
     """
@@ -58,7 +60,5 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid
     #  (ie there will be no implicit surface to visualize).
-    if(np.all(data.flatten() < 0) or (np.all(data.flatten() > 0))):
-        logger.warn(f'Implicit surface not visible because function has '
-                'single sign on grid');
+    check_target(data)
     return data

@@ -23,7 +23,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
      parameters:
        schemeFunc	 Function handle to a CFL constrained ODE system
-                      (typically an approximation to an HJ term, see below).
+                      (typically an approximation to an HJ term e.g. termRestrictUpdate, see below).
        tspan        Range of time over which to integrate (see below).
        y0           Initial condition vector
                       (typically the data array in vector form).

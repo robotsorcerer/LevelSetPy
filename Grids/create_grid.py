@@ -46,20 +46,21 @@ def  createGrid(grid_min, grid_max, N, pdDims=None, process=True, low_mem=False)
     assert numel(grid_min)== numel(N), 'grid min, grid_max, and N must have the same number of elements!'
 
     grid_min = to_column_mat(grid_min)
-    grid_max = to_column_mat(grid_max);
-    N = to_column_mat(N);
+    grid_max = to_column_mat(grid_max)
+    N = to_column_mat(N)
 
     # Create the grid
     g = Bundle(dict(
                     dim=len(grid_min), min=grid_min,
                     max=grid_max, N=N, bdry= cell(len(grid_min), 1)
                     ))
+    
+    #axis to ignore for target set creation
+    g.axis_align = pdDims
 
-    # g.bdry = cell(g.dim, 1);
     for i in range(g.dim):
         if np.any(i == pdDims):
-            g.bdry[i] = addGhostPeriodic;
-            #g.max[i,0] = g.min[i,0] + (g.max[i,0] - g.min[i,0]) * (1 - 1/g.N[i,0]);
+            g.bdry[i] = addGhostPeriodic
         else:
             g.bdry[i] = addGhostExtrapolate
 

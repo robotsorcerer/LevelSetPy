@@ -125,7 +125,7 @@ def upwindFirstWENO5a(grid, data, dim, generateAll=False):
         # Left smoothness estimates just use the left looking portion of
         #   these estimates.  The ENO approximations are in the same order
         #   as in O&F, so we can use the same alpha weights as (3.35) - (3.37).
-        smoothL = cell(size(smooth))
+        smoothL = cell(len(smooth))
         indices1[dim] = cp.arange(size(data, dim),dtype=cp.intp)
 
         for i in range(len(smooth)):
@@ -139,7 +139,7 @@ def upwindFirstWENO5a(grid, data, dim, generateAll=False):
         # Note that the ENO approximations (and smoothness estimates)
         #   are in the opposite order as O&F, so we need to reorder the alpha
         #   weights from (3.35) - (3.37).
-        smoothR = cell(size(smooth))
+        smoothR = cell(len(smooth))
         indices2[dim] = cp.arange(1,size(data, dim) + 1, dtype=cp.intp)
         for i in range(len(smooth)):
             smoothR[i] = smooth[i][cp.ix_(*indices2)]

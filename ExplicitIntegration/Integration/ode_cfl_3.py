@@ -6,7 +6,7 @@ import numpy as np
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_mult import odeCFLmultipleSteps
 from .ode_cfl_call import odeCFLcallPostTimestep
-from LevelSetPy.Utilities import *
+from Utilities import *
 
 def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
     """
@@ -139,7 +139,6 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             #   For vector level sets, use the most restrictive stepBound.
             #   We'll use this fixed timestep for both substeps..
 
-            # print('stepBound ', stepBound, ' options.maxStep ', options.maxStep)
             deltaT = np.min(np.hstack((options.factorCFL*stepBound,  \
                                 tspan[1] - t, options.maxStep)))
             # Take the first substep.
@@ -231,7 +230,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
                 If there is a terminal event function registered, we need
                   to maintain the info from the last timestep.
             """
-            if(not(options.terminalEvent)):
+            if (isfield(options, "terminalEvent") and np.logical_not(options.terminalEvent)):
                 yOld , tOld = y,  t
 
             # Combine t_n and t_{n+3/2} to get third order approximation of t_{n+1}.
@@ -245,16 +244,16 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
             steps += 1
 
             # If there is one or more post-timestep routines, call them.
-            if options.postTimestep:
+            if isfield(options, 'postTimestep') and options.postTimestep:
                 y, schemeData = odeCFLcallPostTimestep(t, y, schemeData, options)
 
             # If we are in single step mode, then do not repeat.
-            if(strcmp(options.singleStep, 'on')):
+            if (isfield(options, 'singleStep') and strcmp(options.singleStep, 'on')):
                 break
 
             # If there is a terminal event function, establish initial sign
             #   of terminal event vector.
-            if options.terminalEvent:
+            if isfield(options, "terminalEvent") and options.terminalEvent:
                 eventValue, schemeData = options.terminalEvent(t, y, tOld, yOld, schemeData)
 
                 if((steps > 1) and np.any(np.sign(eventValue) != np.sign(eventValueOld))):
@@ -264,7 +263,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
 
         endTime = cputime()
 
-        if(strcmp(options.stats, 'on')):
+        if (isfield(options, "stats") and strcmp(options.stats, 'on')):
             info(f'{steps} steps in {(endTime-startTime):.2} seconds from  {tspan[0]} to {t}.')
 
     elif(numT > 2):

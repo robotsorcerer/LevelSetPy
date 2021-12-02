@@ -187,7 +187,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # If there is a terminal event function registered, we need
             #   to maintain the info from the last timestep.
-            if(np.logical_not(options.terminalEvent)):
+            if (isfield(options, "terminalEvent") and np.logical_not(options.terminalEvent)):
                 yOld , tOld = y,  t
 
             # Average t_n and t_{n+2} to get second order approximation of t_{n+1}.
@@ -211,7 +211,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
             # If there is a terminal event function, establish initial sign
             #   of terminal event vector.
-            if options.terminalEvent:
+            if (isfield(options, 'terminalEvent') and options.terminalEvent):
                 eventValue, schemeData = options.terminalEvent(t, y, tOld, yOld, schemeData)
 
                 if((steps > 1) and np.any(np.sign(eventValue) != np.sign(eventValueOld))):

@@ -107,7 +107,7 @@ def processGrid(gridIn, data=None, sparse_flag=False):
     defaultMax = 1
     defaultN = 101
     defaultBdry = addGhostPeriodic
-    defaultBdryData = []
+    defaultBdryData = None
 
     # This is just to avoid attempts to allocate 100 dimensional arrays.
     maxDimension = 5

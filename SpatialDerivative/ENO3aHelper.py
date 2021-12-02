@@ -26,31 +26,33 @@ def upwindFirstENO3aHelper(grid, data, dim, approx4, stripDD=False):
        where this scheme is equivalent to including the Q_1, Q_2 and Q_3
        terms of the ENO approximation.
 
-     parameters:
-       grid	Grid structure (see processGrid.m for details).
-       data        Data array.
-       dim         Which dimension to compute derivative on.
-       approx4     Generate two copies of middle approximation using
-                     both left/right and right/left traversal of divided
-                     difference tree.  The extra copy is placed in the
-                     fourth element of derivL and derivR, and is equivalent
-                     to the version in the second element of those cell vectors.
-       stripDD     Strip the divided difference tables down to their
+     Parameters
+     ==========
+      grid:      Grid Bundle.
+      data:      Data array (Value Function).
+      dim:       Which dimension to compute derivative on.
+      approx4:   Generate two copies of middle approximation using
+                 both left/right and right/left traversal of divided
+                 difference tree.  The extra copy is placed in the
+                 fourth element of derivL and derivR, and is equivalent
+                to the version in the second element of those lists.
+      stripDD:  Strip the divided difference tables down to their
                      appropriate size, otherwise they will contain entries
                      (at the D1 and D2 levels) that correspond entirely
-                     to ghost cells.
-
-       dL          Cell vector containing the 3 or 4 left approximations
+                     to ghost lists.
+      Returns
+      =======
+       dL:      List containing the 3 or 4 left approximations
                      of the first derivative (each the same size as data).
-       dR          Cell vector containing the 3 or 4 right approximations
+       dR:      List containing the 3 or 4 right approximations
                      of the first derivative (each the same size as data).
-       DD          Cell vector containing the divided difference tables
+       DD:      List containing the divided difference tables
                      (optional).
 
-    Copyright Lekan Molu, 8/21/2021 Adopted from Ian M. Mitchell (mitchell@cs.ubc.ca).
+    Copyright Lekan Molu, 8/21/2021. Adopted from Ian M. Mitchell (mitchell@cs.ubc.ca).
     """
     #---------------------------------------------------------------------------
-    if isinstance(data, cp.ndarray):
+    if isinstance(data, np.ndarray):
       data = cp.asarray(data)
 
     dxInv = 1 / grid.dx.item(dim)

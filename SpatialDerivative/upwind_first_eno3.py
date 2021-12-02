@@ -41,8 +41,7 @@ def  upwindFirstENO3(grid, data, dim, generateAll=0):
        agreement contained in the file LICENSE in the top directory of
        the distribution.
 
-     Ian Mitchell, 1/23/04
     Lekan on August 16, 2021
     """
 
-    return upwindFirstENO3a(grid, data, dim, generateAll);
+    return upwindFirstENO3a(grid, data, dim, generateAll)

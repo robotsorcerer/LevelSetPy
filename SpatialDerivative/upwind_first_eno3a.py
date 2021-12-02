@@ -51,11 +51,11 @@ def upwindFirstENO3a(grid, data, dim, generateAll=False):
 
         Added cupy impl on Nov 18, 21
     """
-    if isinstance(data, cp.ndarray):
+    if isinstance(data, np.ndarray):
       data = cp.asarray(data)
 
     if((dim < 0) or (dim > grid.dim)):
-        ValueError('Illegal dim parameter')
+        raise ValueError('Illegal dim parameter')
 
     # Check that approximations that should be equivalent are equivalent
     #   (for debugging purposes, only used if generateAll == 1).

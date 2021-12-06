@@ -1,7 +1,8 @@
-# Ripped off Shame McQuarrie's ROM OPInf Code: pre/_basis.py
+# Some of these contents ripped off Shame McQuarrie's ROM OPInf Code: pre/_basis.py
 """Tools for basis computation and reduced-dimension selection."""
 
 __all__ = [
+            "hosvd",
             "pod_basis",
             "svdval_decay",
             "cumulative_energy",
@@ -14,6 +15,49 @@ from scipy import linalg as la
 from scipy.sparse import linalg as spla
 from sklearn.utils import extmath as sklmath
 from matplotlib import pyplot as plt
+
+
+def hosvd(X, eps, plot=False):
+    """
+     Using a user defined projection error as a criteria,
+     calculate the minimum projection error onto a subspace of the 
+     value function X. 
+    
+       Parameters:
+       -----------
+           X(matrix of doubles): Payoff functional; 
+           eps (float): (User-defined) projection error;
+           plot(bool):  show the projection error on a plot?
+    
+       Returns:
+       --------
+       Core: Core tensor (representing the critical mass of X)
+       Un: Optimal orthonormal matrix (see paper)
+       V: Optimal eigen vectors
+       ranks: best rank approximation of X that admits the tolerable decomp
+                error
+           Basically, it is a projection of X onto one of its subspaces.
+       
+     Author: Lekan Molu, Dec 3, 2021    
+    """
+    
+    # Get gram matrix
+    S = X * X.T
+    
+    # do eigen decomposition of Gram matrix
+    V, Lambda = la.eig(S)
+    
+    #Find Un
+    Sig = np.diagonal(Lambda, 0)  # collect 0-th diagonal elements
+    err_term = (eps**2 * la.norm(X, 'fro')**2)/X.ndim
+    
+    lambs = np.cumsum(Sig[0:])
+    ranks = np.count_nonzero(lambs <= err_term)     
+    Un = V[:, :ranks]
+    
+    Core = X @ Un
+    return Core, Un,  V, ranks
+  
 
 
 # Basis computation ===========================================================
@@ -274,10 +318,10 @@ def minimal_projection_error(X, V, eps, plot=False):
         ax.set_xlim((0,rs.size))
         ylim = ax.get_ylim()
         for ep,r in zip(eps, ranks):
-            ax.hlines(ep, 0, r+1, color="black", linewidth=1)
-            ax.vlines(r, ylim[0], ep, color="black", linewidth=1)
+            ax.hlines(ep, 0, r+1, color="black", linewidth=1, label='User defined tolerance.')
+            ax.vlines(r, ylim[0], ep, color="black", linewidth=1, label='Optimal basis order')
         ax.set_ylim(ylim)
-        ax.set_xlabel(r"POD basis rank $r$")
-        ax.set_ylabel(r"Projection error")
+        ax.set_xlabel(r"Reduced basis rank $r$")
+        ax.set_ylabel(r"Decomposition's Projection error")
 
     return ranks[0] if one_eps else ranks

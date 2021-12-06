@@ -7,11 +7,13 @@ __all__ = ["addGhostExtrapolate"]
 
 
 import copy
+import logging
 import cupy as cp
 import numpy as np
 from LevelSetPy.Utilities import *
+logger = logging.getLogger(__name__)
 
-def addGhostExtrapolate(dataIn, dim, width=1, ghostData=None):
+def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     """
      addGhostExtrapolate: add ghost cells, values extrapolated from bdry nodes.
 
@@ -56,8 +58,11 @@ def addGhostExtrapolate(dataIn, dim, width=1, ghostData=None):
     if isinstance(dataIn, np.ndarray):
       dataIn = cp.asarray(dataIn)
       
+    if not width:
+        width = 1
+
     if((width < 0) or (width > size(dataIn, dim))):
-        raise ValueError('Illegal width parameter')
+        error('Illegal width parameter')
 
     if(np.any(ghostData) and isinstance(ghostData, Bundle)):
         slopeMultiplier = -1 if(ghostData.towardZero) else +1
@@ -77,27 +82,26 @@ def addGhostExtrapolate(dataIn, dim, width=1, ghostData=None):
     sizeOut[dim] = sizeOut[dim] + (2 * width)
     dataOut = cp.zeros(tuple(sizeOut), dtype=cp.float64)
 
-    # fill output array with input data
+    # fill output array with icp.t data
     indicesOut[dim] = cp.arange(width, sizeOut[dim] - width, dtype=cp.intp) # correct
     # dynamic slicing to save the day
-    dataOut[cp.ix_(*indicesOut)] = dataIn 
-
-    #if dim>=1:
-    print(f'dim: {dim} | {cp.linalg.norm(dataIn)}')
+    dataOut[cp.ix_(*indicesOut)] = copy.copy(dataIn) # correct
+    logger.debug(f'dataIn: {cp.linalg.norm(dataIn, 2)} dataOut: {cp.linalg.norm(dataOut, 2)}')
 
     # compute slopes
     indicesOut[dim] = [0]
     indicesIn[dim] = [1]
     slopeBot = dataIn[cp.ix_(*indicesOut)] - dataIn[cp.ix_(*indicesIn)]
-
+    
     indicesOut[dim] = [sizeIn[dim]-1]
     indicesIn[dim] = [sizeIn[dim] - 2]
     slopeTop = dataIn[cp.ix_(*indicesOut)] - dataIn[cp.ix_(*indicesIn)]
+    logger.debug(f'slopeBot: {cp.linalg.norm(slopeBot, 2)} slopeTop: {cp.linalg.norm(slopeTop, 2)}')
 
     # adjust slope sign to correspond with sign of data at array edge
     indicesIn[dim] = [0]
     slopeBot = slopeMultiplier * cp.abs(slopeBot) * cp.sign(dataIn[cp.ix_(*indicesIn)])
-    # print(f'[@addExtrap] indicesOut[{dim}]: {indicesOut[dim]} {[indicesOut[x].shape for x in [1, 2]]}')
+
     indicesIn[dim] = [sizeIn[dim]-1]
     slopeTop = slopeMultiplier * cp.abs(slopeTop) * cp.sign(dataIn[cp.ix_(*indicesIn)])
 
@@ -106,10 +110,13 @@ def addGhostExtrapolate(dataIn, dim, width=1, ghostData=None):
         indicesOut[dim] = [i]
         indicesIn[dim] = [0]
         dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeBot)
+        logger.debug(f'dim: {dim} | i: {i} | dataOut: {cp.linalg.norm(dataOut, 2)}')
 
-        indicesOut[dim] = [sizeOut[dim] - i]
-        indicesIn[dim] = [sizeIn[dim]]
+        indicesOut[dim] = [sizeOut[dim]-1-i]        
+        indicesIn[dim] = [sizeIn[dim]-1]
         dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeTop)
-        print(f'dim: {dim} | i: {i} | {cp.linalg.norm(dataOut[cp.ix_(*indicesOut)])}')
-    print()
+        #logger.debug(f'dim: {dim} | i: {i} | dataOut[cp.ix_(*indicesOut)]: {cp.linalg.norm(dataOut[cp.ix_(*indicesOut)], 2)}')
+        logger.debug(f'dim: {dim} | i: {i} | dataOut: {cp.linalg.norm(dataOut, 2)}')
+    
+    logger.debug(f'\ndataOut: {cp.linalg.norm(dataOut, 2)}')
     return dataOut

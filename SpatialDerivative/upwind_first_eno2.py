@@ -62,6 +62,8 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
 
     # Add ghost cells.
     gdata = grid.bdry[dim](data, dim, stencil, grid.bdryData[dim])
+    #logger.info(f'dim: {dim} | gdata: {cp.linalg.norm(gdata, 2)}')
+    
     #---------------------------------------------------------------------------
     # Create cell array with array indices.
     sizeData = size(gdata)

@@ -202,7 +202,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
             # If there is one or more post-timestep routines, call them.
-            if options.postTimestep:
+            if isfield(options, 'postTimeStep') and options.postTimeStep:
                 y, schemeData = odeCFLcallPostTimestep(t, y, schemeData, options)
 
             # If we are in single step mode, then do not repeat.
@@ -222,7 +222,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
         endTime = cputime()
 
         if(strcmp(options.stats, 'on')):
-            info(f'{steps} steps in {(endTime-startTime):.2} seconds from  {tspan[0]} to {t}.')
+            info(f'{steps} steps in {(endTime-startTime):.2} seconds from  {tspan[0]:.2f} to {t:.2f}.')
     #---------------------------------------------------------------------------
     elif(numT > 2):
         # If we were asked for the solution at multiple timesteps.

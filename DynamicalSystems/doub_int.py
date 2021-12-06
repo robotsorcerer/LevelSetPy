@@ -3,6 +3,7 @@ __all__ = ["DoubleIntegrator"]
 __author__ = "Lekan Molux"
 __date__ = "Nov. 22, 2021"
 
+import cupy as cp
 import numpy as np
 
 class DoubleIntegrator():
@@ -57,7 +58,8 @@ class DoubleIntegrator():
                             grid points computed with upwinding.
         """
         
-        return grid_derivs[0]*self.grid.xs[1]+grid_derivs[1]*self.control_law
+        return -(grid_derivs[0]*self.grid.xs[1]- \
+                 cp.abs(grid_derivs[1])*self.control_law)
 
     def dynamics(self, t, data, derivMin, derivMax, \
                       schemeData, dim):
@@ -67,13 +69,13 @@ class DoubleIntegrator():
                 dim: The dimension of the ode to return.
         """
         x_dot = [
-                    self.grid.xs[1],
-                    self.control_law * np.zeros_like(self.grid.xs[1])
+                    np.abs(self.grid.xs[1]),
+                    np.abs(self.control_law) # * self.grid.xs[1])
         ]
 
         return x_dot[dim]
 
-    def min_time2reach(self):
+    def mttr(self):
         """
             Computes the minimum time we need to reach the 
             switching curve:
@@ -89,9 +91,9 @@ class DoubleIntegrator():
         #  Compute the current state on or outside of the 
         # switching curve.
 
-        above_curve = self.grid.xs[0]>self.Gamma
-        below_curve = self.grid.xs[0]<self.Gamma
-        on_curve    = self.grid.xs[0]==self.Gamma
+        above_curve = (self.grid.xs[0]>self.Gamma)
+        below_curve = (self.grid.xs[0]<self.Gamma)
+        on_curve    = (self.grid.xs[0]==self.Gamma)
 
         reach_term1  = (self.grid.xs[1] + np.emath.sqrt(4*self.grid.xs[0] + \
                          2 * self.grid.xs[1]**2))*above_curve
@@ -99,7 +101,7 @@ class DoubleIntegrator():
                         2 * self.grid.xs[1]**2) )*below_curve
         reach_term3 = np.abs(self.grid.xs[1]) * on_curve
         
-        reach_time = reach_term1.real + reach_term2.real + reach_term3
+        reach_time = reach_term1 + reach_term2 + reach_term3
                       
-        return reach_time
+        return reach_time.real
            

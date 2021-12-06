@@ -1,5 +1,6 @@
 __all__ = ["termRestrictUpdate"]
 
+import copy
 import cupy as cp
 import numpy as np
 from LevelSetPy.Utilities import *
@@ -76,7 +77,7 @@ def termRestrictUpdate(t, y, schemeData):
         innerData = schemeData
         innerData[0] = schemeData[0].innerData
     else:
-        innerData = schemeData.innerData
+        innerData = copy.copy(schemeData.innerData)
 
     #Get the unrestricted update. # this is usually termLaxFriedrichs
     unRestricted, stepBound, innerData = thisSchemeData.innerFunc(t, y, innerData)

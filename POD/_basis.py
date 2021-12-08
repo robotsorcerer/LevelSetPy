@@ -42,21 +42,37 @@ def hosvd(X, eps, plot=False):
     """
     
     # Get gram matrix
-    S = X * X.T
-    
+    S = X @ X.T
+        
     # do eigen decomposition of Gram matrix
-    V, Lambda = la.eig(S)
-    
+    Sig, V = la.eig(S)
+
     #Find Un
-    Sig = np.diagonal(Lambda, 0)  # collect 0-th diagonal elements
+    Sig = Sig.real  # collect real 0-th diagonal elements
     err_term = (eps**2 * la.norm(X, 'fro')**2)/X.ndim
-    
-    lambs = np.cumsum(Sig[0:])
-    ranks = np.count_nonzero(lambs <= err_term)     
-    Un = V[:, :ranks]
-    
-    Core = X @ Un
-    return Core, Un,  V, ranks
+
+    lambs = np.cumsum(Sig)
+    basis_rank = np.count_nonzero(lambs <= err_term)     
+
+    print(V.shape)
+    # Compute X on the reduced basis
+    X_basis = X @ V[:, :basis_rank]
+
+    if plot:
+        ax = plt.gca()
+        ax.grid('on')
+        j = np.arange(1, Sig.size + 1)
+        ax.semilogy(j, Sig, 'C1.-', ms=4, zorder=3)
+        ax.set_xlim((0,j.size))
+        ylim = ax.get_ylim()
+        for ep,r in zip([eps], [basis_rank]):
+            ax.hlines(ep, 0, r+1, color="black", linewidth=1, label='User defined tolerance.')
+            ax.vlines(r, ylim[0], ep, color="black", linewidth=1, label='Optimal basis order')
+        ax.set_ylim(ylim)
+        ax.set_xlabel(r"Reduced basis rank $r$")
+        ax.set_ylabel(r"Decomposition's Projection error")
+
+    return X_basis,  V, basis_rank
   
 
 
@@ -314,14 +330,16 @@ def minimal_projection_error(X, V, eps, plot=False):
 
     if plot:
         ax = plt.gca()
+        ax.grid('on')
         ax.semilogy(rs, errors, 'C1.-', ms=4, zorder=3)
         ax.set_xlim((0,rs.size))
         ylim = ax.get_ylim()
         for ep,r in zip(eps, ranks):
-            ax.hlines(ep, 0, r+1, color="black", linewidth=1, label='User defined tolerance.')
+            ax.hlines(ep, 0, r+1, color="red", linewidth=1, label='User defined tolerance.')
             ax.vlines(r, ylim[0], ep, color="black", linewidth=1, label='Optimal basis order')
         ax.set_ylim(ylim)
         ax.set_xlabel(r"Reduced basis rank $r$")
         ax.set_ylabel(r"Decomposition's Projection error")
+        ax.legend()
 
     return ranks[0] if one_eps else ranks

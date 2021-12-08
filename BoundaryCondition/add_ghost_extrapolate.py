@@ -57,7 +57,7 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     """
     if isinstance(dataIn, np.ndarray):
       dataIn = cp.asarray(dataIn)
-      
+
     if not width:
         width = 1
 
@@ -86,17 +86,17 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
     indicesOut[dim] = cp.arange(width, sizeOut[dim] - width, dtype=cp.intp) # correct
     # dynamic slicing to save the day
     dataOut[cp.ix_(*indicesOut)] = copy.copy(dataIn) # correct
-    logger.debug(f'dataIn: {cp.linalg.norm(dataIn, 2)} dataOut: {cp.linalg.norm(dataOut, 2)}')
+    #logger.debug(f'dataIn: {cp.linalg.norm(dataIn, 2)} dataOut: {cp.linalg.norm(dataOut, 2)}')
 
     # compute slopes
     indicesOut[dim] = [0]
     indicesIn[dim] = [1]
     slopeBot = dataIn[cp.ix_(*indicesOut)] - dataIn[cp.ix_(*indicesIn)]
-    
+
     indicesOut[dim] = [sizeIn[dim]-1]
     indicesIn[dim] = [sizeIn[dim] - 2]
     slopeTop = dataIn[cp.ix_(*indicesOut)] - dataIn[cp.ix_(*indicesIn)]
-    logger.debug(f'slopeBot: {cp.linalg.norm(slopeBot, 2)} slopeTop: {cp.linalg.norm(slopeTop, 2)}')
+    #logger.debug(f'slopeBot: {cp.linalg.norm(slopeBot, 2)} slopeTop: {cp.linalg.norm(slopeTop, 2)}')
 
     # adjust slope sign to correspond with sign of data at array edge
     indicesIn[dim] = [0]
@@ -110,13 +110,12 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
         indicesOut[dim] = [i]
         indicesIn[dim] = [0]
         dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeBot)
-        logger.debug(f'dim: {dim} | i: {i} | dataOut: {cp.linalg.norm(dataOut, 2)}')
 
-        indicesOut[dim] = [sizeOut[dim]-1-i]        
+        indicesOut[dim] = [sizeOut[dim]-1-i]
         indicesIn[dim] = [sizeIn[dim]-1]
         dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeTop)
         #logger.debug(f'dim: {dim} | i: {i} | dataOut[cp.ix_(*indicesOut)]: {cp.linalg.norm(dataOut[cp.ix_(*indicesOut)], 2)}')
-        logger.debug(f'dim: {dim} | i: {i} | dataOut: {cp.linalg.norm(dataOut, 2)}')
-    
-    logger.debug(f'\ndataOut: {cp.linalg.norm(dataOut, 2)}')
+        #logger.debug(f'dim: {dim} | i: {i} | dataOut: {cp.linalg.norm(dataOut, 2)}')
+
+    #logger.debug(f'\ndataOut: {cp.linalg.norm(dataOut, 2)}')
     return dataOut

@@ -50,7 +50,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     if((dim < 0) or (dim > grid.dim)):
         raise ValueError('Illegal dim parameter')
 
-    dxInv = 1 / grid.dx.item(dim)
+    dxInv = cp.divide(1, grid.dx.item(dim))
 
     # How big is the stencil?
     stencil = 2
@@ -63,7 +63,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
     # Add ghost cells.
     gdata = grid.bdry[dim](data, dim, stencil, grid.bdryData[dim])
     #logger.info(f'dim: {dim} | gdata: {cp.linalg.norm(gdata, 2)}')
-    
+
     #---------------------------------------------------------------------------
     # Create cell array with array indices.
     sizeData = size(gdata)

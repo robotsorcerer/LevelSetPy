@@ -68,22 +68,32 @@ class DoubleIntegrator():
 
         return self.Gamma
 
-    def hamiltonian(self, t, data, grid_derivs, schemedata):
+    def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
         """
             H = \dot{x1} . x2 + \dot{x2} . u + x_0
 
-            Here, x_0 is initial state which is zero.
+            Here, x_0 is initial state which is zero since we are not interested in the
+            running cost.
 
             Parameters
             ==========
-                grid_derivs: Spatial derivatives (finite difference) of
-                            grid points computed with upwinding.
+            value: Value function at this time step, t
+            value_derivs: Spatial derivatives (finite difference) of
+                        value function's grid points computed with
+                        upwinding.
+            finite_diff_bundle: Bundle for finite difference function
+                .innerData: Bundle with the following fields:
+                    .partialFunc: RHS of the o.d.e of the system under consideration
+                        (see function dynamics below for its impl).
+                    .hamFunc: Hamiltonian (this function).
+                    .dissFunc: artificial dissipation function.
+                    .derivFunc: Upwinding scheme (upwindFirstENO2).
+                    .innerFunc: terminal Lax Friedrichs integration scheme.
         """
         x2 = cp.asarray(self.grid.xs[1])
-        #self.grid.xs[1] = cp.asarray(self.grid.xs[1])
 
-        return -(grid_derivs[0]*x2- \
-                 cp.abs(grid_derivs[1])*self.control_law)
+        return -(value_derivs[0]*x2- \
+                 cp.abs(value_derivs[1])*self.control_law)
 
     def dynamics(self, t, data, derivMin, derivMax, \
                       schemeData, dim):

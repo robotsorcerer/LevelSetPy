@@ -1,21 +1,25 @@
+__all__ = ["chambollepock"]
+
 import cupy as cp
 import numpy as np
 
 class chambollepock(object):
     def __init__(self):
         """
-          This is a first order primal-dual hybrid-gradient method for non-smooth convex optimization problems with known saddle-point structure
+          This is a first order primal-dual hybrid-gradient method for 
+          non-smooth convex optimization problems with known saddle-point 
+          structure:
 
-            \max_{y \in Y} \min_{x \in X} \big( \langle L x, y\rangle_Y + g(x) - f^*(y) \big) ,
+          \max_{y \in Y} \min_{x \in X} \big( \langle L x, y\rangle_Y + g(x) - f^*(y) \big) ,
+            
+          where X and Y are Hilbert spaces with inner product \langle\cdot,\cdot\rangle and norm \|.\|_2 = \langle\cdot,\cdot\rangle^{1/2}, L is a continuous linear operator L: X \to Y, g: X \to [0,+\infty] and f: Y \to [0,+\infty] are proper, convex and lower semi-continuous functionals, and f^* is the convex (or Fenchel) conjugate of f, (see convex conjugate).
+            
+          The saddle-point problem is a primal-dual formulation of the primal minimization problem
+            
+               \min_{x \in X} \big( g(x) + f(L x) \big).
 
-            where X and Y are Hilbert spaces with inner product \langle\cdot,\cdot\rangle and norm \|.\|_2 = \langle\cdot,\cdot\rangle^{1/2}, L is a continuous linear operator L: X \to Y, g: X \to [0,+\infty] and f: Y \to [0,+\infty] are proper, convex and lower semi-continuous functionals, and f^* is the convex (or Fenchel) conjugate of f, (see convex conjugate).
-
-            The saddle-point problem is a primal-dual formulation of the primal minimization problem
-
-            \min_{x \in X} \big( g(x) + f(L x) \big).
-
-            The corresponding dual maximization problem is
-
+           The corresponding dual maximization problem is
+            
             \max_{y \in Y} \big( g^*(-L^* x) - f^*(y) \big)
 
             with L^* being the adjoint of the operator L.
@@ -54,7 +58,7 @@ class cpk_variables(object):
         self.x = None
         self.z = []
 
-        self.dtype = cp.float32
+        self.dtype = cp.float64
         self.theta = cp.array([1],dtype=self.dtype)
 
         self.gpudevice = 0
@@ -168,9 +172,10 @@ class cpk_define(object):
         itau=np.zeros(Kmat[0].shape[1])
         self.parent.variables.shapex = Kmat[0].shape[1]
         for ii in range(len(Kmat)):
-            self.parent.variables.shapez.append(Kmat[ii].shape[0])
-            itau += np.array(np.sum(np.abs(Kmat[ii]),axis=0)).reshape(-1)
-            isig.append(np.array(np.sum(np.abs(Kmat[ii]),axis=1)).reshape(-1))
+            Kmat_cpu = Kmat[ii].get()
+            self.parent.variables.shapez.append(Kmat_cpu.shape[0])
+            itau += np.array(np.sum(np.abs(Kmat_cpu),axis=0)).reshape(-1)
+            isig.append(np.array(np.sum(np.abs(Kmat_cpu),axis=1)).reshape(-1))
             sig.append(np.divide(1, isig[ii], where=(np.array(isig[ii]) != 0)).reshape(-1))
 
             self.parent.variables.isig.append(cp.array(isig[ii]))
@@ -197,7 +202,7 @@ class cpk_define(object):
                     print('invalid sparse type designation. defaulting to csr.')
                     K_gpu = cp.sparse.csr_matrix(Kmat[ii],dtype=self.parent.variables.dtype)
             else:
-                K_gpu = cp.array(Kmat[ii],dtype=self.parent.variables.dtype)
+                K_gpu = cp.asarray(Kmat[ii],dtype=self.parent.variables.dtype)
 
             self.parent.variables.K.append(self.parent.applyK.matrix_multiply(K_gpu))
 
@@ -449,6 +454,7 @@ class proxops(object):
         elif (b is not None) and (w is None):
             # print('Using assigned b. Defaulting w = 1')
             def buff(x,t):
+                #print([x.shape for x in (t, b)])
                 return cp.divide(x - cp.multiply(t, b),1+t)
             return buff
         elif (b is None) and (w is not None):

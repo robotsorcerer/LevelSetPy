@@ -37,28 +37,6 @@ class DoubleIntegrator():
         self.control_law = u_bound
         self.Gamma = self.switching_curve # switching curve
 
-    def update_rom(self, rom_grid):
-        """
-            Useful when we need to update the reduced grid upon which
-            to compute the new control law.
-
-            Parameters
-            ----------
-                rom_grid: the reduced order model grid upn which to solve the
-                problem.
-        """
-        self.grid = rom_grid
-
-        # # cast state space to numpy
-        # self.grid.xs = [cp.asarray(x) for x in rom_grid.xs]
-
-        # update the switching curve
-        self.switching_curve
-
-        # r_mttr = self.mttr()
-
-        # return r_mttr
-
     @property
     def switching_curve(self):
         """
@@ -95,12 +73,13 @@ class DoubleIntegrator():
         return -(value_derivs[0]*x2- \
                  cp.abs(value_derivs[1])*self.control_law)
 
-    def dynamics(self, t, data, derivMin, derivMax, \
+    def dissipation(self, t, data, derivMin, derivMax, \
                       schemeData, dim):
         """
             Parameters
             ==========
-                dim: The dimension of the ode to return.
+                dim: The dissipation of the Hamiltonian on
+                the grid (see 5.11-5.12 of O&F).
         """
         x_dot = [
                     cp.asarray(np.abs(self.grid.xs[1])),

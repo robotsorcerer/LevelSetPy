@@ -104,8 +104,6 @@ def artificialDissipationGLF(t, data, derivL, derivR, schemeData):
           alpha = cp.max(alpha.flatten())
 
         stepBoundInv += (alpha / grid.dx.item(i))
-        # print(f'i: {i}, stepBoundInv: {stepBoundInv}')
-        # print()
 
     stepBound = (1 / stepBoundInv).get().item()
 

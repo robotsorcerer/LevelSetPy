@@ -329,14 +329,14 @@ def minimal_projection_error(X, V, eps, plot=False):
     ranks = [np.count_nonzero(errors > ep)+1 for ep in eps]
 
     if plot:
-        ax = plt.gca()
+        f, ax = plt.subplots(1, 1, figsize=(16,9))
         ax.grid('on')
-        ax.semilogy(rs, errors, 'C1.-', ms=4, zorder=3)
+        ax.semilogy(rs, errors, 'C1.-', ms=4, zorder=3, linewidth=6.5)
         ax.set_xlim((0,rs.size))
         ylim = ax.get_ylim()
         for ep,r in zip(eps, ranks):
-            ax.hlines(ep, 0, r+1, color="red", linewidth=1, label='User defined tolerance.')
-            ax.vlines(r, ylim[0], ep, color="black", linewidth=1, label='Optimal basis order')
+            ax.hlines(ep, 0, r+1, color="red", linewidth=4.5, label='User defined tolerance.')
+            ax.vlines(r, ylim[0], ep, color="blue", linewidth=4.5, label='Optimal basis order')
         ax.set_ylim(ylim)
         ax.set_xlabel(r"Reduced basis rank $r$")
         ax.set_ylabel(r"Decomposition's Projection error")

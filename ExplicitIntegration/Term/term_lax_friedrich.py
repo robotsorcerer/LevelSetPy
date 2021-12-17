@@ -27,7 +27,7 @@ def termLaxFriedrichs(t, y, schemeData):
 
         In the notation of O&F text:
           data:	        \phi.
-          derivFunc:	Function to calculate phi_i^+-.
+          CoStateCalc:	Function to calculate phi_i^+-.
           dissFunc:     Function to calculate the terms with alpha in them.
           hamFunc:      Function to calculate analytic H.
           partialFunc:	\alpha^i (dimension i is an argument to partialFunc).
@@ -39,7 +39,7 @@ def termLaxFriedrichs(t, y, schemeData):
         y: Data array in vector form.
         schemeData:       A bundle structure withe fields:
             .grid:        Grid structure (see processGrid.py for details).
-            .derivFunc:   Function handle to upwinded finite difference
+            .CoStateCalc:   Function handle to upwinded finite difference
                           derivative approximation.
             .dissFunc:    Function handle to LF dissipation calculator.
             .hamFunc:     Function handle to analytic hamiltonian H(x,p).
@@ -83,7 +83,7 @@ def termLaxFriedrichs(t, y, schemeData):
         thisSchemeData = copy.copy(schemeData)
 
     assert isfield(thisSchemeData, 'grid'),  'grid not in bundle thisschemeData'
-    assert isfield(thisSchemeData, 'derivFunc'),  'derivFunc not in bundle thisschemeData'
+    assert isfield(thisSchemeData, 'CoStateCalc'),  'CoStateCalc not in bundle thisschemeData'
     assert isfield(thisSchemeData, 'dissFunc'),  'dissFunc not in bundle thisschemeData'
     assert isfield(thisSchemeData, 'hamFunc'), 'hamFunc not in bundle thisschemeData'
     assert isfield(thisSchemeData, 'partialFunc'),  'partialFunc not in bundle thisschemeData'
@@ -101,10 +101,10 @@ def termLaxFriedrichs(t, y, schemeData):
     derivL = [cp.nan for i in range(grid.dim)]
     derivR = [cp.nan for i in range(grid.dim)]
     derivC = [cp.nan for i in range(grid.dim)]
-
+    
+    # Calculate the co-states of value function
     for i in range(grid.dim):
-        # Do upwinding now: for RCBRT, we use upwindENO2. I bet w/my life that this is correct
-        derivL[i], derivR[i] = thisSchemeData.derivFunc(grid, data, i)
+        derivL[i], derivR[i] = thisSchemeData.CoStateCalc(grid, data, i)
         derivC[i] = 0.5 * (derivL[i] + derivR[i])
 
     # Analytic Hamiltonian with centered difference derivatives.

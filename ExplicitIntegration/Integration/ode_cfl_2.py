@@ -126,6 +126,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
 
             # Approximate the derivative and CFL restriction.
             for i in range(numY):
+                # termRestrictUpdate->termLaxFriedrichs
                 ydot[i], stepBound[i], schemeData = schemeFuncCell[i](t, y, schemeData)
 
                 # If this is a vector level set, rotate the lists of vector arguments.

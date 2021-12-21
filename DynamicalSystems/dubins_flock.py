@@ -32,20 +32,32 @@ class DubinsFlock(DubinsVehicleAbs):
 
             Parameters
             ==========
-                grid: an np.meshgrid state space on which we are
-                resolving this vehicular dynamics.
+                grid: 2 possible types of grids exist for resolving vehicular dynamics:
+                    .single_grid: an np.meshgrid that homes all these birds
+                    .multiple grids: a collection of possibly intersecting grids 
+                    where agents interact.
+                
                 u_bound: absolute value of the linear speed of the vehicle.
+
                 w_bound: absolute value of the angular speed of the vehicle.
+
                 num_agents: number of agents in this flock of vehicles.
         """
 
-        self.grid        = grid
-        self.v = lambda u: u*u_bound
-        self.w = lambda w: w*w_bound
-
+        self.v           = lambda u: u*u_bound
+        self.w           = lambda w: w*w_bound
         # Number of vehicles in this flock
-        self.vehicles = [DubinsVehicleAbs(grid, u_bound, w_bound) for _ in range(num_agents)]
+        self.N           = num_agents
 
+        # birds could be on different subspaces of an overall grid
+        if isinstance(grid, list):
+            self.vehicles = []
+            for each_grid in grid:
+                self.vehicles.append(DubinsVehicleAbs(each_grid, u_bound, w_bound))
+        else: # all birds are on the same grid
+            self.vehicles = [DubinsVehicleAbs(grid, u_bound, w_bound) for _ in range(num_agents)]
+
+        self.grid        = grid
         """
              Define the anisotropic parameter for this flock.
              This gamma parameter controls the degree of interaction among 

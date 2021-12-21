@@ -35,7 +35,7 @@ def dynamics_RK4(OdeFun, tspan, x, u, v):
 
     for j in range(M):
         if onp.any(tspan): # integrate for this much time steps
-            for h in np.range(tspan[0], tspan[1], hh):
+            for h in np.arange(tspan[0], tspan[1], hh):
                 k1 = OdeFun(X, U, V)
                 k2 = OdeFun(X + h/2 * k1, U, V)
                 k3 = OdeFun(X + h/2 * k2, U, V)

@@ -6,10 +6,12 @@ __comment__ = "Two Dubins Vehicle in Relative Coordinates"
 
 import cupy as cp
 import numpy as np
+import random
 from .dubins_absolute import DubinsVehicleAbs
+from LevelSetPy.Utilities.matlab_utils import *
 
 class DubinsFlock(DubinsVehicleAbs):
-    def __init__(self, grid, u_bound=5, w_bound=5, num_agents=7):
+    def __init__(self, grids, u_bound=5, w_bound=5, num_agents=None):
         """
             A flock of Dubins Vehicles. These are patterned after the 
             behavior of starlings which self-organize into local flocking patterns.
@@ -32,7 +34,7 @@ class DubinsFlock(DubinsVehicleAbs):
 
             Parameters
             ==========
-                grid: 2 possible types of grids exist for resolving vehicular dynamics:
+                grids: 2 possible types of grids exist for resolving vehicular dynamics:
                     .single_grid: an np.meshgrid that homes all these birds
                     .multiple grids: a collection of possibly intersecting grids 
                     where agents interact.
@@ -47,17 +49,30 @@ class DubinsFlock(DubinsVehicleAbs):
         self.v           = lambda u: u*u_bound
         self.w           = lambda w: w*w_bound
         # Number of vehicles in this flock
-        self.N           = num_agents
+        if num_agents is None and isinstance(grids, list):
+            self.N = len(grids) # infer number of agents from the grids of each bird
+        elif np.isscalar(num_agents):
+            self.N = num_agents
 
         # birds could be on different subspaces of an overall grid
-        if isinstance(grid, list):
+        if isinstance(grids, list):
             self.vehicles = []
-            for each_grid in grid:
-                self.vehicles.append(DubinsVehicleAbs(each_grid, u_bound, w_bound))
+            #reference bird must be at origin of the grid
+            bird_pos = np.zeros(grids[0].shape)
+            for i in range(grids[0].dim):
+                bird_pos += np.mean(grids[0].vs[i])
+            for each_grid in grids:
+                self.vehicles.append(DubinsVehicleAbs(each_grid, u_bound, w_bound, \
+                                        bird_pos, random.random()))
+                # randomly initialize position of other birds
+                bird_pos = np.random.sample(size=each_grid.shape)
         else: # all birds are on the same grid
-            self.vehicles = [DubinsVehicleAbs(grid, u_bound, w_bound) for _ in range(num_agents)]
+            self.vehicles = [DubinsVehicleAbs(grids, u_bound, w_bound, \
+                                np.random.sample(size=grids.shape), \
+                                rw_cov=random.random(), axis_align=2, center=None,\
+                                init_random=True) for _ in range(num_agents)]
 
-        self.grid        = grid
+        self.grid = grids
         """
              Define the anisotropic parameter for this flock.
              This gamma parameter controls the degree of interaction among 
@@ -84,6 +99,64 @@ class DubinsFlock(DubinsVehicleAbs):
         else:
             self.w_e = self.w(1)
             self.w_p = self.w(1)
+
+        """create the target set for this local flock"""
+        self.flock_payoff = self.get_target(reach_rad=1.0, avoid_rad=1.0)
+
+    def get_target(self, reach_rad=1.0, avoid_rad=1.0):
+        """Make reference bird the evader and every other bird the pursuer
+            owing to the lateral visual anisotropic characteric of starlings
+        """
+        # first bird is the evader, so collect its position info
+        cur_agent = 0
+        evader = self.vehicles[cur_agent]
+        target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
+        payoff_capture = np.zeros((evader.grid.shape), dtype=np.float64)
+        # first compute the target set that any pursuer captures an evader
+        for pursuer in self.vehicles[1:]:
+            if not np.any(pursuer.center):
+                pursuer.center = np.zeros((pursuer.grid.dim, 1))
+            elif(numel(pursuer.center) == 1):
+                pursuer.center = pursuer.center * np.ones((pursuer.grid.dim, 1), dtype=np.float64)
+
+            #---------------------------------------------------------------------------
+            #axis_align must be same for all agents in a flock
+            # any pursuer can capture the reference bird
+            for i in range(pursuer.grid.dim):
+                if(i != pursuer.axis_align):
+                    target_set[cur_agent] += (pursuer.grid.xs[i] - evader.grid.xs[i])**2
+            target_set[cur_agent] = np.sqrt(target_set[cur_agent])
+
+            # take an element wise min of all corresponding targets now
+            if cur_agent >= 1:
+                payoff_capture = np.minimum(target_set[cur_agent], target_set[cur_agent-1], dtype=np.float64)
+            cur_agent += 1
+        payoff_capture -= reach_rad
+
+        # compute the anisotropic value function: this maintains the gap between the pursuers
+        target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
+        payoff_avoid = np.zeros((evader.grid.shape), dtype=np.float64)
+        cur_agent = 0
+        for vehicle_idx in range(1, len(self.vehicles)-1):
+            this_vehicle = self.vehicles[vehicle_idx]
+            next_vehicle = self.vehicles[vehicle_idx+1]
+            for i in range(this_vehicle.grid.dim):
+                if(i != this_vehicle.axis_align):
+                    target_set[cur_agent] += (this_vehicle.grid.xs[i] + next_vehicle.grid.xs[i])**2
+            target_set[cur_agent] = np.sqrt(target_set[cur_agent])
+
+            # take an element wise min of all corresponding targets now
+            if cur_agent >= 1:
+                payoff_avoid = np.minimum(target_set[cur_agent], target_set[cur_agent-1], dtype=np.float64)
+            cur_agent += 1
+        
+        payoff_avoid -= avoid_rad
+
+        # now do a union of both the avoid and capture sets
+        combo_payoff = np.minimum(payoff_avoid, payoff_capture)
+
+        return combo_payoff
+
 
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
         """

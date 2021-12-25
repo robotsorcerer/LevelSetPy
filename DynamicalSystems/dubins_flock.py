@@ -11,8 +11,7 @@ from .dubins_absolute import DubinsVehicleAbs
 from LevelSetPy.Utilities.matlab_utils import *
 
 class DubinsFlock(DubinsVehicleAbs):
-    def __init__(self, grids, u_bound=5, w_bound=5, num_agents=7, 
-                center=None, radius=1):
+    def __init__(self, grids, u_bound=5, w_bound=5, num_agents=None):
         """
             A flock of Dubins Vehicles. These are patterned after the 
             behavior of starlings which self-organize into local flocking patterns.
@@ -50,30 +49,28 @@ class DubinsFlock(DubinsVehicleAbs):
         self.v           = lambda u: u*u_bound
         self.w           = lambda w: w*w_bound
         # Number of vehicles in this flock
-        self.N           = num_agents
+        if num_agents is None and isinstance(grids, list):
+            self.N = len(grids) # infer number of agents from the grids of each bird
+        elif np.isscalar(num_agents):
+            self.N = num_agents
 
         # birds could be on different subspaces of an overall grid
         if isinstance(grids, list):
             self.vehicles = []
             #reference bird must be at origin of the grid
-            bird_pos = [ 
-                         np.mean(grids[0].vs[0]),
-                         np.mean(grids[0].vs[1]),
-                         np.mean(grids[0].vs[2])
-                         ]
+            bird_pos = np.zeros(grids[0].shape)
+            for i in range(grids[0].dim):
+                bird_pos += np.mean(grids[0].vs[i])
             for each_grid in grids:
                 self.vehicles.append(DubinsVehicleAbs(each_grid, u_bound, w_bound, \
                                         bird_pos, random.random()))
                 # randomly initialize position of other birds
-                bird_pos = [np.random.sample(each_grid.vs[0], 1), \
-                            np.random.sample(each_grid.vs[1], 1), \
-                            np.random.sample(each_grid.vs[2], 1)]
+                bird_pos = np.random.sample(size=each_grid.shape)
         else: # all birds are on the same grid
             self.vehicles = [DubinsVehicleAbs(grids, u_bound, w_bound, \
-                                [np.random.sample(grids.vs[0], 1), \
-                                 np.random.sample(grids.vs[1], 1), \
-                                 np.random.sample(grids.vs[2], 1)], \
-                                random.random()) for _ in range(num_agents)]
+                                np.random.sample(size=grids.shape), \
+                                rw_cov=random.random(), axis_align=2, center=None,\
+                                init_random=True) for _ in range(num_agents)]
 
         self.grid = grids
         """
@@ -130,7 +127,7 @@ class DubinsFlock(DubinsVehicleAbs):
         evader = self.vehicles[cur_agent]
         target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
         payoff_capture = np.zeros((evader.grid.shape), dtype=np.float64)
-        # first compute the any pursuer captures an evader
+        # first compute the target set that any pursuer captures an evader
         for pursuer in self.vehicles[1:]:
             if not np.any(pursuer.center):
                 pursuer.center = np.zeros((pursuer.grid.dim, 1))
@@ -161,7 +158,7 @@ class DubinsFlock(DubinsVehicleAbs):
             for i in range(this_vehicle.grid.dim):
                 if(i != this_vehicle.axis_align):
                     target_set[cur_agent] += (this_vehicle.grid.xs[i] + next_vehicle.grid.xs[i])**2
-            target_set[cur_agent] = np.sqrt(target_set)
+            target_set[cur_agent] = np.sqrt(target_set[cur_agent])
 
             # take an element wise min of all corresponding targets now
             if cur_agent >= 1:
@@ -174,7 +171,6 @@ class DubinsFlock(DubinsVehicleAbs):
         combo_payoff = np.minimum(payoff_avoid, payoff_capture)
 
         return combo_payoff
-
 
 
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):

@@ -42,8 +42,10 @@ class DubinsVehicleAbs():
         assert label is not None, "label of an agent cannot be empty"
 
         self.grid        = grid
-        self.v = lambda u: u*u_bound
-        self.w = lambda w: w*w_bound
+        # self.v = lambda u: u*u_bound
+        # self.w = lambda w: w*w_bound
+        self.v = u_bound
+        self.w = w_bound
 
         # this is a vector defined in the direction of its nearest neighbor
         self.u = None
@@ -53,17 +55,13 @@ class DubinsVehicleAbs():
         self.center = center
         self.axis_align = axis_align
 
+        if not np.any(init_state):
+            init_state = np.zeros((grid.shape))
+
         # position this bird at in the state space
-        self.random_walker(init_state)
-        
+        self.initialize(init_state, init_random)
 
-        # this from Jadbabie's paper
-        self.label = label  # label of this bird in the flock (an integer)
-        self.neigh_rad = neigh_rad
-        self.position  = 
-
-
-    def random_walker(self, init_state):
+    def initialize(self, init_state, init_random):
         """
             simulate each agent's position in a flock as a random walk
             Parameters
@@ -72,28 +70,36 @@ class DubinsVehicleAbs():
                 (does not have to be an initial state/could be a current
                 state during simulation).
         """
-        W = np.asarray(([self.deltaT**2/2])).T
-        WW = W@W.T
+        if init_random:
+            # time between iterations
+            W = np.asarray(([self.deltaT**2/2])).T*np.identity(init_state.shape[-1])
+            WWT = W@W.T*self.rand_walk_cov**2
+            WWCov = np.tile(WWT, [len(init_state), 1, 1])
+            rand_walker = init_state*WWCov
+            
+            self.state = init_state + rand_walker
+        else:
+            self.state = init_state 
 
-        rand_walker = np.ones((len(init_state))).astype(float)*WW*self.rand_walk_cov**2
-
-        return self.update_values(init_state) + rand_walker
+        return self.state
 
     def dynamics(self, cur_state):
         """
             Computes the Dubins vehicular dynamics in relative
             coordinates (deterministic dynamics).
 
-            \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
-            \dot{x}_2 = -v_p sin x_3 - w_e x_1
-            \dot{x}_3 = -w_p - w_e
+            \dot{x}_1 = v cos x_3 
+            \dot{x}_2 = v sin x_3
+            \dot{x}_3 = w * I[sizeof(x_3)]
         """
+        if not np.any(cur_state):
+            cur_state = self.grid.xs
+
         xdot = [
                 self.v * np.cos(cur_state[2]),
                 self.v * np.sin(cur_state[2]),
-                self.w
+                self.w * np.ones_like(cur_state[2])
         ]
-
         return np.asarray(xdot)
 
     def update_values(self, cur_state, t_span=None):
@@ -116,15 +122,10 @@ class DubinsVehicleAbs():
                 .t0: initial integration time
                 .tf: final integration time
         """
-        if not np.any(cur_state):
-            #put cur_state at origin if not specified
-            cur_state = [np.mean(self.grid.vs[0]),
-                         np.mean(self.grid.vs[1]),
-                         np.mean(self.grid.vs[2])
-                         ]
+        assert not np.any(cur_state), "current state cannot be empty."
 
         M, h = 4,  0.2 # RK steps per interval vs time step
-        X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
+        X = np.asarray(cur_state) if isinstance(cur_state, list) else cur_state
 
         for j in range(M):
             if np.any(t_span): # integrate for this much time steps
@@ -134,7 +135,6 @@ class DubinsVehicleAbs():
                     k2 = self.dynamics(X + h/2 * k1)
                     k3 = self.dynamics(X + h/2 * k2)
                     k4 = self.dynamics(X + h * k3)
-
                     X  = X+(h/6)*(k1 + 2*k2 + 2*k3 + k4)
             else:
                 k1 = self.dynamics(X)
@@ -144,4 +144,25 @@ class DubinsVehicleAbs():
 
                 X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
 
-        return list(X)
+        return X
+
+    def dissipation(self, t, data, derivMin, derivMax, \
+                      schemeData, dim):
+        """
+            Parameters
+            ==========
+                dim: The dissipation of the Hamiltonian on
+                the grid (see 5.11-5.12 of O&F).
+
+                t, data, derivMin, derivMax, schemeData: other parameters
+                here are merely decorators to  conform to the boilerplate
+                we use in the levelsetpy toolbox.
+        """
+        assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
+
+        if dim==0:
+            return cp.abs(self.v_e - self.v_p * cp.cos(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[1])
+        elif dim==1:
+            return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
+        elif dim==2:
+            return self.w_e + self.w_p

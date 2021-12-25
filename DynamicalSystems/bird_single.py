@@ -1,19 +1,20 @@
-__all__ = ["DubinsVehicleAbs"]
+__all__ = ["BirdSingle"]
 
 __author__ = "Lekan Molux"
 __date__ = "Dec. 21, 2021"
 __comment__ = "Two Dubins Vehicle in Absolute Coordinates"
 
 import time
+import hashlib
 import cupy as cp
 import numpy as np
 from LevelSetPy.Utilities import eps
 
-class DubinsVehicleAbs():
+class BirdSingle():
     def __init__(self, grid, u_bound=+5, w_bound=+5, \
                  init_state=[0,0,0], rw_cov=0.0, \
                  axis_align=2, center=None, label=None,
-                 neigh_rad=.4):
+                 neigh_rad=.4, n=0, init_random=False):
         """
             Dubins Vehicle Dynamics in absolute coordinates.
             Please consult Merz, 1972 for a detailed reference.
@@ -37,6 +38,9 @@ class DubinsVehicleAbs():
                 center: location of this bird's value function on the grid
                 axis_align: periodic dimension on the grid to be created
                 neigh_rad: sets of neighbors of agent i
+                label: label of this bird; must be a unique integer
+                n: number of neighbors of this agent at time t
+                init_random: randomly initialize this agent's position on the grid?
         """
 
         assert label is not None, "label of an agent cannot be empty"
@@ -54,30 +58,55 @@ class DubinsVehicleAbs():
         self.axis_align = axis_align
 
         # position this bird at in the state space
-        self.random_walker(init_state)
+        self.position(init_state)
         
 
         # this from Jadbabie's paper
         self.label = label  # label of this bird in the flock (an integer)
         self.neigh_rad = neigh_rad
-        self.position  = 
+        self.n  = n
+        self.init_random = init_random
+        # set of labels of those agents whicvh are neighbors of this agent
+        self.neighbors   = [] 
+
+    def update_agent_params(self, t, n, label, w):
+        """
+            Update the parameters of this agent.
+            t: continuous time, t.
+            n: number of agents within a circle of raduius r 
+                about the current position of this agent.
+            label: label (as a natural number) of this agent.
+
+            w: heading of this agent averaged over that of 
+                its neighbors.
+
+        """
+        self.n     = n 
+        self.w     = w     # averaged over the neighors that surround this agent
+        self.label = label # update the label of this agent if it has not changed
 
 
-    def random_walker(self, init_state):
+    def position(self, init_state=None):
         """
             simulate each agent's position in a flock as a random walk
             Parameters
             ==========
             .init_state: current state of a bird in the state space
                 (does not have to be an initial state/could be a current
-                state during simulation).
+                state during simulation). If it is None, it is initialized
+                on the center of the state space.
         """
         W = np.asarray(([self.deltaT**2/2])).T
         WW = W@W.T
 
         rand_walker = np.ones((len(init_state))).astype(float)*WW*self.rand_walk_cov**2
 
-        return self.update_values(init_state) + rand_walker
+        pos = self.update_position(init_state) 
+
+        if self.init_random:
+            pos += rand_walker
+        
+        return pos
 
     def dynamics(self, cur_state):
         """
@@ -96,7 +125,7 @@ class DubinsVehicleAbs():
 
         return np.asarray(xdot)
 
-    def update_values(self, cur_state, t_span=None):
+    def update_position(self, cur_state, t_span=None):
         """
             Birds use an optimization scheme to keep
             separated distances from one another.
@@ -144,4 +173,18 @@ class DubinsVehicleAbs():
 
                 X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
 
-        return list(X)
+        return X
+
+    def __hash__(self):
+        # hash method to distinguish agents from one another    
+        return int(hashlib.md5(str(self.label).encode('utf-8')).hexdigest(),16)
+
+    def __eq__(self,other):
+        if hash(self)==hash(other):
+            return True
+        return False
+
+    def __repr__(self):
+        s="Bird {}."\
+        .format(self.label)
+        return s  

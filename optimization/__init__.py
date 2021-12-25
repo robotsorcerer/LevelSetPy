@@ -1,1 +1,0 @@
-from .champock import chambollepock

@@ -12,7 +12,7 @@ from LevelSetPy.Utilities import eps
 class DubinsVehicleAbs():
     def __init__(self, grid, u_bound=+5, w_bound=+5, \
                  init_state=None, rw_cov=0.0, \
-                 axis_align=2, center=None, init_random=True):
+                 axis_align=2, center=None, init_random=True, neigh_rad=1.0):
         """
             Dubins Vehicle Dynamics in absolute coordinates.
             Please consult Merz, 1972 for a detailed reference.
@@ -35,12 +35,14 @@ class DubinsVehicleAbs():
                 on the grid.
                 center: location of this bird's value function on the grid
                 axis_align: periodic dimension on the grid to be created
+                neigh_rad: neighboring radius that defines the circle where nearest neighbors are counted.
         """
         self.grid        = grid
         # self.v = lambda u: u*u_bound
         # self.w = lambda w: w*w_bound
         self.v = u_bound
         self.w = w_bound
+        self.neigh_rad = neigh_rad
 
         # this is a vector defined in the direction of its nearest neighbor
         self.u = None

@@ -1,19 +1,20 @@
-__all__ = ["DubinsVehicleAbs"]
+__all__ = ["BirdSingle"]
 
 __author__ = "Lekan Molux"
 __date__ = "Dec. 21, 2021"
 __comment__ = "Two Dubins Vehicle in Absolute Coordinates"
 
 import time
+import hashlib
 import cupy as cp
 import numpy as np
 from LevelSetPy.Utilities import eps
 
-class DubinsVehicleAbs():
+class BirdSingle():
     def __init__(self, grid, u_bound=+5, w_bound=+5, \
                  init_state=[0,0,0], rw_cov=0.0, \
                  axis_align=2, center=None, label=None,
-                 neigh_rad=.4):
+                 neigh_rad=.4, n=0, init_random=False):
         """
             Dubins Vehicle Dynamics in absolute coordinates.
             Please consult Merz, 1972 for a detailed reference.
@@ -36,17 +37,17 @@ class DubinsVehicleAbs():
                 on the grid.
                 center: location of this bird's value function on the grid
                 axis_align: periodic dimension on the grid to be created
-                neigh_rad: neighboring radius that defines the circle where nearest neighbors are counted.
+                neigh_rad: sets of neighbors of agent i
+                label: label of this bird; must be a unique integer
+                n: number of neighbors of this agent at time t
+                init_random: randomly initialize this agent's position on the grid?
         """
 
         assert label is not None, "label of an agent cannot be empty"
 
         self.grid        = grid
-        # self.v = lambda u: u*u_bound
-        # self.w = lambda w: w*w_bound
-        self.v = u_bound
-        self.w = w_bound
-        self.neigh_rad = neigh_rad
+        self.v = lambda u: u*u_bound
+        self.w = lambda w: w*w_bound
 
         # this is a vector defined in the direction of its nearest neighbor
         self.u = None
@@ -56,54 +57,75 @@ class DubinsVehicleAbs():
         self.center = center
         self.axis_align = axis_align
 
-        if not np.any(init_state):
-            init_state = np.zeros((grid.shape))
-
         # position this bird at in the state space
-        self.initialize(init_state, init_random)
+        self.position(init_state)
+        
 
-    def initialize(self, init_state, init_random):
+        # this from Jadbabie's paper
+        self.label = label  # label of this bird in the flock (an integer)
+        self.neigh_rad = neigh_rad
+        self.n  = n
+        self.init_random = init_random
+        # set of labels of those agents whicvh are neighbors of this agent
+        self.neighbors   = [] 
+
+    def update_agent_params(self, t, n, label, w):
+        """
+            Update the parameters of this agent.
+            t: continuous time, t.
+            n: number of agents within a circle of raduius r 
+                about the current position of this agent.
+            label: label (as a natural number) of this agent.
+
+            w: heading of this agent averaged over that of 
+                its neighbors.
+
+        """
+        self.n     = n 
+        self.w     = w     # averaged over the neighors that surround this agent
+        self.label = label # update the label of this agent if it has not changed
+
+
+    def position(self, init_state=None):
         """
             simulate each agent's position in a flock as a random walk
             Parameters
             ==========
             .init_state: current state of a bird in the state space
                 (does not have to be an initial state/could be a current
-                state during simulation).
+                state during simulation). If it is None, it is initialized
+                on the center of the state space.
         """
-        if init_random:
-            # time between iterations
-            W = np.asarray(([self.deltaT**2/2])).T*np.identity(init_state.shape[-1])
-            WWT = W@W.T*self.rand_walk_cov**2
-            WWCov = np.tile(WWT, [len(init_state), 1, 1])
-            rand_walker = init_state*WWCov
-            
-            self.state = init_state + rand_walker
-        else:
-            self.state = init_state 
+        W = np.asarray(([self.deltaT**2/2])).T
+        WW = W@W.T
 
-        return self.state
+        rand_walker = np.ones((len(init_state))).astype(float)*WW*self.rand_walk_cov**2
+
+        pos = self.update_position(init_state) 
+
+        if self.init_random:
+            pos += rand_walker
+        
+        return pos
 
     def dynamics(self, cur_state):
         """
             Computes the Dubins vehicular dynamics in relative
             coordinates (deterministic dynamics).
 
-            \dot{x}_1 = v cos x_3 
-            \dot{x}_2 = v sin x_3
-            \dot{x}_3 = w * I[sizeof(x_3)]
+            \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
+            \dot{x}_2 = -v_p sin x_3 - w_e x_1
+            \dot{x}_3 = -w_p - w_e
         """
-        if not np.any(cur_state):
-            cur_state = self.grid.xs
-
         xdot = [
                 self.v * np.cos(cur_state[2]),
                 self.v * np.sin(cur_state[2]),
-                self.w * np.ones_like(cur_state[2])
+                self.w
         ]
+
         return np.asarray(xdot)
 
-    def update_values(self, cur_state, t_span=None):
+    def update_position(self, cur_state, t_span=None):
         """
             Birds use an optimization scheme to keep
             separated distances from one another.
@@ -123,10 +145,15 @@ class DubinsVehicleAbs():
                 .t0: initial integration time
                 .tf: final integration time
         """
-        assert not np.any(cur_state), "current state cannot be empty."
+        if not np.any(cur_state):
+            #put cur_state at origin if not specified
+            cur_state = [np.mean(self.grid.vs[0]),
+                         np.mean(self.grid.vs[1]),
+                         np.mean(self.grid.vs[2])
+                         ]
 
         M, h = 4,  0.2 # RK steps per interval vs time step
-        X = np.asarray(cur_state) if isinstance(cur_state, list) else cur_state
+        X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
 
         for j in range(M):
             if np.any(t_span): # integrate for this much time steps
@@ -136,6 +163,7 @@ class DubinsVehicleAbs():
                     k2 = self.dynamics(X + h/2 * k1)
                     k3 = self.dynamics(X + h/2 * k2)
                     k4 = self.dynamics(X + h * k3)
+
                     X  = X+(h/6)*(k1 + 2*k2 + 2*k3 + k4)
             else:
                 k1 = self.dynamics(X)
@@ -147,23 +175,16 @@ class DubinsVehicleAbs():
 
         return X
 
-    def dissipation(self, t, data, derivMin, derivMax, \
-                      schemeData, dim):
-        """
-            Parameters
-            ==========
-                dim: The dissipation of the Hamiltonian on
-                the grid (see 5.11-5.12 of O&F).
+    def __hash__(self):
+        # hash method to distinguish agents from one another    
+        return int(hashlib.md5(str(self.label).encode('utf-8')).hexdigest(),16)
 
-                t, data, derivMin, derivMax, schemeData: other parameters
-                here are merely decorators to  conform to the boilerplate
-                we use in the levelsetpy toolbox.
-        """
-        assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
+    def __eq__(self,other):
+        if hash(self)==hash(other):
+            return True
+        return False
 
-        if dim==0:
-            return cp.abs(self.v_e - self.v_p * cp.cos(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[1])
-        elif dim==1:
-            return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
-        elif dim==2:
-            return self.w_e + self.w_p
+    def __repr__(self):
+        s="Bird {}."\
+        .format(self.label)
+        return s  

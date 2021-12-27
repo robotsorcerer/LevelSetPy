@@ -1,17 +1,19 @@
-__all__ = ["DubinsFlock"]
+__all__ = ["BirdFlock"]
 
 __author__ = "Lekan Molux"
 __date__ = "Dec. 21, 2021"
 __comment__ = "Two Dubins Vehicle in Relative Coordinates"
 
+import hashlib
 import cupy as cp
 import numpy as np
 import random
-from .dubins_absolute import DubinsVehicleAbs
+from .bird_single import BirdSingle
 from LevelSetPy.Utilities.matlab_utils import *
 
-class DubinsFlock(DubinsVehicleAbs):
-    def __init__(self, grids, u_bound=5, w_bound=5, num_agents=None):
+class BirdFlock(BirdSingle):
+    def __init__(self, grids, u_bound=5, w_bound=5, num_agents=7, 
+                center=None, radius=1):
         """
             A flock of Dubins Vehicles. These are patterned after the 
             behavior of starlings which self-organize into local flocking patterns.
@@ -49,28 +51,32 @@ class DubinsFlock(DubinsVehicleAbs):
         self.v           = lambda u: u*u_bound
         self.w           = lambda w: w*w_bound
         # Number of vehicles in this flock
-        if num_agents is None and isinstance(grids, list):
-            self.N = len(grids) # infer number of agents from the grids of each bird
-        elif np.isscalar(num_agents):
-            self.N = num_agents
+        self.N           = num_agents
 
         # birds could be on different subspaces of an overall grid
         if isinstance(grids, list):
             self.vehicles = []
             #reference bird must be at origin of the grid
-            bird_pos = np.zeros(grids[0].shape)
-            for i in range(grids[0].dim):
-                bird_pos += np.mean(grids[0].vs[i])
+            bird_pos = [ 
+                         np.mean(grids[0].vs[0]),
+                         np.mean(grids[0].vs[1]),
+                         np.mean(grids[0].vs[2])
+                         ]
+            lab = 0
             for each_grid in grids:
-                self.vehicles.append(DubinsVehicleAbs(each_grid, u_bound, w_bound, \
-                                        bird_pos, random.random()))
+                self.vehicles.append(BirdSingle(each_grid, u_bound, w_bound, \
+                                        bird_pos, random.random(), label=lab))
                 # randomly initialize position of other birds
-                bird_pos = np.random.sample(size=each_grid.shape)
+                bird_pos = [np.random.sample(each_grid.vs[0], 1), \
+                            np.random.sample(each_grid.vs[1], 1), \
+                            np.random.sample(each_grid.vs[2], 1)]
+                lab += 1
         else: # all birds are on the same grid
-            self.vehicles = [DubinsVehicleAbs(grids, u_bound, w_bound, \
-                                np.random.sample(size=grids.shape), \
-                                rw_cov=random.random(), axis_align=2, center=None,\
-                                init_random=True) for _ in range(num_agents)]
+            self.vehicles = [BirdSingle(grids, u_bound, w_bound, \
+                                [np.random.sample(grids.vs[0], 1), \
+                                 np.random.sample(grids.vs[1], 1), \
+                                 np.random.sample(grids.vs[2], 1)], \
+                                random.random(), label=_+1) for _ in range(num_agents)]
 
         self.grid = grids
         """
@@ -109,25 +115,68 @@ class DubinsFlock(DubinsVehicleAbs):
         self.Fp = np.zeros_like(self.Ap) # transition matrix for all the headings in this flock
         self.θs = np.zeros((self.N, 1)).fill(self.w(1)) # agent headings
 
-    def get_neighbor(self, agent):
-        # get the # of neighbors of agent i at time t
-        neigh_circ = np.pi * agent.neigh_rad**2 # neighbors will be in this circle
+        # recursively update each agent's position and neighbors in the state
+        for agent in self.vehicles:
+            self.update_agent_single(agent)
         
 
-    def average_headings(self):
-        # for every agent i in the flock, compute the average heading (eq 2, Jadbabaie)
+    def update_agent single(self, agent, t=None):
+        """
+            Compute the # of neighbors of this `agent` at time t.
+            In addition, update the number of neighbors of this agent
+             as labels in a list, and compute the average heading of
+             this robot as well. 
 
+            Update the number of nearest neighbors of this agent
+            and then the labels of its neighbors for bookkeeping.
+
+            Parameters:
+            ==========
+            agent: This agent as a BirdsSingle object.
+            t: Time at which we are updating this agent's dynamics.
+        """
+        # TODO: get this agent's position; how to better valc an agent's psosition
+        pos = agent.update_position() 
+        # neighbors are those agents within a normed distance to this agent's position
+        n    = agent.n
+        label = agent.label # we do not expect this to change
+
+        # update headings and neighbors (see eqs 1 and 2 in Jadbabaie)
+        for other_agent in self.vehicles:
+            if other_agent == agent:
+                # we only compare with other agents
+                continue 
+
+            # TODO: how to better find a vehicle's position on the state space at t? 
+            dist = np.norm(other_agent.position()[:2], 2) - np.norm(agent.position()[:2], 2)
+            if dist <= agent.neigh_rad:
+                n += 1 # increase neighbor count if we are within the prespecified radius
+                agent.neighbors.append(other_agent.label) # label will be integers
+        
+        # update heading for this agent
+        if np.any(agent.neighbors):
+            neighbor_headings = [self.vehicles[agent.neighbors[i]].w \
+                for i in range(len(agent.neighbors)) \
+                    if agent!=self.vehicles[agent.neighbors[i]]]
+        else:
+            neighbor_headings = 0
+        # this maps headings w/values in [0, 2\pi) to [0, \pi)
+        θr = (1/(1+n))*(agent.w + np.sum(neighbor_headings))        
+        agent.update_agent_params(t, n, label, θr)
+        
+    
 
     def get_target(self, reach_rad=1.0, avoid_rad=1.0):
-        """Make reference bird the evader and every other bird the pursuer
-            owing to the lateral visual anisotropic characteric of starlings
+        """
+            Make reference bird the evader and every other bird the pursuer
+            owing to the lateral visual anisotropic characteric of starlings.
         """
         # first bird is the evader, so collect its position info
         cur_agent = 0
         evader = self.vehicles[cur_agent]
         target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
         payoff_capture = np.zeros((evader.grid.shape), dtype=np.float64)
-        # first compute the target set that any pursuer captures an evader
+        # first compute the any pursuer captures an evader
         for pursuer in self.vehicles[1:]:
             if not np.any(pursuer.center):
                 pursuer.center = np.zeros((pursuer.grid.dim, 1))
@@ -158,7 +207,7 @@ class DubinsFlock(DubinsVehicleAbs):
             for i in range(this_vehicle.grid.dim):
                 if(i != this_vehicle.axis_align):
                     target_set[cur_agent] += (this_vehicle.grid.xs[i] + next_vehicle.grid.xs[i])**2
-            target_set[cur_agent] = np.sqrt(target_set[cur_agent])
+            target_set[cur_agent] = np.sqrt(target_set)
 
             # take an element wise min of all corresponding targets now
             if cur_agent >= 1:
@@ -171,6 +220,7 @@ class DubinsFlock(DubinsVehicleAbs):
         combo_payoff = np.minimum(payoff_avoid, payoff_capture)
 
         return combo_payoff
+
 
 
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):

@@ -8,12 +8,94 @@ import hashlib
 import cupy as cp
 import numpy as np
 import random
-from .bird_single import BirdSingle
+from .bird_single_leaderless import BirdSingle
 from LevelSetPy.Utilities.matlab_utils import *
 
+
+class Graph():
+    def __init__(self, n, grids, vertex_set, edges=None):
+        """A graph (an undirected graph that is) that models 
+        the update equations of agents positions on a state space 
+        (defined as a grid).
+
+        The graph has a vertex set {1,2,...,n} so defined such that 
+        (i,j) is one of the graph's edges in case i and j are neighbors.
+        This graph changes over time since the relationship between neighbors
+        can change.
+
+        Paramters
+        =========
+            .grids
+            n: number of initial birds (vertices) on this graph.
+            .V: vertex_set, a set of vertices {1,2,...,n} that represent the labels
+            of birds in a flock. Represent this as a list (see class vertex).
+            .E: edges, a set of unordered pairs E = {(i,j): i,j \in V}.
+                Edges have no self-loops i.e. i≠j or repeated edges (i.e. elements are distinct).
+        """
+        self.N = n
+        if vertex_set is None:            
+            self.vertex_set = {f"{i+1}":BirdSingle(grids[i], 1, 1,\
+                    None, random.random(), label=f"{i}") for i in range(n)}
+        else:
+            self.vertex_set = {f"{i+1}":vertex_set[i] for i in range(n)}
+        
+        # edges are updated dynamically during game
+        self.edges_set = edges 
+
+        # obtain the graph params
+        self.reset()
+
+    def reset(self):
+        # graph entities: this from Jadbabaie's paper
+        self.Ap = np.zeros((self.N, self.N)) #adjacency matrix
+        self.Dp = np.zeros((self.N, self.N)) #diagonal matrix of valencies
+        self.θs = np.zeros((self.N, 1)).fill(self.w(1)) # agent headings
+        self.I  = np.ones((self.num_birds, self.num_birds))
+        self.Fp = np.zeros_like(self.Ap) # transition matrix for all the headings in this flock
+
+    def insert_vertex(self, vertex):
+        if isinstance(vertex, list):
+            assert isinstance(vertex, BirdSingle), "vertex to be inserted must be instance of class Vertex."
+            for vertex_single in vertex:
+                self.vertex_set[vertex_single.label] = vertex_single.neighbors
+        else:
+            self.vertex_set[vertex.label] = vertex
+
+    def insert_edge(self, from_vertices, to_vertices):
+        if isinstance(from_vertices, list) and isinstance(to_vertices, list):
+            for from_vertex, to_vertex in zip(from_vertices, to_vertices):
+                self.insert_edge(from_vertex, to_vertex)
+            return
+        else:
+            assert isinstance(from_vertices, BirdSingle), "from_vertex to be inserted must be instance of class Vertex."
+            assert isinstance(to_vertices, BirdSingle), "to_vertex to be inserted must be instance of class Vertex."
+            from_vertices.update_neighbor(to_vertices)
+            self.vertex_set[from_vertices.label] = from_vertices.neighbors
+            self.vertex_set[to_vertices.label] = to_vertices.neighbors
+
+    def adjacency_matrix(self, t):
+        for i in range(self.Ap.shape[0]):
+            for j in range(self.Ap.shape[1]):
+                for verts in sorted(self.vertex_set.keys()):
+                    if str(j) in self.vertex_set[verts].neighbors:
+                        self.Ap[i,j] = 1 
+        return self.Ap
+
+    def diag_matrix(self):
+        "build Dp matrix"
+        i=0
+        for vertex, egdes in self.vertex_set.items():
+            self.Dp[i,i] = self.vertex_set[vertex].valence
+        return self.Dp
+
+    def update_headings(self, t):
+        return self.adjacency_matrix(t)@self.θs
+
+
+
 class BirdFlock(BirdSingle):
-    def __init__(self, grids, u_bound=5, w_bound=5, num_agents=7, 
-                center=None, radius=1):
+    def __init__(self, grids, u_bound=1, w_bound=1, num_agents=7, 
+                reach_rad=1.0, avoid_rad=1.0):
         """
             A flock of Dubins Vehicles. These are patterned after the 
             behavior of starlings which self-organize into local flocking patterns.
@@ -36,58 +118,16 @@ class BirdFlock(BirdSingle):
 
             Parameters
             ==========
-                grids: 2 possible types of grids exist for resolving vehicular dynamics:
+                .grids: 2 possible types of grids exist for resolving vehicular dynamics:
                     .single_grid: an np.meshgrid that homes all these birds
                     .multiple grids: a collection of possibly intersecting grids 
-                    where agents interact.
-                
-                u_bound: absolute value of the linear speed of the vehicle.
-
-                w_bound: absolute value of the angular speed of the vehicle.
-
-                num_agents: number of agents in this flock of vehicles.
+                    where agents interact.                
+                .u_bound: absolute value of the linear speed of the vehicle.
+                .w_bound: absolute value of the angular speed of the vehicle.
+                .num_agents: number of agents in this flock of vehicles.
+                .center: center of the target set.
+                .radius of the target set's grom primitive.
         """
-
-        self.v           = lambda u: u*u_bound
-        self.w           = lambda w: w*w_bound
-        # Number of vehicles in this flock
-        self.N           = num_agents
-
-        # birds could be on different subspaces of an overall grid
-        if isinstance(grids, list):
-            self.vehicles = []
-            #reference bird must be at origin of the grid
-            bird_pos = [ 
-                         np.mean(grids[0].vs[0]),
-                         np.mean(grids[0].vs[1]),
-                         np.mean(grids[0].vs[2])
-                         ]
-            lab = 0
-            for each_grid in grids:
-                self.vehicles.append(BirdSingle(each_grid, u_bound, w_bound, \
-                                        bird_pos, random.random(), label=lab))
-                # randomly initialize position of other birds
-                bird_pos = [np.random.sample(each_grid.vs[0], 1), \
-                            np.random.sample(each_grid.vs[1], 1), \
-                            np.random.sample(each_grid.vs[2], 1)]
-                lab += 1
-        else: # all birds are on the same grid
-            self.vehicles = [BirdSingle(grids, u_bound, w_bound, \
-                                [np.random.sample(grids.vs[0], 1), \
-                                 np.random.sample(grids.vs[1], 1), \
-                                 np.random.sample(grids.vs[2], 1)], \
-                                random.random(), label=_+1) for _ in range(num_agents)]
-
-        self.grid = grids
-        """
-             Define the anisotropic parameter for this flock.
-             This gamma parameter controls the degree of interaction among 
-             the agents in this flock. Interaction decays with the distance, and 
-             we can use the anisotropy to get information about the interaction.
-             Note that if nc=1 below, then the agents 
-             exhibit isotropic behavior and the aggregation is non-interacting by and large.
-        """
-        self.gamma = lambda nc: (1/3)*nc
 
         # for the nearest neighors in this flock, they should have an anisotropic policy
         # set linear speeds
@@ -105,27 +145,61 @@ class BirdFlock(BirdSingle):
         else:
             self.w_e = self.w(1)
             self.w_p = self.w(1)
+            
+        # Number of vehicles in this flock
+        self.N           = num_agents
+
+        # birds could be on different subspaces of an overall grid
+        if isinstance(grids, list):
+            self.vehicles = []
+            #reference bird must be at origin of the grid
+            bird_pos = [ 
+                         np.mean(grids[0].vs[0]),
+                         np.mean(grids[0].vs[1]),
+                         np.mean(grids[0].vs[2])
+                         ]
+            lab = 0
+            for each_grid in grids:
+                self.vehicles.append(BirdSingle(each_grid, self.v_e, self.w_e, \
+                                        bird_pos, label=lab, neighbors=[]))
+                # randomly initialize position of other birds
+                bird_pos = [np.random.sample(each_grid.vs[0], 1), \
+                            np.random.sample(each_grid.vs[1], 1), \
+                            np.random.sample(each_grid.vs[2], 1)]
+                lab += 1
+        else: # all birds are on the same grid
+            self.vehicles = [BirdSingle(grids, self.v_e, self.w, \
+                                [np.random.sample(grids.vs[0], 1), \
+                                 np.random.sample(grids.vs[1], 1), \
+                                 np.random.sample(grids.vs[2], 1)], \
+                                random.random(), label=_+1) for _ in range(num_agents)]
+
+        self.grid = grids
+        """
+             Define the anisotropic parameter for this flock.
+             This gamma parameter controls the degree of interaction among 
+             the agents in this flock. Interaction decays with the distance, and 
+             we can use the anisotropy to get information about the interaction.
+             Note that if nc=1 below, then the agents 
+             exhibit isotropic behavior and the aggregation is non-interacting by and large.
+        """
+        self.gamma = lambda nc: (1/3)*nc
 
         """create the target set for this local flock"""
-        self.flock_payoff = self.get_target(reach_rad=1.0, avoid_rad=1.0)
-
-        # graph entities: this from Jadbabaie's paper
-        self.Ap = np.zeros((self.N, self.N)) #adjacency matrix
-        self.Dp = np.zeros((self.N, self.N)) #diagonal matrix of valencies
-        self.Fp = np.zeros_like(self.Ap) # transition matrix for all the headings in this flock
-        self.θs = np.zeros((self.N, 1)).fill(self.w(1)) # agent headings
+        self.flock_payoff = self.get_target(reach_rad, avoid_rad)
 
         # recursively update each agent's position and neighbors in the state
         for agent in self.vehicles:
-            self.update_agent_single(agent)
-        
+            self.update_agent_single(agent)      
 
-    def update_agent single(self, agent, t=None):
+        # write the graph lookup of these flock's positions
+        self.graph = Graph(num_agents, self.grid, self.vehicles, None)  
+
+    def update_agent_single(self, agent, t=None):
         """
-            Compute the # of neighbors of this `agent` at time t.
-            In addition, update the number of neighbors of this agent
-             as labels in a list, and compute the average heading of
-             this robot as well. 
+            Compute the # of neighbors of this `agent`, labels of the
+            neighbors of this agent as a list, and update the average
+            heading of this agent -- all at time t
 
             Update the number of nearest neighbors of this agent
             and then the labels of its neighbors for bookkeeping.
@@ -135,8 +209,6 @@ class BirdFlock(BirdSingle):
             agent: This agent as a BirdsSingle object.
             t: Time at which we are updating this agent's dynamics.
         """
-        # TODO: get this agent's position; how to better valc an agent's psosition
-        pos = agent.update_position() 
         # neighbors are those agents within a normed distance to this agent's position
         n    = agent.n
         label = agent.label # we do not expect this to change
@@ -161,10 +233,7 @@ class BirdFlock(BirdSingle):
         else:
             neighbor_headings = 0
         # this maps headings w/values in [0, 2\pi) to [0, \pi)
-        θr = (1/(1+n))*(agent.w + np.sum(neighbor_headings))        
-        agent.update_agent_params(t, n, label, θr)
-        
-    
+        θr = (1/(1+n))*(agent.w + np.sum(neighbor_headings))   
 
     def get_target(self, reach_rad=1.0, avoid_rad=1.0):
         """
@@ -172,8 +241,7 @@ class BirdFlock(BirdSingle):
             owing to the lateral visual anisotropic characteric of starlings.
         """
         # first bird is the evader, so collect its position info
-        cur_agent = 0
-        evader = self.vehicles[cur_agent]
+        evader = self.vehicles[0]
         target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
         payoff_capture = np.zeros((evader.grid.shape), dtype=np.float64)
         # first compute the any pursuer captures an evader

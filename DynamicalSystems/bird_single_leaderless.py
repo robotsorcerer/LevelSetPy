@@ -5,16 +5,18 @@ __date__ = "Dec. 21, 2021"
 __comment__ = "Two Dubins Vehicle in Absolute Coordinates"
 
 import time
+import random
 import hashlib
 import cupy as cp
 import numpy as np
 from LevelSetPy.Utilities import eps
 
 class BirdSingle():
-    def __init__(self, grid, u_bound=+5, w_bound=+5, \
-                 init_state=[0,0,0], rw_cov=0.0, \
-                 axis_align=2, center=None, label=None,
-                 neigh_rad=.4, n=0, init_random=False):
+    def __init__(self, grid, u_bound=+1, w_bound=+1, \
+                 init_state=None, rw_cov=None, \
+                 axis_align=2, center=None, 
+                 neigh_rad=.3, init_random=False,
+                 label="0", neighbors=[]):
         """
             Dubins Vehicle Dynamics in absolute coordinates.
             Please consult Merz, 1972 for a detailed reference.
@@ -41,91 +43,71 @@ class BirdSingle():
                 label: label of this bird; must be a unique integer
                 n: number of neighbors of this agent at time t
                 init_random: randomly initialize this agent's position on the grid?
+
+            BirdSingle Parameters
+            =================
+                .label (str): The label of this BirdSingle drawn from the set {1,2,...,n} 
+                .valence(int): number of edges incident on a BirdSingle V_i
+                .indicant_edge(tuple): an edge (i,j) such that i=v or j=v.
+                .neighbors: neighbors of this BirdSingle (as labels).
+
+            Test
+            ====
+                b0 = BirdSingle("0")
+                b1 = BirdSingle("1")
+                b2 = BirdSingle("2")
+                b3 = BirdSingle("3")
+                b0.update_neighbor(b1)
+                b0.update_neighbor(b2)
+                b2.update_neighbor(b3)
+                print(b0)
+                print(b1)
+                print(b2)
+                print(b3)
+
+                Prints: BirdSingle: 0 | Neighbors: ['1', '2']
+                        BirdSingle: 1 | Neighbors: ['0']
+                        BirdSingle: 2 | Neighbors: ['0', '3']
+                        BirdSingle: 3 | Neighbors: ['2']
+
+                Multiple neighbors test
+                -----------------------
+                neighs_2 = [BirdSingle(f"{i}") for i in range(3, 9)]
+                b2.update_neighbors(neighs_2)
+                print(b2)
+
+                Prints
         """
 
         assert label is not None, "label of an agent cannot be empty"
+        # BirdSingle Params
+        self.label = label
+        # set of labels of those agents whicvh are neighbors of this agent
+        self.neighbors   = neighbors
+        self.inidicant_edge = []       
+        # minimum L2 distance that defines a neighbor 
+        self.neigh_rad = neigh_rad
+        self.init_random = init_random
+        self.n  = 0
 
+        # grid params
         self.grid        = grid
-        self.v = lambda u: u*u_bound
-        self.w = lambda w: w*w_bound
+        self.center      = center
+        self.axis_align  = axis_align
+
+        # linear and angular velocities of the bird
+        self.v = u_bound
+        self.w = w_bound
 
         # this is a vector defined in the direction of its nearest neighbor
         self.u = None
         self.deltaT = eps # use system eps for a rough small start due to in deltaT
-        self.rand_walk_cov = rw_cov
+        self.rand_walk_cov = random.random if rw_cov is None else rw_cov
 
-        self.center = center
-        self.axis_align = axis_align
-
-        # position this bird at in the state space
+        # position this bird at the center of the state space
         self.position(init_state)
         
-
-        # this from Jadbabie's paper
-        self.label = label  # label of this bird in the flock (an integer)
-        self.neigh_rad = neigh_rad
-        self.n  = n
-        self.init_random = init_random
-        # set of labels of those agents whicvh are neighbors of this agent
-        self.neighbors   = [] 
-
-    def update_agent_params(self, t, n, label, w):
-        """
-            Update the parameters of this agent.
-            t: continuous time, t.
-            n: number of agents within a circle of raduius r 
-                about the current position of this agent.
-            label: label (as a natural number) of this agent.
-
-            w: heading of this agent averaged over that of 
-                its neighbors.
-
-        """
-        self.n     = n 
-        self.w     = w     # averaged over the neighors that surround this agent
-        self.label = label # update the label of this agent if it has not changed
-
-
-    def position(self, init_state=None):
-        """
-            simulate each agent's position in a flock as a random walk
-            Parameters
-            ==========
-            .init_state: current state of a bird in the state space
-                (does not have to be an initial state/could be a current
-                state during simulation). If it is None, it is initialized
-                on the center of the state space.
-        """
-        W = np.asarray(([self.deltaT**2/2])).T
-        WW = W@W.T
-
-        rand_walker = np.ones((len(init_state))).astype(float)*WW*self.rand_walk_cov**2
-
-        pos = self.update_position(init_state) 
-
-        if self.init_random:
-            pos += rand_walker
-        
-        return pos
-
-    def dynamics(self, cur_state):
-        """
-            Computes the Dubins vehicular dynamics in relative
-            coordinates (deterministic dynamics).
-
-            \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
-            \dot{x}_2 = -v_p sin x_3 - w_e x_1
-            \dot{x}_3 = -w_p - w_e
-        """
-        xdot = [
-                self.v * np.cos(cur_state[2]),
-                self.v * np.sin(cur_state[2]),
-                self.w
-        ]
-
-        return np.asarray(xdot)
-
-    def update_position(self, cur_state, t_span=None):
+    def position(self, cur_state=None, t_span=None):
         """
             Birds use an optimization scheme to keep
             separated distances from one another.
@@ -144,6 +126,13 @@ class BirdSingle():
             t_span: time_span as a list [t0, tf] where
                 .t0: initial integration time
                 .tf: final integration time
+            
+            Parameters
+            ==========
+            .init_state: current state of a bird in the state space
+                (does not have to be an initial state/could be a current
+                state during simulation). If it is None, it is initialized
+                on the center of the state space.
         """
         if not np.any(cur_state):
             #put cur_state at origin if not specified
@@ -151,7 +140,12 @@ class BirdSingle():
                          np.mean(self.grid.vs[1]),
                          np.mean(self.grid.vs[2])
                          ]
+        # Simulate each agent's position in a flock as a random walk
+        W = np.asarray(([self.deltaT**2/2])).T
+        WW = W@W.T
+        rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
 
+        # integrate the dynamics with 4th order RK scheme
         M, h = 4,  0.2 # RK steps per interval vs time step
         X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
 
@@ -173,7 +167,66 @@ class BirdSingle():
 
                 X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
 
+        if self.init_random:
+            X += rand_walker
+
         return X
+
+    def dynamics(self, cur_state):
+        """
+            Computes the Dubins vehicular dynamics in relative
+            coordinates (deterministic dynamics).
+
+            \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
+            \dot{x}_2 = -v_p sin x_3 - w_e x_1
+            \dot{x}_3 = -w_p - w_e
+        """
+        xdot = [
+                self.v * np.cos(cur_state[2]),
+                self.v * np.sin(cur_state[2]),
+                self.w
+        ]
+
+        return np.asarray(xdot)
+
+    def update_neighbor(self, neigh):
+        if isinstance(neigh, list):
+            for neigh_single in neigh:
+                self.update_neighbor(neigh_single)
+            return
+        assert isinstance(neigh, BirdSingle), "Neighbor must be a BirdSingle member function."
+        # assert neigh not in self.neighbors, "No repeated neighbors allowed."
+        # assert neigh!=self, "Cannot assign a BirdSingle as its own neighbor"
+
+        if neigh in self.neighbors or neigh==self:
+            return self.neighbors 
+
+        self.neighbors.append(neigh)
+
+        # this neighbor must be a neighbor of this parent
+        neigh.neighbors.append(self) 
+
+    @property
+    def valence(self):
+        """
+            By how much has the number of edges incident
+            on v changed?
+
+            Parameter
+            =========
+            delta: integer (could be positive or negative).
+
+            It is positive if the number of egdes increases at a time t.
+            It is negative if the number of egdes decreases at a time t.
+        """
+        return len(self.neighbors)
+
+    
+    def update_inidicant_edges(self, edges):
+        """
+            Update the number of edges (i,j) of the graph for which either
+            i=j or j=v.
+        """        
 
     def __hash__(self):
         # hash method to distinguish agents from one another    
@@ -188,3 +241,7 @@ class BirdSingle():
         s="Bird {}."\
         .format(self.label)
         return s  
+        parent=f"BirdSingle: {self.label} | "
+        children="Neighbors: 0" if not self.neighbors \
+                else f"Neighbors: {sorted([x.label for x in self.neighbors])}"
+        return parent + children  

@@ -120,7 +120,7 @@ class BirdFlock(BirdSingle):
             self.update_agent_single(agent)
         
 
-    def update_agent single(self, agent, t=None):
+    def update_agent_single(self, agent, t=None):
         """
             Compute the # of neighbors of this `agent` at time t.
             In addition, update the number of neighbors of this agent

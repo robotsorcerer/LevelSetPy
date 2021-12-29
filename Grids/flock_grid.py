@@ -27,7 +27,7 @@ def flockGrid(grid_mins = [[-1, -1, -np.pi]], grid_maxs = [[1, 1, np.pi]],\
 
         Author: Lekan Molux, Dec. 23, 2021
     """
-    grids = [createGrid(np.asarray(grid_mins), np.asarray(grid_maxs), N=100, pdDims=2)]
+    grids = [createGrid(np.asarray(grid_mins), np.asarray(grid_maxs), N=N, pdDims=2)]
 
     for agent in range(1, num_agents):
         agent_grid_min = [(x-dx) for x in grid_mins[agent-1]]

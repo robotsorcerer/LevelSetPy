@@ -1,8 +1,8 @@
 __all__ = ["BirdSingle"]
 
 __author__ = "Lekan Molux"
-__date__ = "Dec. 21, 2021"
-__comment__ = "Two Dubins Vehicle in Absolute Coordinates"
+__date__ = "Dec. 25, 2021"
+__comment__ = "Single Dubins Vehicle under Leaderless Coordination."
 
 import time
 import random
@@ -53,10 +53,10 @@ class BirdSingle():
 
             Test
             ====
-                b0 = BirdSingle("0")
-                b1 = BirdSingle("1")
-                b2 = BirdSingle("2")
-                b3 = BirdSingle("3")
+                b0 = BirdSingle(.., label="0")
+                b1 = BirdSingle(.., "1")
+                b2 = BirdSingle(.., "2")
+                b3 = BirdSingle(.., "3")
                 b0.update_neighbor(b1)
                 b0.update_neighbor(b2)
                 b2.update_neighbor(b3)
@@ -95,9 +95,25 @@ class BirdSingle():
         self.center      = center
         self.axis_align  = axis_align
 
-        # linear and angular velocities of the bird
-        self.v = u_bound
-        self.w = w_bound
+        # for the nearest neighors in this flock, they should have an anisotropic policy
+        self.v = lambda v: u_bound
+        self.w = lambda w: w_bound
+
+        # set actual linear speeds: 
+        if not np.isscalar(u_bound) and len(u_bound) > 1:
+            self.v_e = self.v(1)
+            self.v_p = self.v(-1)
+        else:
+            self.v_e = self.v(1)
+            self.v_p = self.v(1)
+
+        # set angular speeds
+        if not np.isscalar(w_bound) and len(w_bound) > 1:
+            self.w_e = self.w(1)
+            self.w_p = self.w(-1)
+        else:
+            self.w_e = self.w(1)
+            self.w_p = self.w(1)
 
         # this is a vector defined in the direction of its nearest neighbor
         self.u = None
@@ -140,34 +156,15 @@ class BirdSingle():
                          np.mean(self.grid.vs[1]),
                          np.mean(self.grid.vs[2])
                          ]
-        # Simulate each agent's position in a flock as a random walk
-        W = np.asarray(([self.deltaT**2/2])).T
-        WW = W@W.T
-        rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
-
-        # integrate the dynamics with 4th order RK scheme
-        M, h = 4,  0.2 # RK steps per interval vs time step
-        X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
-
-        for j in range(M):
-            if np.any(t_span): # integrate for this much time steps
-                hh = (t_span[1]-t_span[0])/10/M
-                for h in np.arange(t_span[0], t_span[1], hh):
-                    k1 = self.dynamics(X)
-                    k2 = self.dynamics(X + h/2 * k1)
-                    k3 = self.dynamics(X + h/2 * k2)
-                    k4 = self.dynamics(X + h * k3)
-
-                    X  = X+(h/6)*(k1 + 2*k2 + 2*k3 + k4)
-            else:
-                k1 = self.dynamics(X)
-                k2 = self.dynamics(X + h/2 * k1)
-                k3 = self.dynamics(X + h/2 * k2)
-                k4 = self.dynamics(X + h * k3)
-
-                X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
+        
+        X = self.do_runge_kutta4(cur_state, t_span)
 
         if self.init_random:
+            # Simulate each agent's position in a flock as a random walk
+            W = np.asarray(([self.deltaT**2/2])).T
+            WW = W@W.T
+            rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
+
             X += rand_walker
 
         return X
@@ -182,9 +179,9 @@ class BirdSingle():
             \dot{x}_3 = -w_p - w_e
         """
         xdot = [
-                self.v * np.cos(cur_state[2]),
-                self.v * np.sin(cur_state[2]),
-                self.w
+                self.v_e * np.cos(cur_state[2]),
+                self.v_e * np.sin(cur_state[2]),
+                self.w_e * np.ones_like(cur_state[2])
         ]
 
         return np.asarray(xdot)
@@ -220,13 +217,43 @@ class BirdSingle():
             It is negative if the number of egdes decreases at a time t.
         """
         return len(self.neighbors)
-
     
     def update_inidicant_edges(self, edges):
         """
             Update the number of edges (i,j) of the graph for which either
             i=j or j=v.
-        """        
+        """   
+        pass     
+
+    def do_runge_kutta4(self, cur_state, t_span, M=4, h=2):
+        """
+            .cur_state: state at time space 
+            .t_span
+            .M: RK steps per interval 
+            .h: time step        
+        """
+        # integrate the dynamics with 4th order RK scheme
+        X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
+
+        for j in range(M):
+            if np.any(t_span): # integrate for this much time steps
+                hh = (t_span[1]-t_span[0])/10/M
+                for h in np.arange(t_span[0], t_span[1], hh):
+                    k1 = self.dynamics(X)
+                    k2 = self.dynamics(X + h/2 * k1)
+                    k3 = self.dynamics(X + h/2 * k2)
+                    k4 = self.dynamics(X + h * k3)
+
+                    X  = X+(h/6)*(k1 + 2*k2 + 2*k3 + k4)
+            else:
+                k1 = self.dynamics(X)
+                k2 = self.dynamics(X + h/2 * k1)
+                k3 = self.dynamics(X + h/2 * k2)
+                k4 = self.dynamics(X + h * k3)
+
+                X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
+
+        return X
 
     def __hash__(self):
         # hash method to distinguish agents from one another    

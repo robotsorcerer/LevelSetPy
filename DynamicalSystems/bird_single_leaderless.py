@@ -16,75 +16,92 @@ class BirdSingle():
                  init_state=None, rw_cov=None, \
                  axis_align=2, center=None, 
                  neigh_rad=.3, init_random=False,
-                 label="0", neighbors=[]):
+                 label="0"):
         """
-            Dubins Vehicle Dynamics in absolute coordinates.
-            Please consult Merz, 1972 for a detailed reference.
+            Parameters
+            ----------
+            .grid: an np.meshgrid state space on which we are
+            resolving this vehicular dynamics. This grid does not have
+            a value function (yet!) until it's part of a flock
+            .u_bound: absolute value of the linear speed of the vehicle.
+            .w_bound: absolute value of the angular speed of the vehicle.
+            .init_state: initial position and orientation of a bird on the grid
+            .rw_cov: random covariance scalar for initiating the stochasticity
+            on the grid.
+            .center: location of this bird's value function on the grid
+            axis_align: periodic dimension on the grid to be created
+            .neigh_rad: sets of neighbors of agent i
+            .label (str): The label of this BirdSingle drawn from the set {1,2,...,n} 
+            .n: number of neighbors of this agent at time t
+            init_random: randomly initialize this agent's position on the grid?
 
-            Dynamics:
-            ==========
-                \dot{x}_1 = v cos x_3
-                \dot{x}_2 = v sin x_3
-                \dot{x}_3 = w
+            Tests
+            -----
+            b0 = BirdSingle(.., label="0")
+            b1 = BirdSingle(.., "1")
+            b2 = BirdSingle(.., "2")
+            b3 = BirdSingle(.., "3")
+            b0.update_neighbor(b1)
+            b0.update_neighbor(b2)
+            b2.update_neighbor(b3)
+            print(b0)
+            print(b1)
+            print(b2)
+            print(b3)
 
-            Parameters:
-            ===========
-                grid: an np.meshgrid state space on which we are
-                resolving this vehicular dynamics. This grid does not have
-                a value function (yet!) until it's part of a flock
-                u_bound: absolute value of the linear speed of the vehicle.
-                w_bound: absolute value of the angular speed of the vehicle.
-                init_state: initial position and orientation of a bird on the grid
-                rw_cov: random covariance scalar for initiating the stochasticity
-                on the grid.
-                center: location of this bird's value function on the grid
-                axis_align: periodic dimension on the grid to be created
-                neigh_rad: sets of neighbors of agent i
-                label: label of this bird; must be a unique integer
-                n: number of neighbors of this agent at time t
-                init_random: randomly initialize this agent's position on the grid?
+            Prints: BirdSingle: 0 | Neighbors: ['1', '2']
+                    BirdSingle: 1 | Neighbors: ['0']
+                    BirdSingle: 2 | Neighbors: ['0', '3']
+                    BirdSingle: 3 | Neighbors: ['2']
 
-            BirdSingle Parameters
-            =================
-                .label (str): The label of this BirdSingle drawn from the set {1,2,...,n} 
-                .valence(int): number of edges incident on a BirdSingle V_i
-                .indicant_edge(tuple): an edge (i,j) such that i=v or j=v.
-                .neighbors: neighbors of this BirdSingle (as labels).
+            Multiple neighbors test
+            -----------------------     
+            Test1:       
+                # for every agent, create the grid bounds
+                grid_mins = [[-1, -1, -np.pi]]
+                grid_maxs = [[1, 1, np.pi]]   
+                grids = flockGrid(grid_mins, grid_maxs, dx=.1, N=101)
+                ref_bird = BirdSingle(grids[0], 1, 1, None, \
+                                    random.random(), label=0) 
+                print(ref_bird.position())
 
-            Test
-            ====
-                b0 = BirdSingle(.., label="0")
-                b1 = BirdSingle(.., "1")
-                b2 = BirdSingle(.., "2")
-                b3 = BirdSingle(.., "3")
-                b0.update_neighbor(b1)
-                b0.update_neighbor(b2)
-                b2.update_neighbor(b3)
-                print(b0)
-                print(b1)
-                print(b2)
-                print(b3)
+                print(ref_bird)  
 
-                Prints: BirdSingle: 0 | Neighbors: ['1', '2']
-                        BirdSingle: 1 | Neighbors: ['0']
-                        BirdSingle: 2 | Neighbors: ['0', '3']
-                        BirdSingle: 3 | Neighbors: ['2']
+                num_agents=10
+                neighs = [BirdSingle(grids[i], 1, 1, None, \
+                                    random.random(), label=i) for i in range(1, num_agents)]
+                ref_bird.update_neighbor(neighs)
+                print(ref_bird, ' || valence: ', ref_bird.valence)
 
-                Multiple neighbors test
-                -----------------------
-                neighs_2 = [BirdSingle(f"{i}") for i in range(3, 9)]
-                b2.update_neighbors(neighs_2)
-                print(b2)
+            Prints:
+                array([0.99558554, 1.15271013, 8.        ])
 
-                Prints
+                Agent: 0 | Neighbors: 0 || valence: 0.
+                Agent: 0 | Neighbors: [1, 2, 3, 4, 5, 6, 7, 8, 9] || valence: 9.
+
+            Test2: 
+                ref_bird = BirdSingle(grids[0], 1, 1, None, \
+                        random.random(), label=21)          
+                print(ref_bird)    
+                neighs = [BirdSingle(grids[i], 1, 1, None, \
+                                    random.random(), label=random.randint(10, 100)) for i in range(1, num_agents)]                
+                ref_bird.update_neighbor(neighs)                    
+                print(ref_bird)  
+
+            Prints: 
+                Agent: 21 | Neighbors: 0 || valence: 0.
+                Agent: 21 | Neighbors: [10, 39, 45, 61, 66, 67, 85, 90] || valence: 8.
+                  
+            Author: Lekan Molux.
+            December 2021
         """
 
         assert label is not None, "label of an agent cannot be empty"
         # BirdSingle Params
         self.label = label
         # set of labels of those agents whicvh are neighbors of this agent
-        self.neighbors   = neighbors
-        self.inidicant_edge = []       
+        self.neighbors   = []
+        self.indicant_edge = []       
         # minimum L2 distance that defines a neighbor 
         self.neigh_rad = neigh_rad
         self.init_random = init_random
@@ -171,12 +188,12 @@ class BirdSingle():
 
     def dynamics(self, cur_state):
         """
-            Computes the Dubins vehicular dynamics in relative
-            coordinates (deterministic dynamics).
+            Dubins Vehicle Dynamics in absolute coordinates.
+            Please consult Merz, 1972 for a detailed reference.
 
-            \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
-            \dot{x}_2 = -v_p sin x_3 - w_e x_1
-            \dot{x}_3 = -w_p - w_e
+            \dot{x}_1 = v cos x_3
+            \dot{x}_2 = v sin x_3
+            \dot{x}_3 = w
         """
         xdot = [
                 self.v_e * np.cos(cur_state[2]),
@@ -201,7 +218,7 @@ class BirdSingle():
         self.neighbors.append(neigh)
 
         # this neighbor must be a neighbor of this parent
-        neigh.neighbors.append(self) 
+        # neigh.neighbors.append(self) 
 
     @property
     def valence(self):
@@ -265,10 +282,8 @@ class BirdSingle():
         return False
 
     def __repr__(self):
-        s="Bird {}."\
-        .format(self.label)
-        return s  
-        parent=f"BirdSingle: {self.label} | "
+        parent=f"Agent: {self.label} | "
         children="Neighbors: 0" if not self.neighbors \
                 else f"Neighbors: {sorted([x.label for x in self.neighbors])}"
-        return parent + children  
+        valence=f" || valence: {self.valence}."
+        return parent + children  + valence

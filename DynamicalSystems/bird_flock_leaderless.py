@@ -43,7 +43,7 @@ class Graph():
         self.edges_set = edges 
 
         # obtain the graph params
-        self.reset(self.vertex_set[list(self.vertex_set.keys())[0]].w)
+        self.reset(self.vertex_set[list(self.vertex_set.keys())[0]].w_e)
 
     def reset(self, w):
         # graph entities: this from Jadbabaie's paper
@@ -111,9 +111,9 @@ class BirdFlock(BirdSingle):
                 (2008): 1232-1237. 
 
             Dynamics:
-                \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
-                \dot{x}_2 = -v_p sin x_3 - w_e x_1
-                \dot{x}_3 = -w_p - w_e
+                \dot{x}_1 = v cos x_3
+                \dot{x}_2 = v sin x_3
+                \dot{x}_3 = w
 
             Parameters
             ==========
@@ -243,7 +243,7 @@ class BirdFlock(BirdSingle):
         target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
         payoff_capture = np.zeros((evader.grid.shape), dtype=np.float64)
         # first compute the any pursuer captures an evader
-        for pursuer in self.vehicles[1:]:
+        for pursuer in self.vehicles[1:]: 
             if not np.any(pursuer.center):
                 pursuer.center = np.zeros((pursuer.grid.dim, 1))
             elif(numel(pursuer.center) == 1):

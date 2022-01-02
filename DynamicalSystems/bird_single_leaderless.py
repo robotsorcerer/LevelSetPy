@@ -136,9 +136,16 @@ class BirdSingle():
         self.u = None
         self.deltaT = eps # use system eps for a rough small start due to in deltaT
         self.rand_walk_cov = random.random if rw_cov is None else rw_cov
-
-        # position this bird at the center of the state space
-        self.position(init_state)
+        
+        assert isinstance(init_state, np.ndarray) or isinstance(init_state, cp.ndarray), "initial state must either be a numpy or cupy array."
+        r, c = init_state.shape
+        if r<c:
+            # turn to column vector
+            init_state = init_state.T
+            
+        self.cur_state   = init_state
+        # # position this bird at the center of the state space
+        # self.position(init_state)
         
     def position(self, cur_state=None, t_span=None):
         """
@@ -167,14 +174,14 @@ class BirdSingle():
                 state during simulation). If it is None, it is initialized
                 on the center of the state space.
         """
-        if not np.any(cur_state):
-            #put cur_state at origin if not specified
-            cur_state = [np.mean(self.grid.vs[0]),
-                         np.mean(self.grid.vs[1]),
-                         np.mean(self.grid.vs[2])
-                         ]
+        # if not np.any(cur_state):
+        #     #put cur_state at origin if not specified
+        #     cur_state = [np.mean(self.grid.vs[0]),
+        #                  np.mean(self.grid.vs[1]),
+        #                  np.mean(self.grid.vs[2])
+        #                  ]
         
-        X = self.do_runge_kutta4(cur_state, t_span)
+        # X = self.do_runge_kutta4(cur_state, t_span)
 
         if self.init_random:
             # Simulate each agent's position in a flock as a random walk
@@ -182,11 +189,18 @@ class BirdSingle():
             WW = W@W.T
             rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
 
-            X += rand_walker
+            cur_state += rand_walker
 
-        return X
+        return cur_state
 
-    def dynamics(self, cur_state):
+    def reset(self):
+        self.neighbors=[]
+    
+    def step(self, cur_state=None, t_span=None):
+        "advance the simulation"
+        self.position(cur_state, t_span) # update position at time t
+
+    def dynamics(self, cur_state, disturb=np.zeros((3,1))):
         """
             Dubins Vehicle Dynamics in absolute coordinates.
             Please consult Merz, 1972 for a detailed reference.
@@ -195,10 +209,11 @@ class BirdSingle():
             \dot{x}_2 = v sin x_3
             \dot{x}_3 = w
         """
+        #self.step(cur_state)
         xdot = [
-                self.v_e * np.cos(cur_state[2]),
-                self.v_e * np.sin(cur_state[2]),
-                self.w_e * np.ones_like(cur_state[2])
+                self.v_e * np.cos(cur_state[2]) + disturb[0],
+                self.v_e * np.sin(cur_state[2]) + disturb[1],
+                (np.ones_like(cur_state[2])/(1+self.valence))*(self.w_e + np.sum([x.w_e for x in self.neighbors]))+ disturb[2],
         ]
 
         return np.asarray(xdot)

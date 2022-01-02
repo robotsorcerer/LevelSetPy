@@ -19,7 +19,8 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
        Intervals, circles and spheres (if axis_align is empty).
        Slabs (if axis_align contains all dimensions except one).
 
-     Inp.t Parameters:
+     Parameters:
+     ==========
 
        grid: Grid structure (see processGrid.py for details).
 
@@ -34,8 +35,8 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
 
        radius: Scalar specifying the radius of the cylinder.  Defaults to 1.
 
-     Output Parameters:
-
+     Output:
+     =======
        data: Output data array (of size grid.size) containing the implicit
        surface function.
 

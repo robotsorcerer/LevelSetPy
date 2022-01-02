@@ -4,7 +4,7 @@ import numpy as np
 from .create_grid import createGrid
 
 def flockGrid(grid_mins = [[-1, -1, -np.pi]], grid_maxs = [[1, 1, np.pi]],\
-              dx=.2, num_agents=10, N=100):
+              dx=.2, num_agents=10, N=101):
     """
         Create a grid for a local flock within a Starlings murmuration.
 

@@ -7,8 +7,10 @@ __comment__ = "Two Dubins Vehicle in Relative Coordinates"
 import cupy as cp
 import numpy as np
 
+from LevelSetPy.Utilities.matlab_utils import isColumnLength, isvector
+
 class DubinsVehicleRel():
-    def __init__(self, grid, u_bound=5, w_bound=5):
+    def __init__(self, grid, u_bound=5, w_bound=5, x=None):
         """
             Dubins Vehicle Dynamics in relative coordinates.
             Please consult Merz, 1972 for a detailed reference.
@@ -28,6 +30,14 @@ class DubinsVehicleRel():
         """
 
         self.grid        = grid
+        
+        assert isinstance(x, np.ndarray) or isinstance(x, cp.ndarray), "initial state must either be a numpy or cupy array."
+        r, c = x.shape
+        if r<c:
+            # turn to column vector
+            x = x.T
+            
+        self.cur_state   = x
         self.v = lambda u: u*u_bound
         self.w = lambda w: w*w_bound
 

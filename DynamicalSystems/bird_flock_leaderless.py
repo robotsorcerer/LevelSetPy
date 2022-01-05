@@ -93,76 +93,44 @@ class Graph():
 
 
 class BirdFlock(BirdSingle):
-    def __init__(self, grids, num_agents=7, grid_nodes=101,
+    def __init__(self, grids, vehicles, label=1,
                 reach_rad=1.0, avoid_rad=1.0):
-        """
+        """        
+        Intro:
+        =====    
             A flock of Dubins Vehicles. These are patterned after the 
             behavior of starlings which self-organize into local flocking patterns.
-
-            Note that here, we must work in absolute coordinates.
-
             The inspiration for this is the following paper:
-
                 "Interaction ruling animal collective behavior depends on topological 
                 rather than metric distance: Evidence from a field study." 
                 ~ Ballerini, Michele, Nicola Cabibbo, Raphael Candelier, 
                 Andrea Cavagna, Evaristo Cisbani, Irene Giardina, Vivien Lecomte et al. 
                 Proceedings of the national academy of sciences 105, no. 4 
                 (2008): 1232-1237. 
-
-            Dynamics:
-                \dot{x}_1 = v cos x_3
-                \dot{x}_2 = v sin x_3
-                \dot{x}_3 = w
-
-            Parameters
-            ==========
-                .grids: 2 possible types of grids exist for resolving vehicular dynamics:
-                    .single_grid: an np.meshgrid that homes all these birds
-                    .multiple grids: a collection of possibly intersecting grids 
-                    where agents interact.
                 
-                .num_agents: number of agents in this flock of vehicles.
-
-                .grid_nodes: number of nodes in grid.
+        Parameters:
+        ===========
+            .grids: 2 possible types of grids exist for resolving vehicular dynamics:
+                .single_grid: an np.meshgrid that homes all these birds
+                .multiple grids: a collection of possibly intersecting grids 
+                    where agents interact.                
+            .vehicles: BirdSingle Objects in a list.
+            .id (int): The id of this flock.
+            .reach_rad: The reach radius that defines capture by a pursuer.
+            .avoid_rad: The avoid radius that defines the minimum distance between 
+            agents.
         """
-        # Number of vehicles in this flock
-        self.N  = num_agents
-        self.grid_nodes = grid_nodes
-
-        if grids is None and num_agents==1:
-            # for every agent, create the grid bounds
-            grid_mins = [[-1, -1, -np.pi]]
-            grid_maxs = [[1, 1, np.pi]]   
-            grids = flockGrid(grid_mins, grid_maxs, dx=.1, num_agents=num_agents, N=grid_nodes)
-        elif grids is None and num_agents>1:
-            gmin = np.array(([[-1, -1, -np.pi]]),dtype=np.float64).T
-            gmax = np.array(([[1, 1, np.pi]]),dtype=np.float64).T
-            grid = createGrid(gmin, gmax, grid_nodes, 2)
-
-        # birds could be on different subspaces of an overall grid
-        if isinstance(grids, list):
-            self.vehicles = []
-            #reference bird must be at origin of the grid
-            # bird_pos = [ 
-            #              np.mean(grids[0].vs[0]),
-            #              np.mean(grids[0].vs[1]),
-            #              np.mean(grids[0].vs[2])
-            #              ]
-            lab = 0
-            for each_grid in grids:
-                self.vehicles.append(BirdSingle(each_grid,1,1,None, \
-                                         random.random(), label=lab))
-                # # randomly initialize position of other birds
-                # bird_pos = [np.random.sample(each_grid.vs[0], 1), \
-                #             np.random.sample(each_grid.vs[1], 1), \
-                #             np.random.sample(each_grid.vs[2], 1)]
-                lab += 1
-        else: # all birds are on the same grid
-            ref_bird = BirdSingle(grids[0], 1, 1, None, \
-                                random.random(), label=0) 
-            self.vehicles = [BirdSingle(grids[i], 1, 1, None, \
-                    random.random(), label=i) for i in range(1,num_agents)]
+        self.N         = len(vehicles)  # Number of vehicles in this flock
+        self.label     = label # label of this flock
+        self.avoid_rad = avoid_rad
+        self.reach_rad = reach_rad        
+        self.vehicles  = vehicles
+        """
+            update neighbors now based on topological distance
+            update headings too: note that headings do not 
+            contribute to neighbors;  only linear positions do.
+        """
+        self._housekeeping()
 
         self.grid = grids
         """
@@ -174,120 +142,9 @@ class BirdFlock(BirdSingle):
              exhibit isotropic behavior and the aggregation is non-interacting by and large.
         """
         self.gamma = lambda nc: (1/3)*nc
-        """create the target set for this local flock"""
-        self.flock_payoff = self.get_target(reach_rad=1.0, avoid_rad=1.0)
-            
-        self.graph = Graph(num_agents, self.grid, self.vehicles, None)
+        self.graph = Graph(self.N, self.grid, self.vehicles, None)
 
-    def update_dynamics(self):
-        """
-            Update the dynamics of the agents on this grid whose positionings are
-            determined by a graph self.graph.
-        """
-        
-        # recursively update each agent's position and neighbors in the state
-        for idx in range(len(self.vehicles)):
-            self.graph.θs[idx,:] = self.update_agent_single(self.vehicles[idx])
-
-    def update_agent_single(self, agent, t=None):
-        """
-            Compute the # of neighbors of this `agent` at time t.
-            In addition, update the number of neighbors of this agent
-             as labels in a list, and compute the average heading of
-             this robot as well. 
-
-            Update the number of nearest neighbors of this agent
-            and then the labels of its neighbors for bookkeeping.
-
-            Parameters:
-            ==========
-            agent: This agent as a BirdsSingle object.
-            t: Time at which we are updating this agent's dynamics.
-        """
-        # neighbors are those agents within a normed distance to this agent's position
-        n    = agent.n
-        label = agent.label # we do not expect this to change
-
-        # update headings and neighbors (see eqs 1 and 2 in Jadbabaie)
-        for other_agent in self.vehicles:
-            if other_agent == agent:
-                # we only compare with other agents
-                continue 
-
-            # TODO: how to better find a vehicle's position on the state space at t? 
-            dist = np.linalg.norm(other_agent.position()[:2], 2) - np.linalg.norm(agent.position()[:2], 2)
-            if dist <= agent.neigh_rad:
-                n += 1 # increase neighbor count if we are within the prespecified radius
-                agent.neighbors.append(other_agent.label) # label will be integers
-        
-        # update heading for this agent
-        if np.any(agent.neighbors):
-            neighbor_headings = [self.vehicles[agent.neighbors[i]].w \
-                for i in range(len(agent.neighbors)) \
-                    if agent!=self.vehicles[agent.neighbors[i]]]
-        else:
-            neighbor_headings = 0
-        # this maps headings w/values in [0, 2\pi) to [0, \pi)
-        θr = (1/(1+n))*(agent.w + np.sum(neighbor_headings))        
-        #agent.update_agent_params(t, n, label, θr)
-        return θr
-           
-    def get_target(self, reach_rad=1.0, avoid_rad=1.0):
-        """
-            Make reference bird the evader and every other bird the pursuer
-            owing to the lateral visual anisotropic characteric of starlings.
-        """
-        # first bird is the evader, so collect its position info
-        cur_agent = 0
-        evader = self.vehicles[cur_agent]
-        target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
-        payoff_capture = np.zeros((evader.grid.shape), dtype=np.float64)
-        # first compute the any pursuer captures an evader
-        for pursuer in self.vehicles[1:]: 
-            if not np.any(pursuer.center):
-                pursuer.center = np.zeros((pursuer.grid.dim, 1))
-            elif(numel(pursuer.center) == 1):
-                pursuer.center = pursuer.center * np.ones((pursuer.grid.dim, 1), dtype=np.float64)
-
-            #---------------------------------------------------------------------------
-            #axis_align must be same for all agents in a flock
-            # any pursuer can capture the reference bird
-            for i in range(pursuer.grid.dim):
-                if(i != pursuer.axis_align):
-                    target_set[cur_agent] += (pursuer.grid.xs[i] - evader.grid.xs[i])**2
-            target_set[cur_agent] = np.sqrt(target_set[cur_agent])
-
-            # take an element wise min of all corresponding targets now
-            if cur_agent >= 1:
-                payoff_capture = np.minimum(target_set[cur_agent], target_set[cur_agent-1], dtype=np.float64)
-            cur_agent += 1
-        payoff_capture -= reach_rad
-
-        # compute the anisotropic value function: this maintains the gap between the pursuers
-        # note this is also the avoid set
-        target_set = np.zeros((self.N-1,)+(evader.grid.shape), dtype=np.float64)
-        payoff_avoid = np.zeros((evader.grid.shape), dtype=np.float64)
-        cur_agent = 0
-        for vehicle_idx in range(1, len(self.vehicles)-1):
-            this_vehicle = self.vehicles[vehicle_idx]
-            next_vehicle = self.vehicles[vehicle_idx+1]
-            for i in range(this_vehicle.grid.dim):
-                if(i != this_vehicle.axis_align):
-                    target_set[cur_agent] += (this_vehicle.grid.xs[i] + next_vehicle.grid.xs[i])**2
-            target_set[cur_agent] = np.sqrt(target_set[cur_agent])
-
-            # take an element wise min of all corresponding targets now
-            if cur_agent >= 1:
-                payoff_avoid = np.minimum(target_set[cur_agent], target_set[cur_agent-1], dtype=np.float64)
-            cur_agent += 1
-        
-        payoff_avoid -= avoid_rad
-
-        # now do a union of both the avoid and capture sets
-        combo_payoff = np.minimum(payoff_avoid, payoff_capture)
-
-        return combo_payoff
-
+   
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
         """
             H = p_1 [v_e - v_p cos(x_3)] - p_2 [v_p sin x_3] \
@@ -337,3 +194,58 @@ class BirdFlock(BirdSingle):
             return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
         elif dim==2:
             return self.w_e + self.w_p
+
+    def _housekeeping(self):
+        """
+            Update the neighbors and headings based on topological 
+            interaction.
+        """
+        # Update neighbors first
+        for i in range(self.N):
+            # look to the right and update neighbors
+            for j in range(i+1,self.N):        
+                self.compare_neighbor(self.vehicles[i], self.vehicles[j])
+            
+            # look to the left and update neighbors
+            for j in range(i-1, -1, -1):
+                self.compare_neighbor(self.vehicles[i], self.vehicles[j])
+
+        # recursively update each agent's headings based on neighbors
+        for idx in range(len(self.vehicles)):
+            self._update_headings(self.vehicles[idx], idx)
+
+    def _compare_neighbor(self, agent1, agent2):
+        "Check if agent1 is a neighbor of agent2."
+        if np.abs(agent1.label - agent2.label) < agent1.neigh_rad:
+            agent1.update_neighbor(agent2)
+        
+    def _update_headings(self, agent, idx, t=None):
+        """
+            Update the average heading of this flock. 
+
+            Parameters:
+            ==========
+            agent: This agent as a BirdsSingle object.
+            t (optional): Time at which we are updating this agent's dynamics.
+        """
+        # update heading for this agent
+        if agent.has_neighbor:
+            neighbor_headings = [neighbor.w_e for neighbor in (agent.neighbors)]
+        else:
+            neighbor_headings = 0
+        
+        # this maps headings w/values in [0, 2\pi) to [0, \pi)
+        θr = (1/(1+agent.valence))*(agent.w_e + np.sum(neighbor_headings)) 
+        agent.w_e = θr    
+
+        # bookkeeing on the graph
+        self.graph.θs[idx,:] =  θr
+
+    def __eq__(self,other):
+        if hash(self)==hash(other):
+            return True
+        return False
+
+    def __repr__(self):
+        parent=f"Flock: {self.label}"
+        return parent 

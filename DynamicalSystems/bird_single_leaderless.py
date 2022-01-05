@@ -13,11 +13,16 @@ from LevelSetPy.Utilities import eps
 
 class BirdSingle():
     def __init__(self, grid, u_bound=+1, w_bound=+1, \
-                 init_state=None, rw_cov=None, \
+                 init_xyw=None, rw_cov=None, \
                  axis_align=2, center=None, 
-                 neigh_rad=.3, init_random=False,
-                 label="0"):
+                 neigh_rad=3, init_random=False,
+                 label=0):
         """
+            Dynamics:
+                \dot{x}_1 = v cos x_3
+                \dot{x}_2 = v sin x_3
+                \dot{x}_3 = w
+
             Parameters
             ----------
             .grid: an np.meshgrid state space on which we are
@@ -25,15 +30,14 @@ class BirdSingle():
             a value function (yet!) until it's part of a flock
             .u_bound: absolute value of the linear speed of the vehicle.
             .w_bound: absolute value of the angular speed of the vehicle.
-            .init_state: initial position and orientation of a bird on the grid
+            .init_xyz: initial position and orientation of a bird on the grid
             .rw_cov: random covariance scalar for initiating the stochasticity
             on the grid.
             .center: location of this bird's value function on the grid
             axis_align: periodic dimension on the grid to be created
             .neigh_rad: sets of neighbors of agent i
-            .label (str): The label of this BirdSingle drawn from the set {1,2,...,n} 
-            .n: number of neighbors of this agent at time t
-            init_random: randomly initialize this agent's position on the grid?
+            .label (int): The label of this BirdSingle drawn from the set {1,2,...,n} 
+            .init_random: randomly initialize this agent's position on the grid?
 
             Tests
             -----
@@ -105,7 +109,6 @@ class BirdSingle():
         # minimum L2 distance that defines a neighbor 
         self.neigh_rad = neigh_rad
         self.init_random = init_random
-        self.n  = 0
 
         # grid params
         self.grid        = grid
@@ -137,15 +140,13 @@ class BirdSingle():
         self.deltaT = eps # use system eps for a rough small start due to in deltaT
         self.rand_walk_cov = random.random if rw_cov is None else rw_cov
         
-        assert isinstance(init_state, np.ndarray) or isinstance(init_state, cp.ndarray), "initial state must either be a numpy or cupy array."
-        r, c = init_state.shape
+        assert isinstance(init_xyw, np.ndarray), "initial state must either be a numpy or cupy array."
+        r, c = init_xyw.shape
         if r<c:
             # turn to column vector
-            init_state = init_state.T
-            
-        self.cur_state   = init_state
-        # # position this bird at the center of the state space
-        # self.position(init_state)
+            init_xyw = init_xyw.T
+                    
+        self.cur_state   = init_xyw 
         
     def position(self, cur_state=None, t_span=None):
         """
@@ -169,19 +170,11 @@ class BirdSingle():
             
             Parameters
             ==========
-            .init_state: current state of a bird in the state space
+            .init_xyz: current state of a bird in the state space
                 (does not have to be an initial state/could be a current
                 state during simulation). If it is None, it is initialized
                 on the center of the state space.
         """
-        # if not np.any(cur_state):
-        #     #put cur_state at origin if not specified
-        #     cur_state = [np.mean(self.grid.vs[0]),
-        #                  np.mean(self.grid.vs[1]),
-        #                  np.mean(self.grid.vs[2])
-        #                  ]
-        
-        # X = self.do_runge_kutta4(cur_state, t_span)
 
         if self.init_random:
             # Simulate each agent's position in a flock as a random walk
@@ -196,9 +189,14 @@ class BirdSingle():
     def reset(self):
         self.neighbors=[]
     
-    def step(self, cur_state=None, t_span=None):
-        "advance the simulation"
-        self.position(cur_state, t_span) # update position at time t
+    def has_neighbor(self):
+        """
+            Check that this agent has a neighbor on the 
+            state space.        
+        """        
+        if self.neighbors is not None:
+            return True 
+        return False
 
     def dynamics(self, cur_state, disturb=np.zeros((3,1))):
         """
@@ -219,21 +217,18 @@ class BirdSingle():
         return np.asarray(xdot)
 
     def update_neighbor(self, neigh):
-        if isinstance(neigh, list):
+        """
+            Neigh: A BirdSingle Instance.
+        """
+        if isinstance(neigh, list): # multiple neighbors.
             for neigh_single in neigh:
                 self.update_neighbor(neigh_single)
             return
         assert isinstance(neigh, BirdSingle), "Neighbor must be a BirdSingle member function."
-        # assert neigh not in self.neighbors, "No repeated neighbors allowed."
-        # assert neigh!=self, "Cannot assign a BirdSingle as its own neighbor"
 
         if neigh in self.neighbors or neigh==self:
             return self.neighbors 
-
         self.neighbors.append(neigh)
-
-        # this neighbor must be a neighbor of this parent
-        # neigh.neighbors.append(self) 
 
     @property
     def valence(self):

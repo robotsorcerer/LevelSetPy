@@ -91,7 +91,6 @@ class Graph():
     def update_headings(self, t):
         return self.adjacency_matrix(t)@self.θs
 
-
 class BirdFlock(BirdSingle):
     def __init__(self, grids, vehicles, label=1,
                 reach_rad=1.0, avoid_rad=1.0):
@@ -121,17 +120,11 @@ class BirdFlock(BirdSingle):
             agents.
         """
         self.N         = len(vehicles)  # Number of vehicles in this flock
-        self.label     = label # label of this flock
-        self.avoid_rad = avoid_rad
-        self.reach_rad = reach_rad        
-        self.vehicles  = vehicles
-        """
-            update neighbors now based on topological distance
-            update headings too: note that headings do not 
-            contribute to neighbors;  only linear positions do.
-        """
-        self._housekeeping()
-
+        self.label     = label      # label of this flock
+        self.avoid_rad = avoid_rad  # distance between each bird.
+        self.reach_rad = reach_rad  # distance between birds and attacker.
+        self.vehicles  = vehicles   # # number of birds in the flock
+        
         self.grid = grids
         """
              Define the anisotropic parameter for this flock.
@@ -143,6 +136,13 @@ class BirdFlock(BirdSingle):
         """
         self.gamma = lambda nc: (1/3)*nc
         self.graph = Graph(self.N, self.grid, self.vehicles, None)
+
+        """
+            update neighbors now based on topological distance
+            update headings too: note that headings do not 
+            contribute to neighbors;  only linear positions do.
+        """
+        self._housekeeping()
 
    
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
@@ -204,11 +204,11 @@ class BirdFlock(BirdSingle):
         for i in range(self.N):
             # look to the right and update neighbors
             for j in range(i+1,self.N):        
-                self.compare_neighbor(self.vehicles[i], self.vehicles[j])
+                self._compare_neighbor(self.vehicles[i], self.vehicles[j])
             
             # look to the left and update neighbors
             for j in range(i-1, -1, -1):
-                self.compare_neighbor(self.vehicles[i], self.vehicles[j])
+                self._compare_neighbor(self.vehicles[i], self.vehicles[j])
 
         # recursively update each agent's headings based on neighbors
         for idx in range(len(self.vehicles)):

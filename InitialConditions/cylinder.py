@@ -46,17 +46,17 @@ def shapeCylinder(grid, axis_align=[], center=None, radius=1):
     """
 
     if not np.any(center):
-        center = zeros(grid.dim, 1);
+        center = zeros(grid.dim, 1)
     elif(numel(center) == 1):
-        center = center * ones(grid.dim, 1, dtype=np.float64);
+        center = center * ones(grid.dim, 1, dtype=np.float64)
 
     #---------------------------------------------------------------------------
     # Signed distance function calculation.
-    data = np.zeros((grid.shape));
+    data = np.zeros((grid.shape))
     for i in range(grid.dim):
         if(i != axis_align):
             data += (grid.xs[i] - center[i])**2
-    data = np.sqrt(data) - radius;
+    data = np.sqrt(data) - radius
 
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid

@@ -109,6 +109,8 @@ class BirdSingle():
         # minimum L2 distance that defines a neighbor 
         self.neigh_rad = neigh_rad
         self.init_random = init_random
+        # print('init_random: ', init_random)
+        # print('self init_random: ', self.init_random)
 
         # grid params
         self.grid        = grid
@@ -146,7 +148,10 @@ class BirdSingle():
             # turn to column vector
             init_xyw = init_xyw.T
                     
-        self.cur_state   = init_xyw 
+        self.cur_state   = self.position(init_xyw )
+
+        # adhoc functiomn for payoff
+        self.payoff = None
         
     def position(self, cur_state=None, t_span=None):
         """
@@ -176,13 +181,13 @@ class BirdSingle():
                 on the center of the state space.
         """
 
-        if self.init_random:
-            # Simulate each agent's position in a flock as a random walk
-            W = np.asarray(([self.deltaT**2/2])).T
-            WW = W@W.T
-            rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
+        # if self.init_random:
+        #     # Simulate each agent's position in a flock as a random walk
+        #     W = np.asarray(([self.deltaT**2/2])).T
+        #     WW = W@W.T
+        #     rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
 
-            cur_state += rand_walker
+        #     cur_state += rand_walker
 
         return cur_state
 

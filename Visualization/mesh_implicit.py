@@ -7,6 +7,7 @@ __status__ 		= "Completed"
 
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage import measure
+from Utilities import Bundle
 
 def implicit_mesh(surface, level, spacing, gd='ascent', edge_color='k', face_color='r'):
 
@@ -48,4 +49,6 @@ def implicit_mesh(surface, level, spacing, gd='ascent', edge_color='k', face_col
     mesh.set_edgecolor(edge_color)
     mesh.set_facecolor(face_color)
 
-    return mesh
+    
+    # we now return faces in order to set the limits of the plot in pyplot
+    return Bundle(dict(mesh=mesh, verts=verts))

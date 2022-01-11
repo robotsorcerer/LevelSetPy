@@ -128,19 +128,15 @@ class ValueVisualizer(object):
 			# init_ax = self._fig_init_val.axes(projection='3d')
 			self._ax_arr[0].contourf(g.xs[0], g.xs[1], self.value, levels=self.params.level, colors=next(self.color))
 			self.title(init_ax, title=f'Initial {self.params.level}-Value Set')# init_ax.set_xlabel('X', fontdict=self.fontdict)
-			# init_ax.set_ylabel('Y', fontdict=self.fontdict)
-			# init_ax.set_zlabel('Z', fontdict=self.fontdict)
-			# init_ax.set_title(f'Initial {self.params.level}-Value Set',fontdict = self._fontdict)
+
 		elif g.dim == 3:
 			spacing = tuple(g.dx.flatten().tolist())
 			mesh = implicit_mesh(data, level=self.params.level, spacing=spacing,  edge_color='k', face_color='r')
-			self.show_3d(g, mesh, self._ax_arr[0], spacing)
+			self.show_3d(g, mesh.mesh, self._ax_arr[0], spacing)
 
-			buffer_factor=1.05
-			xlim = (min(data[0].ravel()), max(data[0].ravel())) #, buffer_factor)
-			ylim = (min(data[1].ravel()), max(data[1].ravel())) #, buffer_factor)
-			zlim = (min(data[2].ravel()), max(data[2].ravel()), buffer_factor*1.55)
-			# zlim = (min(data[2].ravel()), max(data[2].ravel()), buffer_factor*1.55)
+			xlim = (mesh.verts[:, 0].min(), mesh.verts[:,0].max())
+			ylim = (mesh.verts[:, 1].min(), mesh.verts[:,1].max())
+			zlim = (mesh.verts[:, 2].min(), mesh.verts[:,2].max())
 
 			self._ax_arr[0].set_xlim(*xlim)
 			self._ax_arr[0].set_ylim(*ylim)

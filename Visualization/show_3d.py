@@ -41,12 +41,20 @@ def show3D(g=None, mesh=None, winsize=(16, 9), title='Zero Level Set', ax=None, 
             m = implicit_mesh(m, level=level, spacing=spacing,  edge_color='k', face_color='r')
             ax.add_collection3d(m)
     else:
-        ax.add_collection(mesh)
+        ax.add_collection(mesh.mesh)
+
+        xlim = (mesh.verts[:, 0].min(), mesh.verts[:,0].max())
+        ylim = (mesh.verts[:, 1].min(), mesh.verts[:,1].max())
+        zlim = (mesh.verts[:, 2].min(), mesh.verts[:,2].max())
+
+    ax.set_xlim3d(*xlim)
+    ax.set_ylim3d(*ylim)
+    ax.set_zlim3d(*zlim)
+    
     ax.set_xlabel("X-axis", fontdict = fontdict)
     ax.set_ylabel("Y-axis", fontdict = fontdict)
     ax.set_zlabel("Z-axis", fontdict = fontdict)
     ax.set_title(title, fontdict = fontdict)
-
 
     if savedict["save"]:
         fig.savefig(join(savedict["savepath"],savedict["savename"]),

@@ -7,7 +7,7 @@ __status__ 		= "Completed"
 
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from skimage import measure
-from Utilities import Bundle
+from LevelSetPy.Utilities import Bundle
 
 def implicit_mesh(surface, level, spacing, gd='ascent', edge_color='k', face_color='r'):
 

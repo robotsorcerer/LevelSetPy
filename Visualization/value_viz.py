@@ -6,7 +6,7 @@ __maintainer__ 	= "Lekan Molu"
 __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Completed"
 
-import time
+import time, os
 import numpy as np
 from os.path import join
 import matplotlib.pylab as plt
@@ -134,17 +134,11 @@ class ValueVisualizer(object):
 			mesh = implicit_mesh(data, level=self.params.level, spacing=spacing,  edge_color='k', face_color='r')
 			self.show_3d(g, mesh.mesh, self._ax_arr[0], spacing)
 
-			xlim = (mesh.verts[:, 0].min(), mesh.verts[:,0].max())
-			ylim = (mesh.verts[:, 1].min(), mesh.verts[:,1].max())
-			zlim = (mesh.verts[:, 2].min(), mesh.verts[:,2].max())
+			xlim, ylim, zlim = self.get_lims(mesh)
 
 			self._ax_arr[0].set_xlim(*xlim)
 			self._ax_arr[0].set_ylim(*ylim)
-			self._ax_arr[0].set_zlim(-np.pi-.05, np.pi+2.3)
-			# init_ax.set_xlabel("X", fontdict = self._fontdict)
-			# init_ax.set_ylabel("Y", fontdict = self._fontdict)
-			# init_ax.set_zlabel("Z", fontdict = self._fontdict)
-			# self.set_title(ax_idx, f'Initial {self.params.level}-Level Value Set')
+			self._ax_arr[0].set_zlim(*zlim)
 			self.set_title(self._ax_arr[0], title=f'Starting {self.params.level}-level Value Set')
 
 
@@ -253,7 +247,7 @@ class ValueVisualizer(object):
 			# self._ax_arr[1].set_title(f'3D Zero level set', fontdict=self._fontdict)
 			self._ax_arr[0].view_init(elev=30., azim=10.)
 
-			xlims, ylims, zlims = self.get_lims(g, data, use_hard_coded=True)
+			xlims, ylims, zlims = self.get_lims(mesh)
 			self._ax_arr[0].set_xlim(xlims)
 			self._ax_arr[0].set_ylim(ylims)
 			self._ax_arr[0].set_zlim(zlims)
@@ -264,7 +258,7 @@ class ValueVisualizer(object):
 			# # mesh = implicit_mesh(data, level=0., spacing=tuple(g.dx.flatten().tolist()),  edge_color=None, face_color='g')
 			# # project last dim and visu 2D level set
 			xs = 'min' # xs = g.min[g.dim-1] + 3/(N+1) * (g.max[g.dim-1] - g.min[g.dim-1])
-			g_red, data_red = proj(g, data, [0, 0, 1], xs);
+			g_red, data_red = proj(g, data, [0, 0, 1], xs)
 			self._ax_arr[1].plot_surface(g_red.xs[0], g_red.xs[1], data_red, rstride=1, cstride=1,
 						cmap='viridis', edgecolor='k', facecolor='red')
 			# self._ax_arr[1].contourf(g_red.xs[0], g_red.xs[1], data_red, colors=next(self.color))
@@ -291,26 +285,9 @@ class ValueVisualizer(object):
 		self._fig.canvas.draw()
 		self._fig.canvas.flush_events()
 
-	def get_lims(self, g3, cylinder, use_hard_coded=False):
-		# Or use hardcoded values
-		if use_hard_coded:
-			xlim = (6.0, 7.5)
-			ylim = (6.0, 7.5)
-			zlim = (0, 6.)
-
-			return xlim, ylim, zlim
-
-		xlim = (min(cylinder[0].ravel()), max(cylinder[0].ravel()))
-		ylim = (min(cylinder[1].ravel()), max(cylinder[1].ravel()))
-		zlim = (min(cylinder[2].ravel()), max(cylinder[2].ravel()))
-
-		gxlims = (min(g3.vs[0]), max(g3.vs[0]))
-		gylims = (min(g3.vs[1]), max(g3.vs[1]))
-		gzlims = (min(g3.vs[2]), max(g3.vs[2]))
-
-		xlim = (xlim[0]-gxlims[0], xlim[1]-gxlims[1])
-		ylim = (ylim[0]-gylims[0], ylim[1]-gylims[1])
-		zlim = (0, zlim[1])
-
+	def get_lims(self, mesh):
+		xlim = (mesh.verts[:, 0].min(), mesh.verts[:,0].max())
+		ylim = (mesh.verts[:, 1].min(), mesh.verts[:,1].max())
+		zlim = (mesh.verts[:, 2].min(), mesh.verts[:,2].max())
 
 		return xlim, ylim, zlim

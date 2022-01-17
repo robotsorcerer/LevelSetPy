@@ -287,6 +287,56 @@ class BirdSingle():
 
         return X
 
+
+    def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
+        """
+            H = p_1 [v_e - v_p cos(x_3)] - p_2 [v_p sin x_3] \
+                   - w | p_1 x_2 - p_2 x_1 - p_3| + w |p_3|
+
+            Parameters
+            ==========
+            value: Value function at this time step, t
+            value_derivs: Spatial derivatives (finite difference) of
+                        value function's grid points computed with
+                        upwinding.
+            finite_diff_bundle: Bundle for finite difference function
+                .innerData: Bundle with the following fields:
+                    .partialFunc: RHS of the o.d.e of the system under consideration
+                        (see function dynamics below for its impl).
+                    .hamFunc: Hamiltonian (this function).
+                    .dissFunc: artificial dissipation function.
+                    .derivFunc: Upwinding scheme (upwindFirstENO2).
+                    .innerFunc: terminal Lax Friedrichs integration scheme.
+        """
+        p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
+        p1_coeff = self.v_e * cp.cos(self.cur_state[2])
+        p2_coeff = self.v_e * cp.sin(self.cur_state[2])
+
+        Hxp = -(p1 * p1_coeff + p2 * p2_coeff + self.cur_state[2])
+
+        return Hxp        
+
+    def dissipation(self, t, data, derivMin, derivMax, \
+                      schemeData, dim):
+        """
+            Parameters
+            ==========
+                dim: The dissipation of the Hamiltonian on
+                the grid (see 5.11-5.12 of O&F).
+
+                t, data, derivMin, derivMax, schemeData: other parameters
+                here are merely decorators to  conform to the boilerplate
+                we use in the levelsetpy toolbox.
+        """
+        assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
+
+        if dim==0:
+            return cp.abs(self.v_e - self.v_p * cp.cos(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[1])
+        elif dim==1:
+            return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
+        elif dim==2:
+            return self.w_e  
+
     def __hash__(self):
         # hash method to distinguish agents from one another    
         return int(hashlib.md5(str(self.label).encode('utf-8')).hexdigest(),16)

@@ -1,24 +1,24 @@
-__all__ = ["BirdFlock"]
+__all__ = ["Flock"]
 
 __author__ = "Lekan Molux"
 __date__ = "Dec. 21, 2021"
 __comment__ = "Two Dubins Vehicle in Relative Coordinates"
 
+import random
 import hashlib
 import cupy as cp
 import numpy as np
-import random
+from .bird import Bird
 from LevelSetPy.Grids import *
-from .bird_single_leaderless import BirdSingle
 from LevelSetPy.Utilities.matlab_utils import *
 
 class Graph():
     def __init__(self, n, grids, vertex_set, edges=None):
-        """A graph (an undirected graph that is) that models 
-        the update equations of agents positions on a state space 
+        """A graph (an undirected graph that is) that models
+        the update equations of agents positions on a state space
         (defined as a grid).
 
-        The graph has a vertex set {1,2,...,n} so defined such that 
+        The graph has a vertex set {1,2,...,n} so defined such that
         (i,j) is one of the graph's edges in case i and j are neighbors.
         This graph changes over time since the relationship between neighbors
         can change.
@@ -33,14 +33,14 @@ class Graph():
                 Edges have no self-loops i.e. i≠j or repeated edges (i.e. elements are distinct).
         """
         self.N = n
-        if vertex_set is None:            
-            self.vertex_set = {f"{i+1}":BirdSingle(grids[i], 1, 1,\
+        if vertex_set is None:
+            self.vertex_set = {f"{i+1}":Bird(grids[i], 1, 1,\
                     None, random.random(), label=f"{i}") for i in range(n)}
         else:
             self.vertex_set = {f"{i+1}":vertex_set[i] for i in range(n)}
-        
+
         # edges are updated dynamically during game
-        self.edges_set = edges 
+        self.edges_set = edges
 
         # obtain the graph params
         self.reset(self.vertex_set[list(self.vertex_set.keys())[0]].w_e)
@@ -55,7 +55,7 @@ class Graph():
 
     def insert_vertex(self, vertex):
         if isinstance(vertex, list):
-            assert isinstance(vertex, BirdSingle), "vertex to be inserted must be instance of class Vertex."
+            assert isinstance(vertex, Bird), "vertex to be inserted must be instance of class Vertex."
             for vertex_single in vertex:
                 self.vertex_set[vertex_single.label] = vertex_single.neighbors
         else:
@@ -67,8 +67,8 @@ class Graph():
                 self.insert_edge(from_vertex, to_vertex)
             return
         else:
-            assert isinstance(from_vertices, BirdSingle), "from_vertex to be inserted must be instance of class Vertex."
-            assert isinstance(to_vertices, BirdSingle), "to_vertex to be inserted must be instance of class Vertex."
+            assert isinstance(from_vertices, Bird), "from_vertex to be inserted must be instance of class Vertex."
+            assert isinstance(to_vertices, Bird), "to_vertex to be inserted must be instance of class Vertex."
             from_vertices.update_neighbor(to_vertices)
             self.vertex_set[from_vertices.label] = from_vertices.neighbors
             self.vertex_set[to_vertices.label] = to_vertices.neighbors
@@ -78,7 +78,7 @@ class Graph():
             for j in range(self.Ap.shape[1]):
                 for verts in sorted(self.vertex_set.keys()):
                     if str(j) in self.vertex_set[verts].neighbors:
-                        self.Ap[i,j] = 1 
+                        self.Ap[i,j] = 1
         return self.Ap
 
     def diag_matrix(self):
@@ -91,121 +91,66 @@ class Graph():
     def update_headings(self, t):
         return self.adjacency_matrix(t)@self.θs
 
-class BirdFlock(BirdSingle):
+class Flock(Bird):
     def __init__(self, grids, vehicles, label=1,
                 reach_rad=1.0, avoid_rad=1.0):
-        """        
-        Intro:
-        =====    
-            A flock of Dubins Vehicles. These are patterned after the 
-            behavior of starlings which self-organize into local flocking patterns.
-            The inspiration for this is the following paper:
-                "Interaction ruling animal collective behavior depends on topological 
-                rather than metric distance: Evidence from a field study." 
-                ~ Ballerini, Michele, Nicola Cabibbo, Raphael Candelier, 
-                Andrea Cavagna, Evaristo Cisbani, Irene Giardina, Vivien Lecomte et al. 
-                Proceedings of the national academy of sciences 105, no. 4 
-                (2008): 1232-1237. 
-                
-        Parameters:
-        ===========
-            .grids: 2 possible types of grids exist for resolving vehicular dynamics:
-                .single_grid: an np.meshgrid that homes all these birds
-                .multiple grids: a collection of possibly intersecting grids 
-                    where agents interact.                
-            .vehicles: BirdSingle Objects in a list.
-            .id (int): The id of this flock.
-            .reach_rad: The reach radius that defines capture by a pursuer.
-            .avoid_rad: The avoid radius that defines the minimum distance between 
-            agents.
+        """
+            Introduction:
+            =============
+                A flock of Dubins Vehicles. These are patterned after the
+                behavior of starlings which self-organize into local flocking patterns.
+                The inspiration for this is the following paper:
+                    "Interaction ruling animal collective behavior depends on topological
+                    rather than metric distance: Evidence from a field study."
+                    ~ Ballerini, Michele, Nicola Cabibbo, Raphael Candelier,
+                    Andrea Cavagna, Evaristo Cisbani, Irene Giardina, Vivien Lecomte et al.
+                    Proceedings of the national academy of sciences 105, no. 4
+                    (2008): 1232-1237.
+
+            Parameters:
+            ===========
+                .grids: 2 possible types of grids exist for resolving vehicular dynamics:
+                    .single_grid: an np.meshgrid that homes all these birds
+                    .multiple grids: a collection of possibly intersecting grids
+                        where agents interact.
+                .vehicles: Bird Objects in a list.
+                .id (int): The id of this flock.
+                .reach_rad: The reach radius that defines capture by a pursuer.
+                .avoid_rad: The avoid radius that defines the minimum distance between
+                agents.
         """
         self.N         = len(vehicles)  # Number of vehicles in this flock
         self.label     = label      # label of this flock
         self.avoid_rad = avoid_rad  # distance between each bird.
         self.reach_rad = reach_rad  # distance between birds and attacker.
         self.vehicles  = vehicles   # # number of birds in the flock
-        
+
         self.grid = grids
         """
              Define the anisotropic parameter for this flock.
-             This gamma parameter controls the degree of interaction among 
-             the agents in this flock. Interaction decays with the distance, and 
+             This gamma parameter controls the degree of interaction among
+             the agents in this flock. Interaction decays with the distance, and
              we can use the anisotropy to get information about the interaction.
-             Note that if nc=1 below, then the agents 
+             Note that if nc=1 below, then the agents
              exhibit isotropic behavior and the aggregation is non-interacting by and large.
         """
         self.gamma = lambda nc: (1/3)*nc
         self.graph = Graph(self.N, self.grid, self.vehicles, None)
 
-        """
-            update neighbors now based on topological distance
-            update headings too: note that headings do not 
-            contribute to neighbors;  only linear positions do.
-        """
+        #update neighbors+headings now based on topological distance
         self._housekeeping()
-
-   
-    def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
-        """
-            H = p_1 [v_e - v_p cos(x_3)] - p_2 [v_p sin x_3] \
-                   - w | p_1 x_2 - p_2 x_1 - p_3| + w |p_3|
-
-            Parameters
-            ==========
-            value: Value function at this time step, t
-            value_derivs: Spatial derivatives (finite difference) of
-                        value function's grid points computed with
-                        upwinding.
-            finite_diff_bundle: Bundle for finite difference function
-                .innerData: Bundle with the following fields:
-                    .partialFunc: RHS of the o.d.e of the system under consideration
-                        (see function dynamics below for its impl).
-                    .hamFunc: Hamiltonian (this function).
-                    .dissFunc: artificial dissipation function.
-                    .derivFunc: Upwinding scheme (upwindFirstENO2).
-                    .innerFunc: terminal Lax Friedrichs integration scheme.
-        """
-        p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
-        p1_coeff = self.v_e - self.v_p * cp.cos(self.grid.xs[2])
-        p2_coeff = self.v_p * cp.sin(self.grid.xs[2])
-
-        Hxp = p1 * p1_coeff - p2 * p2_coeff - self.w(1)*cp.abs(p1*self.grid.xs[1] - \
-                p2*self.grid.xs[0] - p3) + self.w(1) * cp.abs(p3)
-
-        return Hxp
-
-    def dissipation(self, t, data, derivMin, derivMax, \
-                      schemeData, dim):
-        """
-            Parameters
-            ==========
-                dim: The dissipation of the Hamiltonian on
-                the grid (see 5.11-5.12 of O&F).
-
-                t, data, derivMin, derivMax, schemeData: other parameters
-                here are merely decorators to  conform to the boilerplate
-                we use in the levelsetpy toolbox.
-        """
-        assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
-
-        if dim==0:
-            return cp.abs(self.v_e - self.v_p * cp.cos(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[1])
-        elif dim==1:
-            return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
-        elif dim==2:
-            return self.w_e + self.w_p
 
     def _housekeeping(self):
         """
-            Update the neighbors and headings based on topological 
+            Update the neighbors and headings based on topological
             interaction.
         """
         # Update neighbors first
         for i in range(self.N):
             # look to the right and update neighbors
-            for j in range(i+1,self.N):        
+            for j in range(i+1,self.N):
                 self._compare_neighbor(self.vehicles[i], self.vehicles[j])
-            
+
             # look to the left and update neighbors
             for j in range(i-1, -1, -1):
                 self._compare_neighbor(self.vehicles[i], self.vehicles[j])
@@ -218,10 +163,10 @@ class BirdFlock(BirdSingle):
         "Check if agent1 is a neighbor of agent2."
         if np.abs(agent1.label - agent2.label) < agent1.neigh_rad:
             agent1.update_neighbor(agent2)
-        
+
     def _update_headings(self, agent, idx, t=None):
         """
-            Update the average heading of this flock. 
+            Update the average heading of this flock.
 
             Parameters:
             ==========
@@ -233,18 +178,20 @@ class BirdFlock(BirdSingle):
             neighbor_headings = [neighbor.w_e for neighbor in (agent.neighbors)]
         else:
             neighbor_headings = 0
-        
+
         # this maps headings w/values in [0, 2\pi) to [0, \pi)
-        θr = (1/(1+agent.valence))*(agent.w_e + np.sum(neighbor_headings)) 
-        agent.w_e = θr    
+        θr = (1/(1+agent.valence))*(agent.w_e + np.sum(neighbor_headings))
+        agent.w_e = θr
 
         # bookkeeing on the graph
         self.graph.θs[idx,:] =  θr
 
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
         """
-            H = p_1 [v_e - v_p cos(x_3)] - p_2 [v_p sin x_3] \
-                   - w | p_1 x_2 - p_2 x_1 - p_3| + w |p_3|
+            By definition, the Hamiltonian is the total energy stored in
+            a system. If we have a team of agents moving along in a state
+            space, it would inform us that the total Hamiltonian is a union
+            (sum) of the respective Hamiltonian of each agent.
 
             Parameters
             ==========
@@ -261,35 +208,29 @@ class BirdFlock(BirdSingle):
                     .derivFunc: Upwinding scheme (upwindFirstENO2).
                     .innerFunc: terminal Lax Friedrichs integration scheme.
         """
-        p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
-        p1_coeff = self.v_e - self.v_p * cp.cos(self.grid.xs[2])
-        p2_coeff = self.v_p * cp.sin(self.grid.xs[2])
 
-        Hxp = p1 * p1_coeff - p2 * p2_coeff - self.w(1)*cp.abs(p1*self.grid.xs[1] - \
-                p2*self.grid.xs[0] - p3) + self.w(1) * cp.abs(p3)
-
-        return Hxp        
+        hams = [vehicle.hamiltonian(t, data, value_derivs, finite_diff_bundle) for vehicle in self.vehicles]
+        
+        ham = hams[0]
+        for idx in range(1, len(hams)):
+            ham = cp.add(ham, hams[idx])
+        
+        return ham
 
     def dissipation(self, t, data, derivMin, derivMax, \
                       schemeData, dim):
         """
-            Parameters
-            ==========
-                dim: The dissipation of the Hamiltonian on
-                the grid (see 5.11-5.12 of O&F).
-
-                t, data, derivMin, derivMax, schemeData: other parameters
-                here are merely decorators to  conform to the boilerplate
-                we use in the levelsetpy toolbox.
+            Just add the respective dissipation of all the agent's dissipation
         """
         assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
 
-        if dim==0:
-            return cp.abs(self.v_e - self.v_p * cp.cos(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[1])
-        elif dim==1:
-            return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
-        elif dim==2:
-            return self.w_e + self.w_p    
+        alphas = [vehicle.dissipation(t, data, derivMin, derivMax, schemeData, dim) for vehicle in self.vehicles]
+        
+        alpha = alphas[0]
+        for idx in range(1, len(alphas)):
+            alpha = cp.add(alpha, alphas[idx])
+        
+        return cp.asarray(alpha)
 
     def __eq__(self,other):
         if hash(self)==hash(other):
@@ -298,4 +239,4 @@ class BirdFlock(BirdSingle):
 
     def __repr__(self):
         parent=f"Flock: {self.label}"
-        return parent 
+        return parent

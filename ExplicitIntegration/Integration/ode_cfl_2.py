@@ -93,6 +93,7 @@ def  odeCFL2(schemeFunc, tspan, y0, options=None, schemeData=None):
     #---------------------------------------------------------------------------
     # Number of timesteps to be returned.
     numT = len(tspan)
+
     #---------------------------------------------------------------------------
     # If we were asked to integrate forward to a final time.
     if(numT == 2):

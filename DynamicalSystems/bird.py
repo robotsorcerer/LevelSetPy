@@ -1,4 +1,4 @@
-__all__ = ["BirdSingle"]
+__all__ = ["Bird"]
 
 __author__ = "Lekan Molux"
 __date__ = "Dec. 25, 2021"
@@ -11,10 +11,10 @@ import cupy as cp
 import numpy as np
 from LevelSetPy.Utilities import eps
 
-class BirdSingle():
+class Bird():
     def __init__(self, grid, u_bound=+1, w_bound=+1, \
                  init_xyw=None, rw_cov=None, \
-                 axis_align=2, center=None, 
+                 axis_align=2, center=None,
                  neigh_rad=3, init_random=False,
                  label=0):
         """
@@ -36,7 +36,7 @@ class BirdSingle():
             .center: location of this bird's value function on the grid
             axis_align: periodic dimension on the grid to be created
             .neigh_rad: sets of neighbors of agent i
-            .label (int): The label of this BirdSingle drawn from the set {1,2,...,n} 
+            .label (int): The label of this BirdSingle drawn from the set {1,2,...,n}
             .init_random: randomly initialize this agent's position on the grid?
 
             Tests
@@ -59,17 +59,17 @@ class BirdSingle():
                     BirdSingle: 3 | Neighbors: ['2']
 
             Multiple neighbors test
-            -----------------------     
-            Test1:       
+            -----------------------
+            Test1:
                 # for every agent, create the grid bounds
                 grid_mins = [[-1, -1, -np.pi]]
-                grid_maxs = [[1, 1, np.pi]]   
+                grid_maxs = [[1, 1, np.pi]]
                 grids = flockGrid(grid_mins, grid_maxs, dx=.1, N=101)
                 ref_bird = BirdSingle(grids[0], 1, 1, None, \
-                                    random.random(), label=0) 
+                                    random.random(), label=0)
                 print(ref_bird.position())
 
-                print(ref_bird)  
+                print(ref_bird)
 
                 num_agents=10
                 neighs = [BirdSingle(grids[i], 1, 1, None, \
@@ -83,19 +83,19 @@ class BirdSingle():
                 Agent: 0 | Neighbors: 0 || valence: 0.
                 Agent: 0 | Neighbors: [1, 2, 3, 4, 5, 6, 7, 8, 9] || valence: 9.
 
-            Test2: 
+            Test2:
                 ref_bird = BirdSingle(grids[0], 1, 1, None, \
-                        random.random(), label=21)          
-                print(ref_bird)    
+                        random.random(), label=21)
+                print(ref_bird)
                 neighs = [BirdSingle(grids[i], 1, 1, None, \
-                                    random.random(), label=random.randint(10, 100)) for i in range(1, num_agents)]                
-                ref_bird.update_neighbor(neighs)                    
-                print(ref_bird)  
+                                    random.random(), label=random.randint(10, 100)) for i in range(1, num_agents)]
+                ref_bird.update_neighbor(neighs)
+                print(ref_bird)
 
-            Prints: 
+            Prints:
                 Agent: 21 | Neighbors: 0 || valence: 0.
                 Agent: 21 | Neighbors: [10, 39, 45, 61, 66, 67, 85, 90] || valence: 8.
-                  
+
             Author: Lekan Molux.
             December 2021
         """
@@ -103,14 +103,14 @@ class BirdSingle():
         assert label is not None, "label of an agent cannot be empty"
         # BirdSingle Params
         self.label = label
+
         # set of labels of those agents whicvh are neighbors of this agent
         self.neighbors   = []
-        self.indicant_edge = []       
-        # minimum L2 distance that defines a neighbor 
+        self.indicant_edge = []
+
+        # minimum L2 distance that defines a neighbor
         self.neigh_rad = neigh_rad
         self.init_random = init_random
-        # print('init_random: ', init_random)
-        # print('self init_random: ', self.init_random)
 
         # grid params
         self.grid        = grid
@@ -121,7 +121,7 @@ class BirdSingle():
         self.v = lambda v: u_bound
         self.w = lambda w: w_bound
 
-        # set actual linear speeds: 
+        # set actual linear speeds:
         if not np.isscalar(u_bound) and len(u_bound) > 1:
             self.v_e = self.v(1)
             self.v_p = self.v(-1)
@@ -141,18 +141,18 @@ class BirdSingle():
         self.u = None
         self.deltaT = eps # use system eps for a rough small start due to in deltaT
         self.rand_walk_cov = random.random if rw_cov is None else rw_cov
-        
+
         assert isinstance(init_xyw, np.ndarray), "initial state must either be a numpy or cupy array."
         r, c = init_xyw.shape
         if r<c:
             # turn to column vector
             init_xyw = init_xyw.T
-                    
+
         self.cur_state   = self.position(init_xyw )
 
         # adhoc functiomn for payoff
         self.payoff = None
-        
+
     def position(self, cur_state=None, t_span=None):
         """
             Birds use an optimization scheme to keep
@@ -172,7 +172,7 @@ class BirdSingle():
             t_span: time_span as a list [t0, tf] where
                 .t0: initial integration time
                 .tf: final integration time
-            
+
             Parameters
             ==========
             .init_xyz: current state of a bird in the state space
@@ -193,14 +193,14 @@ class BirdSingle():
 
     def reset(self):
         self.neighbors=[]
-    
+
     def has_neighbor(self):
         """
-            Check that this agent has a neighbor on the 
-            state space.        
-        """        
+            Check that this agent has a neighbor on the
+            state space.
+        """
         if self.neighbors is not None:
-            return True 
+            return True
         return False
 
     def dynamics(self, cur_state, disturb=np.zeros((3,1))):
@@ -229,10 +229,10 @@ class BirdSingle():
             for neigh_single in neigh:
                 self.update_neighbor(neigh_single)
             return
-        assert isinstance(neigh, BirdSingle), "Neighbor must be a BirdSingle member function."
+        assert isinstance(neigh, Bird), "Neighbor must be a BirdSingle member function."
 
         if neigh in self.neighbors or neigh==self:
-            return self.neighbors 
+            return self.neighbors
         self.neighbors.append(neigh)
 
     @property
@@ -249,20 +249,13 @@ class BirdSingle():
             It is negative if the number of egdes decreases at a time t.
         """
         return len(self.neighbors)
-    
-    def update_inidicant_edges(self, edges):
-        """
-            Update the number of edges (i,j) of the graph for which either
-            i=j or j=v.
-        """   
-        pass     
 
     def do_runge_kutta4(self, cur_state, t_span, M=4, h=2):
         """
-            .cur_state: state at time space 
+            .cur_state: state at time space
             .t_span
-            .M: RK steps per interval 
-            .h: time step        
+            .M: RK steps per interval
+            .h: time step
         """
         # integrate the dynamics with 4th order RK scheme
         X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
@@ -309,20 +302,22 @@ class BirdSingle():
                     .innerFunc: terminal Lax Friedrichs integration scheme.
         """
         p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
-        p1_coeff = self.v_e * cp.cos(self.cur_state[2])
-        p2_coeff = self.v_e * cp.sin(self.cur_state[2])
+        cur_state = cp.asarray(self.cur_state)
 
-        Hxp = -(p1 * p1_coeff + p2 * p2_coeff + self.cur_state[2])
+        p1_coeff = self.v_e * cp.cos(cur_state[2])
+        p2_coeff = self.v_e * cp.sin(cur_state[2])
 
-        return Hxp        
+        Hxp = -(p1 * p1_coeff + p2 * p2_coeff + cur_state[2])
 
-    def dissipation(self, t, data, derivMin, derivMax, \
-                      schemeData, dim):
+        return Hxp
+
+    def dissipation(self, t, data, derivMin, derivMax, schemeData, dim):
         """
             Parameters
             ==========
                 dim: The dissipation of the Hamiltonian on
-                the grid (see 5.11-5.12 of O&F).
+                the grid (see 5.11-5.12 of O&F). Robust cohesion is simulated 
+                against a worst-possible attacker.
 
                 t, data, derivMin, derivMax, schemeData: other parameters
                 here are merely decorators to  conform to the boilerplate
@@ -335,10 +330,10 @@ class BirdSingle():
         elif dim==1:
             return cp.abs(self.v_p * cp.sin(self.grid.xs[2])) + cp.abs(self.w(1) * self.grid.xs[0])
         elif dim==2:
-            return self.w_e  
+            return self.w_e + self.w_p
 
     def __hash__(self):
-        # hash method to distinguish agents from one another    
+        # hash method to distinguish agents from one another
         return int(hashlib.md5(str(self.label).encode('utf-8')).hexdigest(),16)
 
     def __eq__(self,other):

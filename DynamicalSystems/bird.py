@@ -18,11 +18,6 @@ class Bird():
                  neigh_rad=3, init_random=False,
                  label=0):
         """
-            Dynamics:
-                \dot{x}_1 = v cos x_3
-                \dot{x}_2 = v sin x_3
-                \dot{x}_3 = w
-
             Parameters
             ----------
             .grid: an np.meshgrid state space on which we are
@@ -110,7 +105,9 @@ class Bird():
 
         # minimum L2 distance that defines a neighbor
         self.neigh_rad = neigh_rad
+        # print(f'init_random: {init_random}')
         self.init_random = init_random
+        # print(f'self.init_random: {self.init_random}')
 
         # grid params
         self.grid        = grid
@@ -181,13 +178,13 @@ class Bird():
                 on the center of the state space.
         """
 
-        # if self.init_random:
-        #     # Simulate each agent's position in a flock as a random walk
-        #     W = np.asarray(([self.deltaT**2/2])).T
-        #     WW = W@W.T
-        #     rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
+        if self.init_random:
+            # Simulate each agent's position in a flock as a random walk
+            W = np.asarray(([self.deltaT**2/2])).T
+            WW = W@W.T
+            rand_walker = np.ones((len(cur_state))).astype(float)*WW*self.rand_walk_cov**2
 
-        #     cur_state += rand_walker
+            cur_state += rand_walker
 
         return cur_state
 
@@ -202,24 +199,6 @@ class Bird():
         if self.neighbors is not None:
             return True
         return False
-
-    def dynamics(self, cur_state, disturb=np.zeros((3,1))):
-        """
-            Dubins Vehicle Dynamics in absolute coordinates.
-            Please consult Merz, 1972 for a detailed reference.
-
-            \dot{x}_1 = v cos x_3
-            \dot{x}_2 = v sin x_3
-            \dot{x}_3 = w
-        """
-        #self.step(cur_state)
-        xdot = [
-                self.v_e * np.cos(cur_state[2]) + disturb[0],
-                self.v_e * np.sin(cur_state[2]) + disturb[1],
-                (np.ones_like(cur_state[2])/(1+self.valence))*(self.w_e + np.sum([x.w_e for x in self.neighbors]))+ disturb[2],
-        ]
-
-        return np.asarray(xdot)
 
     def update_neighbor(self, neigh):
         """
@@ -250,37 +229,6 @@ class Bird():
         """
         return len(self.neighbors)
 
-    def do_runge_kutta4(self, cur_state, t_span, M=4, h=2):
-        """
-            .cur_state: state at time space
-            .t_span
-            .M: RK steps per interval
-            .h: time step
-        """
-        # integrate the dynamics with 4th order RK scheme
-        X = np.array(cur_state) if isinstance(cur_state, list) else cur_state
-
-        for j in range(M):
-            if np.any(t_span): # integrate for this much time steps
-                hh = (t_span[1]-t_span[0])/10/M
-                for h in np.arange(t_span[0], t_span[1], hh):
-                    k1 = self.dynamics(X)
-                    k2 = self.dynamics(X + h/2 * k1)
-                    k3 = self.dynamics(X + h/2 * k2)
-                    k4 = self.dynamics(X + h * k3)
-
-                    X  = X+(h/6)*(k1 + 2*k2 + 2*k3 + k4)
-            else:
-                k1 = self.dynamics(X)
-                k2 = self.dynamics(X + h/2 * k1)
-                k3 = self.dynamics(X + h/2 * k2)
-                k4 = self.dynamics(X + h * k3)
-
-                X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
-
-        return X
-
-
     def hamiltonian(self, t, data, value_derivs, finite_diff_bundle):
         """
             H = p_1 [v_e - v_p cos(x_3)] - p_2 [v_p sin x_3] \
@@ -304,10 +252,18 @@ class Bird():
         p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
         cur_state = cp.asarray(self.cur_state)
 
-        p1_coeff = self.v_e * cp.cos(cur_state[2])
-        p2_coeff = self.v_e * cp.sin(cur_state[2])
+        p1_coeff = self.v_e - self.v_p * cp.cos(cur_state[2])
+        p2_coeff = self.v_p* cp.sin(cur_state[2])
 
-        Hxp = -(p1 * p1_coeff + p2 * p2_coeff + cur_state[2])
+        # find lower and upper bound of orientation of vehicles that are neighbors
+        w_e_upper_bound = max([state.cur_state[2] for state in self.neighbors]).item(0)
+        w_e_lower_bound = min([state.cur_state[2] for state in self.neighbors]).item(0)
+
+        Hxp = (p1 * p1_coeff - p2 * p2_coeff + cur_state[2]) + \
+               w_e_upper_bound*cp.abs(p2 * self.cur_state[0] - p1*self.cur_state[1]+p3) -\
+                self.w(-1) * cp.abs(p3)         
+        
+        # Note the sign of w
 
         return Hxp
 

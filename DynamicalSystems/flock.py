@@ -94,6 +94,7 @@ class Graph():
 class Flock(Bird):
     def __init__(self, grids, vehicles, label=1,
                 reach_rad=1.0, avoid_rad=1.0):
+        # super(Flock, self).__init__(grids)
         """
             Introduction:
             =============
@@ -124,6 +125,7 @@ class Flock(Bird):
         self.avoid_rad = avoid_rad  # distance between each bird.
         self.reach_rad = reach_rad  # distance between birds and attacker.
         self.vehicles  = vehicles   # # number of birds in the flock
+        self.init_random = False
 
         self.grid = grids
         """

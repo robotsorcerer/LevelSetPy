@@ -47,12 +47,6 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
        .towardZero Boolean indicating whether sign of extrapolation should
                      be towards or away from the zero level set (default = 0).
 
-
-     Copyright 2004 Ian M. Mitchell (mitchell@cs.ubc.ca).
-     This software is used, copied and distributed under the licensing
-       agreement contained in the file LICENSE in the top directory of
-       the distribution.
-
      Lekan Molu, Circa, August Week I, 2021
     """
     if isinstance(dataIn, np.ndarray):
@@ -114,8 +108,6 @@ def addGhostExtrapolate(dataIn, dim, width=None, ghostData=None):
         indicesOut[dim] = [sizeOut[dim]-1-i]
         indicesIn[dim] = [sizeIn[dim]-1]
         dataOut[cp.ix_(*indicesOut)] = (dataIn[cp.ix_(*indicesIn)] + (width - i) * slopeTop)
-        #logger.debug(f'dim: {dim} | i: {i} | dataOut[cp.ix_(*indicesOut)]: {cp.linalg.norm(dataOut[cp.ix_(*indicesOut)], 2)}')
-        #logger.debug(f'dim: {dim} | i: {i} | dataOut: {cp.linalg.norm(dataOut, 2)}')
 
-    #logger.debug(f'\ndataOut: {cp.linalg.norm(dataOut, 2)}')
+    cp.cuda.Device().synchronize()
     return dataOut

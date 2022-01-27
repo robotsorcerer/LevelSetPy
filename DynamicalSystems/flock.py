@@ -226,13 +226,13 @@ class Flock(Bird):
         """
         assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
 
-        alphas = [vehicle.dissipation(t, data, derivMin, derivMax, schemeData, dim) for vehicle in self.vehicles]
+        alphas = [vehicle.dissipation(t, data, derivMin, derivMax, schemeData, dim).take(0) for vehicle in self.vehicles]
         
-        alpha = alphas[0]
-        for idx in range(1, len(alphas)):
-            alpha = cp.add(alpha, alphas[idx])
+        # alphas = np.maximum.reduce(alphas)
+        alphas = max(alphas)
         
-        return cp.asarray(alpha)
+        return cp.asarray(alphas)
+        # return alphas
 
     def __eq__(self,other):
         if hash(self)==hash(other):

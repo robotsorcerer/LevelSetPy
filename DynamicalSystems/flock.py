@@ -8,8 +8,11 @@ import random
 import hashlib
 import cupy as cp
 import numpy as np
+
+from LevelSetPy.InitialConditions.shape_ops import shapeUnion
 from .bird import Bird
 from LevelSetPy.Grids import *
+from LevelSetPy.InitialConditions import *
 from LevelSetPy.Utilities.matlab_utils import *
 
 class Graph():
@@ -220,16 +223,17 @@ class Flock(Bird):
         unattacked_hams  = []
         for vehicle in vehicles:
             ham_x = vehicle.hamiltonian_abs(t, data, value_derivs, finite_diff_bundle)
-            unattacked_hams.append(ham_x)
-        unattacked_hams = cp.sum(cp.asarray(unattacked_hams), axis=0)
+            unattacked_hams.append(ham_x.get())
+        # unattacked_hams = cp.sum(cp.asarray(unattacked_hams), axis=0)
 
         # try computing the attack of a pursuer against the targeted agent
         attacked_ham = self.vehicles[self.attacked_idx].hamiltonian(t, data, value_derivs, finite_diff_bundle)
 
         # sum all the energies of the system
-        ham = unattacked_hams + attacked_ham 
+        ham = unattacked_hams + [attacked_ham.get() ]
+        ham = shapeUnion(ham)
         
-        return ham
+        return cp.asarray(ham)
 
     def dissipation(self, t, data, derivMin, derivMax, \
                       schemeData, dim):
@@ -245,12 +249,13 @@ class Flock(Bird):
         alphas  = []
         for vehicle in vehicles:
             diss_x = vehicle.dissipation_abs(t, data, derivMin, derivMax, \
-                      schemeData, dim).take(0) 
+                      schemeData, dim)
             alphas.append(diss_x)
 
         attacked_alpha = self.vehicles[self.attacked_idx].dissipation(t, data, derivMin, derivMax, schemeData, dim)
-        
-        alphas = max(cp.hstack([alphas, attacked_alpha]))
+        alphas.append(attacked_alpha)
+
+        alphas = np.maximum.reduce(alphas)
         return cp.asarray(alphas)
 
     def __eq__(self,other):

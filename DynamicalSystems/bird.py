@@ -196,9 +196,10 @@ class Bird():
         """
         p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
         cur_state = cp.asarray(self.cur_state)
+        # cur_state = [self.grid.xs[i] * self.cur_state[i, 0] for i in range(len(self.grid.xs))] #[xs.get() for xs in self.grid.xs]
 
-        p1_coeff = cp.cos(cur_state[2,0])
-        p2_coeff =  np.sin(cur_state[2,0])
+        p1_coeff = cp.cos(cur_state[2])
+        p2_coeff =  cp.sin(cur_state[2])
 
         θr  = self.w_e
 
@@ -227,19 +228,22 @@ class Bird():
                     .innerFunc: terminal Lax Friedrichs integration scheme.
         """
         p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
+        cur_state = self.grid.xs
         cur_state = cp.asarray(self.cur_state)
 
-        p1_coeff = self.v_e - self.v_p * cp.cos(cur_state[2,0])
-        p2_coeff = self.v_p* cp.sin(cur_state[2,0])
+        p1_coeff = self.v_e - self.v_p * cp.cos(cur_state[2])
+        p2_coeff = self.v_p* cp.sin(cur_state[2])
 
         # find lower and upper bound of orientation of vehicles that are neighbors
         w_e_upper_bound = max([neigh.w_e for neigh in self.neighbors])
         w_e_lower_bound = min([neigh.w_e for neigh in self.neighbors])
 
-        Hxp = (p1 * p1_coeff - p2 * p2_coeff + cur_state[2,0]) + \
-               w_e_upper_bound*cp.abs(p2 * cur_state[0,0] - p1*cur_state[1,0]+p3) -\
-               w_e_upper_bound * cp.abs(p3)   # self.w(1) * cp.abs(p3)         
-                # make pursuer orientation equal to evader orientation so there is never capture?
+        # Hxp = (p1 * p1_coeff - p2 * p2_coeff + cur_state[2]) + \
+        #        w_e_upper_bound*cp.abs(p2 * cur_state[0] - p1*cur_state[1]+p3) +\
+        #        w_e_upper_bound * cp.abs(p3)    
+        Hxp = p1 * p1_coeff - p2 * p2_coeff - self.w(1)*cp.abs(p1*self.grid.xs[1] - \
+                p2*self.grid.xs[0] - p3) + self.w(1) * cp.abs(p3)     
+        # make pursuer orientation equal to evader orientation so there is never capture?
         return  Hxp
 
     def dissipation_abs(self, t, data, derivMin, derivMax, schemeData, dim):
@@ -256,16 +260,17 @@ class Bird():
         """
         assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
         
-        w_e_upper_bound = max([state.cur_state[2,0] for state in self.neighbors])
-        w_e_lower_bound = min([state.cur_state[2,0] for state in self.neighbors])
+        w_e_upper_bound = max([state.cur_state[2] for state in self.neighbors])
+        w_e_lower_bound = min([state.cur_state[2] for state in self.neighbors])
+        
         cur_state = np.asarray(self.cur_state)
 
         if dim==0:
-            return np.abs(self.v_p * np.cos(cur_state[2,0]))
+            return np.abs(self.v_p * np.cos(cur_state[2,0]))* self.grid.xs[0].get()
         elif dim==1:
-            return np.abs(self.v_e * np.sin(cur_state[2,0]))
+            return np.abs(self.v_e * np.sin(cur_state[2,0]))* self.grid.xs[1].get()
         elif dim==2:
-            return np.abs(w_e_lower_bound)
+            return w_e_lower_bound* self.grid.xs[2].get()
 
     def dissipation(self, t, data, derivMin, derivMax, schemeData, dim):
         """
@@ -285,14 +290,18 @@ class Bird():
         
         w_e_upper_bound = max([state.cur_state[2,0] for state in self.neighbors])
         w_e_lower_bound = min([state.cur_state[2,0] for state in self.neighbors])
+        
         cur_state = np.asarray(self.cur_state)
 
         if dim==0:
-            return np.abs(self.v_e - self.v_p * np.cos(cur_state[2,0])) + np.abs(w_e_upper_bound * cur_state[1,0])
+            d0 = np.abs(self.v_e - self.v_p * np.cos(cur_state[2,0])) + np.abs(w_e_upper_bound * cur_state[1,0])
+            return d0 * self.grid.xs[0].get()
         elif dim==1:
-            return np.abs(self.v_p * np.sin(cur_state[2,0])) + np.abs(w_e_upper_bound * cur_state[0,0])
+            d1 =  np.abs(self.v_p * np.sin(cur_state[2,0])) + np.abs(w_e_upper_bound * cur_state[0,0])
+            return d1* self.grid.xs[1].get()
         elif dim==2:
-            return np.abs(self.w_p + w_e_upper_bound)
+            d3 = self.w_p + w_e_upper_bound
+            return d3*self.grid.xs[2].get()
         
     def __hash__(self):
         # hash method to distinguish agents from one another

@@ -9,7 +9,7 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-def shapeUnion(shape1, shape2):
+def shapeUnion(shapes):
     """
      shapeUnion: implicit surface function for the union of two shapes.
 
@@ -33,7 +33,10 @@ def shapeUnion(shape1, shape2):
     """
 
     #---------------------------------------------------------------------------
-    data = np.minimum(shape1, shape2)
+    if len(shapes)==2:
+      data = np.minimum(shapes[0], shapes[2])
+    else:
+      data = np.minimum.reduce(shapes)
 
     #---------------------------------------------------------------------------
     # Warn the user if there is no sign change on the grid

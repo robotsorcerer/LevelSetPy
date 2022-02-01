@@ -1,5 +1,5 @@
 __all__ = [
-            "Bundle", "ZEROS_TYPE", "ONES_TYPE",
+            "Bundle", "ZEROS_TYPE", "ONES_TYPE", "rad2deg", "deg2rad",
             "realmin", "DEFAULT_ORDER", "mat_like_array", "index_array",
             "quickarray", "ismember", "omin", "omax", "strcmp",
             "isbundle", "isfield", "cputime","error", "realmax", "eps",
@@ -18,11 +18,12 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Completed"
 
 
-import numpy as np
-import logging
 import time
+import math
 import numbers
 import sys, copy
+import numpy as np
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -262,3 +263,9 @@ def isscalar(x):
         return False
     elif not (isinstance(x, np.ndarray) or isinstance(x, list)):
         return True
+
+def rad2deg(x):
+    return (x * 180)/math.pi
+
+def deg2rad(x):
+    return x*(math.pi/180)

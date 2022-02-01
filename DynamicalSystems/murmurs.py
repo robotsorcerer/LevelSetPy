@@ -1,4 +1,4 @@
-__all__ = ["Flock"]
+__all__ = ["Murmurs"]
 
 __author__ = "Lekan Molux"
 __date__ = "Dec. 21, 2021"
@@ -12,86 +12,7 @@ from .bird import Bird
 from LevelSetPy.Grids import *
 from LevelSetPy.Utilities.matlab_utils import *
 
-class Graph():
-    def __init__(self, n, grids, vertex_set, edges=None):
-        """A graph (an undirected graph that is) that models
-        the update equations of agents positions on a state space
-        (defined as a grid).
-
-        The graph has a vertex set {1,2,...,n} so defined such that
-        (i,j) is one of the graph's edges in case i and j are neighbors.
-        This graph changes over time since the relationship between neighbors
-        can change.
-
-        Paramters
-        =========
-            .grids
-            n: number of initial birds (vertices) on this graph.
-            .V: vertex_set, a set of vertices {1,2,...,n} that represent the labels
-            of birds in a flock. Represent this as a list (see class vertex).
-            .E: edges, a set of unordered pairs E = {(i,j): i,j \in V}.
-                Edges have no self-loops i.e. i≠j or repeated edges (i.e. elements are distinct).
-        """
-        self.N = n
-        if vertex_set is None:
-            self.vertex_set = {f"{i+1}":Bird(grids[i], 1, 1,\
-                    None, random.random(), label=f"{i}") for i in range(n)}
-        else:
-            self.vertex_set = {f"{i+1}":vertex_set[i] for i in range(n)}
-
-        # edges are updated dynamically during game
-        self.edges_set = edges
-
-        # obtain the graph params
-        self.reset(self.vertex_set[list(self.vertex_set.keys())[0]].w_e)
-
-    def reset(self, w):
-        # graph entities: this from Jadbabaie's paper
-        self.Ap = np.zeros((self.N, self.N)) #adjacency matrix
-        self.Dp = np.zeros((self.N, self.N)) #diagonal matrix of valencies
-        self.θs = np.ones((self.N, 1))*w # agent headings
-        self.I  = np.ones((self.N, self.N))
-        self.Fp = np.zeros_like(self.Ap) # transition matrix for all the headings in this flock
-
-    def insert_vertex(self, vertex):
-        if isinstance(vertex, list):
-            assert isinstance(vertex, Bird), "vertex to be inserted must be instance of class Vertex."
-            for vertex_single in vertex:
-                self.vertex_set[vertex_single.label] = vertex_single.neighbors
-        else:
-            self.vertex_set[vertex.label] = vertex
-
-    def insert_edge(self, from_vertices, to_vertices):
-        if isinstance(from_vertices, list) and isinstance(to_vertices, list):
-            for from_vertex, to_vertex in zip(from_vertices, to_vertices):
-                self.insert_edge(from_vertex, to_vertex)
-            return
-        else:
-            assert isinstance(from_vertices, Bird), "from_vertex to be inserted must be instance of class Vertex."
-            assert isinstance(to_vertices, Bird), "to_vertex to be inserted must be instance of class Vertex."
-            from_vertices.update_neighbor(to_vertices)
-            self.vertex_set[from_vertices.label] = from_vertices.neighbors
-            self.vertex_set[to_vertices.label] = to_vertices.neighbors
-
-    def adjacency_matrix(self, t):
-        for i in range(self.Ap.shape[0]):
-            for j in range(self.Ap.shape[1]):
-                for verts in sorted(self.vertex_set.keys()):
-                    if str(j) in self.vertex_set[verts].neighbors:
-                        self.Ap[i,j] = 1
-        return self.Ap
-
-    def diag_matrix(self):
-        "build Dp matrix"
-        i=0
-        for vertex, egdes in self.vertex_set.items():
-            self.Dp[i,i] = self.vertex_set[vertex].valence
-        return self.Dp
-
-    def update_headings(self, t):
-        return self.adjacency_matrix(t)@self.θs
-
-class Flock(Bird):
+class Murmurs(Bird):
     def __init__(self, grids, vehicles, label=1,
                 reach_rad=1.0, avoid_rad=1.0):
         """
@@ -135,9 +56,6 @@ class Flock(Bird):
              Note that if nc=1 below, then the agents
              exhibit isotropic behavior and the aggregation is non-interacting by and large.
         """
-        self.gamma = lambda nc: (1/3)*nc
-        self.graph = Graph(self.N, self.grid, self.vehicles, None)
-
         #update neighbors+headings now based on topological distance
         self._housekeeping()
 
@@ -159,7 +77,6 @@ class Flock(Bird):
         # recursively update each agent's headings based on neighbors
         for idx, agent in enumerate(self.vehicles):
             self._update_headings(agent, idx)
-            # self._update_headings(agent, idx)
 
     def _compare_neighbor(self, agent1, agent2):
         "Check if agent1 is a neighbor of agent2."
@@ -171,12 +88,15 @@ class Flock(Bird):
             Update the average heading of this flock.
 
             Parameters:
-            ==========
+            ===========
             agent: This agent as a BirdsSingle object.
             t (optional): Time at which we are updating this agent's dynamics.
         """
         # update heading for this agent
-        neighbor_headings = [neigh.w_e for neigh in (agent.neighbors)]
+        if agent.has_neighbor:
+            neighbor_headings = [neighbor.w_e for neighbor in (agent.neighbors)]
+        else:
+            neighbor_headings = 0
 
         # this maps headings w/values in [0, 2\pi) to [0, \pi)
         θr = (1/(1+agent.valence))*(agent.w_e + np.sum(neighbor_headings))
@@ -211,23 +131,25 @@ class Flock(Bird):
         self._housekeeping()
 
         # randomly drop one agent from the flock for the pursuer to attack
-        self.attacked_idx = np.random.choice(len(self.vehicles))
+        attacked_idx = np.random.choice(len(self.vehicles))
 
         # update vehicles not under attack
-        vehicles = [x for x in self.vehicles if x is not self.vehicles[self.attacked_idx]]
+        vehicles = [x for x in self.vehicles if x is not self.vehicles[attacked_idx]]
         
         # get hamiltonian of non-attcked agents
         unattacked_hams  = []
         for vehicle in vehicles:
             ham_x = vehicle.hamiltonian_abs(t, data, value_derivs, finite_diff_bundle)
             unattacked_hams.append(ham_x)
+            # update orientations etc
+            # self._housekeeping()
         unattacked_hams = cp.sum(cp.asarray(unattacked_hams), axis=0)
 
         # try computing the attack of a pursuer against the targeted agent
-        attacked_ham = self.vehicles[self.attacked_idx].hamiltonian(t, data, value_derivs, finite_diff_bundle)
+        attacked_ham = self.vehicles[attacked_idx].hamiltonian(t, data, value_derivs, finite_diff_bundle)
 
         # sum all the energies of the system
-        ham = unattacked_hams + attacked_ham 
+        ham = attacked_ham + unattacked_hams
         
         return ham
 
@@ -238,19 +160,10 @@ class Flock(Bird):
         """
         assert dim>=0 and dim <3, "Dubins vehicle dimension has to between 0 and 2 inclusive."
 
-        # update vehicles not under attack
-        vehicles = [x for x in self.vehicles if x is not self.vehicles[self.attacked_idx]]
+        alphas = [vehicle.dissipation(t, data, derivMin, derivMax, schemeData, dim).take(0) for vehicle in self.vehicles]
         
-        # get dissipation of non-attcked agents
-        alphas  = []
-        for vehicle in vehicles:
-            diss_x = vehicle.dissipation_abs(t, data, derivMin, derivMax, \
-                      schemeData, dim).take(0) 
-            alphas.append(diss_x)
-
-        attacked_alpha = self.vehicles[self.attacked_idx].dissipation(t, data, derivMin, derivMax, schemeData, dim)
+        alphas = max(alphas)
         
-        alphas = max(cp.hstack([alphas, attacked_alpha]))
         return cp.asarray(alphas)
 
     def __eq__(self,other):

@@ -72,6 +72,7 @@ def upwindFirstENO2(grid, data, dim, generateAll=0):
       indices1.append(cp.arange(sizeData[i], dtype=cp.intp))
     indices2 = copy.copy(indices1)
 
+    cp.cuda.Device().synchronize()
     #---------------------------------------------------------------------------
     # First divided differences (first entry corresponds to D^1_{-1/2}).
     indices1[dim] = cp.arange(1,size(gdata, dim), dtype=cp.intp)

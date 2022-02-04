@@ -162,8 +162,7 @@ class Flock(Bird):
         # recursively update each agent's headings based on neighbors
         for idx, agent in enumerate(self.vehicles):
             self._update_headings(agent, idx)
-            # self._update_headings(agent, idx)
-
+            
     def _compare_neighbor(self, agent1, agent2):
         "Check if agent1 is a neighbor of agent2."
         if np.abs(agent1.label - agent2.label) < agent1.neigh_rad:
@@ -214,7 +213,7 @@ class Flock(Bird):
         self._housekeeping()
 
         # randomly drop one agent from the flock for the pursuer to attack
-        self.attacked_idx = np.random.choice(len(self.vehicles))
+        self.attacked_idx = 0 #np.random.choice(len(self.vehicles))
 
         # update vehicles not under attack
         vehicles = [x for x in self.vehicles if x is not self.vehicles[self.attacked_idx]]
@@ -255,7 +254,7 @@ class Flock(Bird):
         attacked_alpha = self.vehicles[self.attacked_idx].dissipation(t, data, derivMin, derivMax, schemeData, dim)
         alphas.append(attacked_alpha)
 
-        alphas = np.maximum.reduce(alphas)
+        alphas = np.maximum.reduce(alphas, dtype=object)
         return cp.asarray(alphas)
 
     def __eq__(self,other):

@@ -52,8 +52,8 @@ def upwindFirstENO3bHelper(grid, gdata, dim, direction):
      Lekan on August 16, 2021
     """
     #---------------------------------------------------------------------------
-    if isinstance(data, cp.ndarray):
-      data = cp.asarray(data)
+    if isinstance(gdata, cp.ndarray):
+      data = cp.asarray(gdata)
 
     dxInv = 1 / grid.dx.item(dim)
 

@@ -45,4 +45,4 @@ def upwindFirstWENO5(grid, data, dim, generateAll =False):
      Lekan Aug 21, 2021
     """
 
-    return upwindFirstWENO5a(grid, data, dim, generateAll);
+    return upwindFirstWENO5a(grid, data, dim, generateAll)

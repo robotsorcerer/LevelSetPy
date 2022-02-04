@@ -119,8 +119,8 @@ def odeCFLset(kwargs=None):
 
     # print('options.singleStep ', options.singleStep)
     if (not isinstance(options.singleStep, str) and \
-            not strcmp(options.singleStep, 'on') or \
-            not strcmp(options.singleStep, 'off')):
+            (not strcmp(options.singleStep, 'on') or \
+            not strcmp(options.singleStep, 'off'))):
         raise ValueError('SingleStep must be one of the strings ''on'' or ''off''')
 
     if(not isinstance(options.stats, str) and not \

@@ -92,7 +92,7 @@ def termRestrictUpdate(t, y, schemeData):
     if(isfield(thisSchemeData, 'positive')):
         positive = thisSchemeData.positive
     else:
-        positive = 1
+        positive = True
 
     #Restrict the update (stepBound is returned unchanged).
     #   Do not negate for RHS of ODE (that is handled by innerFunc).

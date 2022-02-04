@@ -78,7 +78,7 @@ class Bird():
 
         # this is a vector defined in the direction of its nearest neighbor
         self.u = None
-        self.deltaT = eps # use system eps for a rough small start due to in deltaT
+        self.deltaT = 0.05 # use system eps for a rough small start due to in deltaT
         self.rand_walk_cov = random.random if rw_cov is None else rw_cov
         
         self.reset_neighbors()
@@ -88,12 +88,12 @@ class Bird():
             # turn to column vector
             init_xyw = init_xyw.T
 
-        self.cur_state   = self.position(init_xyw )
+        self.cur_state   = self.update_state(init_xyw)
 
         # adhoc functiomn for payoff
         self.payoff = None
 
-    def position(self, cur_state=None, t_span=None):
+    def update_state(self, cur_state=None, t_span=None):
         """
             Birds use an optimization scheme to keep
             separated distances from one another.
@@ -172,6 +172,66 @@ class Bird():
         """
         return len(self.neighbors)
 
+    def dynamics_abs(self, cur_state):
+        """
+            Computes the Dubins vehicular dynamics in relative
+            coordinates (deterministic dynamics).
+
+            \dot{x}_1 = v cos x_3 
+            \dot{x}_2 = v sin x_3
+            \dot{x}_3 = w * I[sizeof(x_3)]
+        """
+        if not np.any(cur_state):
+            cur_state = self.grid.xs
+
+        xdot = [
+                self.v_e * np.cos(cur_state[2,0]),
+                self.v_e * np.sin(cur_state[2,0]),
+                self.w_e * cur_state[2,0]
+        ]
+        # return np.asarray(xdot, dtype=cur_state.dtype)
+
+        x = cur_state + np.asarray([xdot], dtype=cur_state.dtype).T*self.deltaT
+        return np.asarray(x, dtype=cur_state.dtype)
+
+    def dynamics_rel(self, cur_state):
+        """
+            Computes the Dubins vehicular dynamics in relative
+            coordinates (deterministic dynamics).
+
+            \dot{x}_1 = -v_e + v_p cos x_3 + w_e x_2
+            \dot{x}_2 = v_p sin x_3 - w_e x_1
+            \dot{x}_3 = w_p - w_e
+        """
+
+        xdot = [
+                self.v_e + self.v_p * np.cos(cur_state[2]) + cur_state[2],
+                self.v_p * np.sin(cur_state[2]) - self.w_e * cur_state[0],
+                self.w_p - self.w_e 
+        ]
+
+        # x = cur_state + xdot*self.deltaT
+        # return np.asarray(x, dtype=cur_state.dtype)
+        
+        x = cur_state + np.asarray([xdot], dtype=cur_state.dtype).T*self.deltaT
+        return np.asarray(x, dtype=cur_state.dtype)
+
+    def runge_kutta4(self, xdot):
+        # assert not np.any(cur_state), "current state cannot be empty."
+
+        M, h = 50,  0.2 # RK steps per interval vs time step
+        X = np.asarray(xdot) if isinstance(xdot, list) else xdot
+
+        for j in range(M):
+            k1 = self.dynamics_abs(X)
+            k2 = self.dynamics_abs(X + h/2 * k1)
+            k3 = self.dynamics_abs(X + h/2 * k2)
+            k4 = self.dynamics_abs(X + h * k3)
+
+            X  = X+(h/6)*(k1 +2*k2 +2*k3 +k4)
+
+        return X
+
     def hamiltonian_abs(self, t, data, value_derivs, finite_diff_bundle):
         """
             Uses the absolute coordinates of vehicles to compute the 
@@ -187,19 +247,26 @@ class Bird():
                         upwinding.
             finite_diff_bundle: Bundle for finite difference function
                 .innerData: Bundle with the following fields:
-                    .partialFunc: RHS of the o.d.e of the system under consideration
-                        (see function dynamics below for its impl).
-                    .hamFunc: Hamiltonian (this function).
-                    .dissFunc: artificial dissipation function.
-                    .derivFunc: Upwinding scheme (upwindFirstENO2).
-                    .innerFunc: terminal Lax Friedrichs integration scheme.
+                .partialFunc: RHS of the o.d.e of the system under consideration
+                    (see function dynamics below for its impl).
+                .hamFunc: Hamiltonian (this function).
+                .dissFunc: artificial dissipation function.
+                .derivFunc: Upwinding scheme (upwindFirstENO2).
+                .innerFunc: terminal Lax Friedrichs integration scheme.
         """
         p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
-        cur_state = cp.asarray(self.cur_state)
-        # cur_state = [self.grid.xs[i] * self.cur_state[i, 0] for i in range(len(self.grid.xs))] #[xs.get() for xs in self.grid.xs]
 
-        p1_coeff = cp.cos(cur_state[2])
-        p2_coeff =  cp.sin(cur_state[2])
+        # update the state with RK4 method
+
+        # if t>0: # do implicit Euler integration fwd in time
+        #     xdot      = self.dynamics_abs(self.cur_state)
+        #     self.cur_state = self.runge_kutta4(xdot)
+        # self.cur_state = self.dynamics_abs(self.cur_state)
+        
+        cur_state = cp.asarray(self.cur_state)
+
+        p1_coeff = cp.cos(cur_state[2,0])
+        p2_coeff =  cp.sin(cur_state[2,0])
 
         θr  = self.w_e
 
@@ -228,22 +295,26 @@ class Bird():
                     .innerFunc: terminal Lax Friedrichs integration scheme.
         """
         p1, p2, p3 = value_derivs[0], value_derivs[1], value_derivs[2]
-        cur_state = self.grid.xs
+
+        # if t>0: # do implicit Euler integration fwd in time
+        #     xdot      = self.dynamics_rel(self.cur_state)
+        #     self.cur_state = self.runge_kutta4(xdot)
+        #     # print('integrated type: ', type(self.cur_state), self.cur_state.dtype)
+        # self.cur_state = self.dynamics_abs(self.cur_state)
+
         cur_state = cp.asarray(self.cur_state)
 
-        p1_coeff = self.v_e - self.v_p * cp.cos(cur_state[2])
-        p2_coeff = self.v_p* cp.sin(cur_state[2])
+        p1_coeff = self.v_e - self.v_p * cp.cos(cur_state[2,0])
+        p2_coeff = self.v_p* cp.sin(cur_state[2,0])
 
         # find lower and upper bound of orientation of vehicles that are neighbors
         w_e_upper_bound = max([neigh.w_e for neigh in self.neighbors])
         w_e_lower_bound = min([neigh.w_e for neigh in self.neighbors])
 
-        # Hxp = (p1 * p1_coeff - p2 * p2_coeff + cur_state[2]) + \
-        #        w_e_upper_bound*cp.abs(p2 * cur_state[0] - p1*cur_state[1]+p3) +\
-        #        w_e_upper_bound * cp.abs(p3)    
-        Hxp = p1 * p1_coeff - p2 * p2_coeff - self.w(1)*cp.abs(p1*self.grid.xs[1] - \
-                p2*self.grid.xs[0] - p3) + self.w(1) * cp.abs(p3)     
-        # make pursuer orientation equal to evader orientation so there is never capture?
+        Hxp = (p1 * p1_coeff - p2 * p2_coeff ) + \
+               w_e_upper_bound*cp.abs(p2 * cur_state[0,0] - p1*cur_state[1,0]+p3) +\
+               w_e_upper_bound * cp.abs(p3)    
+
         return  Hxp
 
     def dissipation_abs(self, t, data, derivMin, derivMax, schemeData, dim):
@@ -266,11 +337,11 @@ class Bird():
         cur_state = np.asarray(self.cur_state)
 
         if dim==0:
-            return np.abs(self.v_p * np.cos(cur_state[2,0]))* self.grid.xs[0].get()
+            return np.abs(self.v_p * np.cos(cur_state[2,0]))#* self.grid.xs[0].get()
         elif dim==1:
-            return np.abs(self.v_e * np.sin(cur_state[2,0]))* self.grid.xs[1].get()
+            return np.abs(self.v_e * np.sin(cur_state[2,0]))#* self.grid.xs[1].get()
         elif dim==2:
-            return w_e_lower_bound* self.grid.xs[2].get()
+            return w_e_lower_bound #* self.grid.xs[2].get()
 
     def dissipation(self, t, data, derivMin, derivMax, schemeData, dim):
         """
@@ -294,14 +365,11 @@ class Bird():
         cur_state = np.asarray(self.cur_state)
 
         if dim==0:
-            d0 = np.abs(self.v_e - self.v_p * np.cos(cur_state[2,0])) + np.abs(w_e_upper_bound * cur_state[1,0])
-            return d0 * self.grid.xs[0].get()
+            return np.abs(self.v_e - self.v_p * np.cos(cur_state[2])) + np.abs(w_e_upper_bound * cur_state[1])
         elif dim==1:
-            d1 =  np.abs(self.v_p * np.sin(cur_state[2,0])) + np.abs(w_e_upper_bound * cur_state[0,0])
-            return d1* self.grid.xs[1].get()
+            return  np.abs(self.v_p * np.sin(cur_state[2])) + np.abs(w_e_upper_bound * cur_state[0])
         elif dim==2:
-            d3 = self.w_p + w_e_upper_bound
-            return d3*self.grid.xs[2].get()
+            return self.w_p + w_e_upper_bound
         
     def __hash__(self):
         # hash method to distinguish agents from one another

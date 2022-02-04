@@ -11,13 +11,24 @@ The [Tests](/Tests) folder contains examples of running basic tests. For example
 
 ### TODO's
 
-+ Fix len of smooth in derivL computation in upwindFirstWENO5.py
-+ data_proj is a lotta issue
-+ Add all exports from modules PODS down
-+ Write POD projections and reprojections for lifting dynamics
+- [+] Fix len of smooth in derivL computation in upwindFirstWENO5.py
 
-#### Derivatives and LF that work
-+ upwindENO2
-+ termLaxFriedrichs
-+ artificialGLF
-+ dissipation 
+- [ ] data_proj is a lotta issue.
+  - This is particular to Dr. Herbert's HelperOC class. Could not faithfully reproduce interpolation scheme in python.
+
+- [ ] Tensor operators in PODS Function.
+  - Todo Fall 2022.
+
+- [ ] Write POD projections and reprojections for lifting dynamics.
+  - Todo with Boris Kramer and Dr. Herbert.
+
+
+  #### Derivatives Integration LF with Bugs
+  - [+] upwindFirstWENO5a
+
+#### Derivatives Integration LF
+- [+] upwindFirstENO2
+- [+] upwindFirstWENO5a
+- [+] termLaxFriedrichs
+- [+] termRestrictUpdate
+- [+] artificialDissipationGLF

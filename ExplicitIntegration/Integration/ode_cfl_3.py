@@ -6,7 +6,7 @@ import numpy as np
 from .ode_cfl_set import odeCFLset
 from .ode_cfl_mult import odeCFLmultipleSteps
 from .ode_cfl_call import odeCFLcallPostTimestep
-from Utilities import *
+from LevelSetPy.Utilities import *
 
 def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
     """
@@ -193,7 +193,6 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
                 yHalf = 0.25 * (3 * y + y2)
 
             'Third substep: Forward Euler from t_{n+1/2} to t_{n+3/2}.'
-
             # Approximate the derivative.
             # We will also check the CFL condition for gross violation.
             for i in range(numY):
@@ -264,7 +263,7 @@ def odeCFL3(schemeFunc, tspan, y0, options, schemeData):
         endTime = cputime()
 
         if (isfield(options, "stats") and strcmp(options.stats, 'on')):
-            info(f'{steps} steps in {(endTime-startTime):.2} seconds from  {tspan[0]} to {t}.')
+            info(f'{steps} steps in {(endTime-startTime):.2} seconds from  {tspan[0]:.2f} to {t:.2f}.')
 
     elif(numT > 2):
         # If we were asked for the solution at multiple timesteps.

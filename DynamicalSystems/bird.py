@@ -265,10 +265,10 @@ class Bird():
         
         cur_state = cp.asarray(self.cur_state)
 
-        p1_coeff = cp.cos(cur_state[2,0])
-        p2_coeff =  cp.sin(cur_state[2,0])
+        p1_coeff = -cp.cos(cur_state[2,0])
+        p2_coeff =  -cp.sin(cur_state[2,0])
 
-        θr  = self.w_e
+        θr  = -self.w_e
 
         Hxp = (p1 * p1_coeff + p2 * p2_coeff  + p3 *  θr)      
 

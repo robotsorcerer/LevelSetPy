@@ -1,16 +1,40 @@
-### LevelSets Py
+.. image:: https://anaconda.org/conda-forge/levelsetpy/badges/version.svg
+   :target: https://anaconda.org/conda-forge/levelsetpy
 
-This repo is a reproduction of Ian Mitchell's LevelSets Toolbox in Python written by Lekan Molu in August, 2021
+.. image:: https://img.shields.io/pypi/v/control.svg
+   :target: https://pypi.org/project/levelsetpy/
+
+.. image:: https://github.com/python-control/python-control/actions/workflows/python-package-conda.yml/badge.svg
+   :target: https://github.com/python-control/python-control/actions/workflows/python-package-conda.yml
+
+.. image:: https://github.com/python-control/python-control/actions/workflows/install_examples.yml/badge.svg
+   :target: https://github.com/python-control/python-control/actions/workflows/install_examples.yml
+
+.. image:: https://github.com/python-control/python-control/actions/workflows/control-slycot-src.yml/badge.svg
+   :target: https://github.com/python-control/python-control/actions/workflows/control-slycot-src.yml
+
+.. image:: https://coveralls.io/repos/python-control/python-control/badge.svg
+   :target: https://coveralls.io/r/python-control/python-control
+   
+### LevelSetsPy Library
+
+This repo implements basic level set methods. It started as a reimplementation if Ian Mitchell's level set toolbox,but has since metamorphorsed into a standalone project of its own. It was a project started by Lekan Molu in August, 2021.
+
+#### Features
+
+- Linear input/output systems in state-space and frequency domain
+- Block diagram algebra: serial, parallel, and feedback interconnections
+- Time response: initial, step, impulse
+- Frequency response: Bode and Nyquist plots
+- Control analysis: stability, reachability, observability, stability margins
+- Control design: eigenvalue placement, linear quadratic regulator
+- Estimator design: linear quadratic estimator (Kalman filter)
+
+
 
 ### Status
 
-This repo is under active development.
-
-<!-- ### Demos
-
-The [Tests](/Tests) folder contains examples of running basic tests. For example, you can view a demo of the grids creation by running
-
-`python Tests/test_grids.py` -->
+ [x] Testing.
 
 
 ### TODO's
@@ -42,6 +66,3 @@ If you have used LevelSetPy in your work, please cite it:
   note = {Accessed March 11, 2022}
 }
 ```
-
-
-Olalekan Ogunmolu.

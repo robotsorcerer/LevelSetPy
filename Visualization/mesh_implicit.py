@@ -14,7 +14,7 @@ def implicit_mesh(surface, level, spacing, gd='ascent', edge_color='k', face_col
     """
         Generate a level set about the avg of the min and max of the vol
         of an implicit surface function. This algorithm uses the Marching Cubes Function of Lewiner et al.
-        For this implementation, we are leveraging the Lewiner's method implemeneted oin scipykit.image measure
+        For this implementation, we are leveraging the Lewiner's method implemeneted in scipykit.image measure
         Lorensen et al's algorithm:   Lorensen, W. E.; Cline, Harvey E. (1987).
         "Marching cubes: A high resolution 3d surface construction algorithm".
         ACM Computer Graphics. 21 (4): 163–169. CiteSeerX 10.1.1.545.613. doi:10.1145/37402.37422

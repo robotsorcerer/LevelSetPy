@@ -4,7 +4,8 @@ This repo implements basic level set methods. It started as a reimplementation i
 
 #### Features
 
-- Explicit Hamiltonian Integration Schemes: Courant-Friedrichs Lax; Dissipasion; Lax-Friedrichs Schemes.
+- Explicit Hamiltonian Integration: Courant-Friedrichs-Lax methods; (Weighted) 
+Essentially Non-oscillatory Dissipation Schemes; Lax-Friedrichs Schemes.
 - Eikonal Equation: Signed-distance functions for level set representations of value functions.
 - Optimization Libraries: ADMM, Chambolle-Pock TVD schemes.
 - Upwinding: Directional approximations to  essentially non-oscillatory integration schemes.

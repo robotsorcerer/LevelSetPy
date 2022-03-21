@@ -1,6 +1,6 @@
 ### LevelSetsPy Library
 
-This repo implements basic level set methods. It started as a reimplementation if Ian Mitchell's level set toolbox,but has since metamorphorsed into a standalone project of its own. It was a project started by Lekan Molu in August, 2021.
+This repo implements basic level set methods. It started as a GPU implementation if Ian Mitchell's level set toolbox in Python,but has since metamorphorsed into a standalone project of its own. 
 
 #### Features
 

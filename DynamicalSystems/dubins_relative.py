@@ -31,13 +31,16 @@ class DubinsVehicleRel():
 
         self.grid        = grid
 
-        assert isinstance(x, np.ndarray) or isinstance(x, cp.ndarray), "initial state must either be a numpy or cupy array."
-        r, c = x.shape
-        if r<c:
-            # turn to column vector
-            x = x.T
+        if x:
+            assert isinstance(x, np.ndarray) or isinstance(x, cp.ndarray), "initial state must either be a numpy or cupy array."
+            r, c = x.shape
+            if r<c:
+                # turn to column vector
+                x = x.T
 
-        self.cur_state   = x
+            self.cur_state   = x
+        else:
+            self.cur_state = self.grid.xs
         self.v = lambda u: u*u_bound
         self.w = lambda w: w*w_bound
 

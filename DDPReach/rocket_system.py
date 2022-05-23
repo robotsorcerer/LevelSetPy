@@ -6,25 +6,20 @@ __email__ 		= "patlekno@icloud.com"
 __status__ 		= "Ongoing"
 
 import numpy as np
+from scipy.linalg import cholesky
 from LevelSetPy.Utilities import *
 
 
-class VarHJIApprox():
-    def __init__(self, X, eta=.5, rho=.99, r = 100, \
+class RocketSystem():
+    def __init__(self, r = 100, \
                   T=100, DX=4, DU=4, DV=4):
         """
-            This functions uses iterative dynamic game to compute the level sets of the
-            value function for all scheduled trajectories of a dynamical system.
-
-            At issue is a differential game between two rockets over a shared space in
-            $\mathbb{R}^n$.
+            This class sets up the dynamics, value function and Hamiltonian as
+            well as their partial derivatives for the differential game between
+            two rockets over a shared space in $\mathbb{R}^n$.
 
             Parameters:
             -----------
-                .X: All states that emanate from the trajectory.
-              Cost improvement params:
-                .eta: Stopping condition for backward pass;
-                .rho: Regularization condition.
               Capture params:
                 r: Capture radius.
               Integration/State/Control Parameters:
@@ -33,8 +28,6 @@ class VarHJIApprox():
                 .DU: Dimension of the control.
                 .DV: Dimension of the disturbance.
         """
-        self.eta = eta
-        self.rho = rho
         # gravitational acceleration, 32.17ft/sec^2
         self.g = 32.17
         # acceleration of the rocket <-- eq 2.3.70 Dreyfus
@@ -71,10 +64,14 @@ class VarHJIApprox():
         self.Hvx = np.zeros((self.T, self.DV, self.DX))
         self.Hxx = np.zeros((self.T, self.DX, self.DX))
 
-        #Value functions and their derivatives
-        V  = np.zeros((self.T))
-        Vx = np.zeros((self.T, self.DX))
-        Vxx = np.zeros((self.T, self.DX, self.DX))
+        # Value functions and their derivatives
+        self.V  = np.zeros((self.T))
+        self.Vx = np.zeros((self.T, self.DX))
+        self.Vxx = np.zeros((self.T, self.DX, self.DX))
+
+        # Gains
+        self.ku = np.zeros((self.T, self.Du, self.Du))
+        self.kv = np.zeros((self.T, self.Dv, self.Dv))
 
     def dynamics(self, x, pol):
         """
@@ -118,14 +115,14 @@ class VarHJIApprox():
         Parameters
         ==========
             Input:
-                .x - state
+                .x - state as an initial condition
                 .pol: A tuple of maximizing (u) and minimizing (v) controllers where:
                     .u - control input (evader)
                     .v - disturbance input (pursuer)
             Output:
                 xdot - System dynamics
         """
-        assert isinstance(x, list), "x must be a List."
+        assert isinstance(x, list) or isinstance(x, np.ndarray), "x must be a List or ND-Array."
         assert isinstance(pol, tuple), "Policy passed to <dynamics> must be a Tuple."
         u, v = pol
 
@@ -135,7 +132,7 @@ class VarHJIApprox():
 
         return xdot
 
-    def rk4_integration(self, x0, steps = 50, time_step = 0.2):
+    def rk4_integration(self, x0, pol, steps = 50, time_step = 0.2):
         """
             Compute an approximation to the rhs of an ode using a 4th-order Runge-Kutta
             integration technique/scheme. Equations from: https://lpsa.swarthmore.edu/NumInt/NumIntFourth.html
@@ -152,10 +149,10 @@ class VarHJIApprox():
         X = np.asarray(x0) if isinstance(x0, list) else x0
 
         for j in range(steps):
-            k1 = self.dynamics(X)                    # {k_1} = f({\hat{x}}({t_0}),{t_0})
-            k2 = self.dynamics(X + time_step/2 * k1) # f\left( {\hat{x}({t_0}) + {k_1}{h \over 2},{t_0} + {h \over 2}} \right)
-            k3 = self.dynamics(X + time_step/2 * k2) # f\left( {\hat{x}({t_0}) + {k_2}{h \over 2},{t_0} + {h \over 2}} \right)
-            k4 = self.dynamics(X + time_step * k3)   # f\left( {\hat{x}({t_0}) + {k_3}h,{t_0} + h} \right)
+            k1 = self.dynamics(X, pol)                    # {k_1} = f({\hat{x}}({t_0}),{t_0})
+            k2 = self.dynamics(X + time_step/2 * k1, pol) # f\left( {\hat{x}({t_0}) + {k_1}{h \over 2},{t_0} + {h \over 2}} \right)
+            k3 = self.dynamics(X + time_step/2 * k2, pol) # f\left( {\hat{x}({t_0}) + {k_2}{h \over 2},{t_0} + {h \over 2}} \right)
+            k4 = self.dynamics(X + time_step * k3, pol)   # f\left( {\hat{x}({t_0}) + {k_3}h,{t_0} + h} \right)
 
             # compute a weighted sum of the slopes to obtain the final estimate of \hat{x}(t_0 + h)
             X  = X+(time_step/6)*(k1 +2*k2 +2*k3 +k4)
@@ -171,8 +168,8 @@ class VarHJIApprox():
             Inputs:
                 .f -- System Dynamics
                 .pol: A tuple of maximizing (u) and minimizing (v) controllers where:
-                .u - Control input (evader).
-                .v - Disturbance input (pursuer).
+                    .u - Control input (evader).
+                    .v - Disturbance input (pursuer).
                 .t - Time step at which to compute f.
             Output: Bundle of all partials of f i.e.:
                     .Bundle(fu, fv, fx)
@@ -189,7 +186,7 @@ class VarHJIApprox():
         self.fv[t,2,0] = self.a*np.sin(v)
         self.fv[t,3,0] = -self.a*np.cos(v)
 
-        return Bundle(dict(fx=self.fx, fu=self.fu, fv=self.fv))
+        # return Bundle(dict(fx=self.fx, fu=self.fu, fv=self.fv))
 
     def hamiltonian(self, states, pol, p, t=0):
         '''
@@ -223,9 +220,9 @@ class VarHJIApprox():
                                         &H_{xv} = \textbf{0}_{4\times4}
         '''
 
-        assert isinstance(states, list), "The states of the dynamical system must be a list instance."
+        assert isinstance(states, np.ndarray), "The states of the dynamical system must be a list instance."
         assert isinstance(pol, tuple), "Policy input for Hamiltonian Function must be a tuple."
-        assert isinstance(p, list), "The co-state must be a list instance."
+        assert isinstance(p, np.ndarray), "The co-state must be a list instance."
         u, v = pol
 
         # computations  #TODOs: Broadcast to appropriate Dims
@@ -240,12 +237,12 @@ class VarHJIApprox():
         self.Hvv[t] = p[2] * self.a * np.cos(v) + p[3] * self.a * np.sin(v)
 
 
-        self.Hx[t, 2,0] = p[0]
-        self.Hx[t, 3,0] = p[1]
+        self.Hx[t, 2] = p[0]
+        self.Hx[t, 3] = p[1]
 
-        return Bundle(dict(H=self.H, Hx=self.Hx, Hu=self.Hu, Hv=self.Hv, \
-                            Huu=self.Huu, Hvv=self.Hvv, Huv=self.Huv, Hvx=self.Hvx, \
-                            Hvu=self.Hvu, Hux=self.Hux, Hxx=self.Hxx))
+        # return Bundle(dict(H=self.H, Hx=self.Hx, Hu=self.Hu, Hv=self.Hv, \
+        #                     Huu=self.Huu, Hvv=self.Hvv, Huv=self.Huv, Hvx=self.Hvx, \
+        #                     Hvu=self.Hvu, Hux=self.Hux, Hxx=self.Hxx))
 
     def value_funcs(self, x, t):
         """
@@ -283,4 +280,26 @@ class VarHJIApprox():
         self.Vxx[t,0,0] = 2
         self.Vxx[t,1,1] = 2
 
-        return Bundle(dict(V=self.V, Vx=self.Vx, Vxx=self.Vxx))
+    def gains(self):
+        """
+            Compute the gains for the controller and disturbance
+            𝑢∗, 𝑣∗ as given by equation (31).
+        """
+            #Huu_inv = np.zeros_like(self.Huu)
+            try:
+                Huu_upper = cholesky(self.Huu, lower=False)
+                Huu_lower = Huu_upper.T
+            except:
+                raise LinAlgError("Had trouble computing the Huu inverse matrix.", LinAlgError)
+
+            try:
+                Hvv_upper = cholesky(self.Hvv, lower=False)
+                Hvv_lower = Hvv_upper.T
+            except:
+                raise LinAlgError("Had trouble computing the Hvv inverse matrix.", LinAlgError)
+            """
+                Recall A = U^* U ==> A^{-1}=U^{-1} U*{-1}
+                Solve for X in AX = I ==> U^* U X = I ==> U^* B = I
+            """
+            Huu_B = solve_triangular(Huu_upper, np.eye(self.DU)) # B above
+            Hvv_B = solve_triangular(Hvv_upper, np.eye(self.DV)) # B above

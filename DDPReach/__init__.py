@@ -1,1 +1,2 @@
-from .system import VarHJIApprox
+from .rocket_system import RocketSystem
+from .var_hji_approx import VarHJIApprox
